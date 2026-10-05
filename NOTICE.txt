@@ -13,3 +13,11 @@ distribution of this package do not grant additional rights to that content.
 Bundled snapshot: 2026-10-04, World of Warcraft Forever 1.60.1 build 69876.
 Rules and content may differ from a later patch. Numerical estimates use
 dated observations and editable assumptions, not a complete combat model.
+
+Simulator effect snapshot: Forever 1.60.1 build 70009, reviewed 2026-10-05.
+Selected corrections follow Forever developer notes; this is not a complete
+talent-catalog migration. Character reference values are adapted from the
+Forever simulation data project (github.com/gunba/wow-forever-sim),
+Copyright (c) 2024 wowsims team, MIT licensed. Its license is included in
+THIRD-PARTY.txt. Reference values are not verified current server baselines.
+The Character workspace illustration is original Forever Talents artwork.

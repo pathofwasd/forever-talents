@@ -40,3 +40,32 @@ Use the Forever client with the matching interface version. Check window fitting
 resolutions/UI scales, reading logged-in talents/stats, key binding discovery, tooltip fallback, and
 whispers with another addon user. Automated API mocks do not establish that live client APIs or chat
 delivery work on every client patch.
+
+## Simulator and character checks
+
+`tests/test_simulation.lua` covers hand-calculated direct/tick/shield/AP/weapon examples, scope
+exclusions, reported-crit normalization, gear/attribute effects, capture deltas, isolated temporary
+inputs, portable FS1/FS2/FC1/FL1 data, corruption rejection and every captured effect model. Native
+UI checks exercise custom item editing and character/skill separation. The browser-engine parity
+suite compares central workspaces, resolved inputs, results and exact export strings to Lua 5.1.
+
+For release QA, use an isolated browser origin. Check desktop, 320/375 px phones, tablet and
+landscape; enter gear/stats, calculate multiple effects, paste invalid and valid inputs, and confirm
+the central character remains intact. Test the production service worker with the preview server
+stopped, then accept a new bundle and confirm character/equipment and saved build branches remain. A
+browser or mocked-frame check is not verification of the native live WoW client.
+
+## Version 1.2.0 validation
+
+The release passed the shared/native verification gate, browser-engine parity, format checks, Python
+lint/format checks and archive validation. The reviewed CSV replay matches all 728 simulator models
+and reported-crit flags in the canonical catalog.
+
+Production browser checks covered desktop, 1600 px desktop, tablet, 320/375 px phones and landscape:
+custom gear and central stats, live temporary results, valid/damaged character and skill-input
+strings, full-library deduplication, sibling checkpoints, shield/heal/cost controls, keyboard focus,
+horizontal fit and sticky result visibility. Update acceptance preserved character gear and branch
+history. With the local server stopped, reload and calculation still worked with those saves.
+
+Live WoW character/item capture and native visual behavior still require in-client verification; API
+fixtures and browser screenshots do not establish live-client compatibility.

@@ -20,7 +20,7 @@ pnpm preview
 ```
 
 `npm` can run the scripts too, but pnpm owns the dependency lockfile. The local preview listens at
-http://localhost:4173. `web/dist/` is the complete static site; `dist/ForeverTalents-PWA-1.1.2.zip`
+http://localhost:4173. `web/dist/` is the complete static site; `dist/ForeverTalents-PWA-1.2.0.zip`
 is its release archive. Neither needs Node, Python, a server database or a CDN on the hosting
 service.
 
@@ -51,19 +51,23 @@ writing; the More view offers the original saved-data download.
 ## Sharing
 
 - FT1: talent allocation, exact ordered spending, race and target level.
-- FC1: those talents and level plus simulation stats / captured character data.
-- FS1: simulation stats only; importing keeps current talents and target level.
-- FL1: all saved profiles, checkpoint branches, class drafts, undo/redo and stats.
+- FC1: those talents and level plus central character stats and custom/captured equipment.
+- FS2: character stats/equipment or temporary skill inputs. FS1 remains supported.
+- FL1: all saved profiles, checkpoint branches, class drafts, undo/redo and character workspaces.
 
 Share → choose format → Copy string or Save to file. Import previews strings before loading. Library
 imports merge profiles, skipping exact duplicates. Replacing class drafts is a separate explicit
 checkbox. Existing saves can be backed up with a whole-library export before importing. Native
 window settings and received whisper receipts stay on their own platform.
 
-In-game Character can capture live talents/stats, or copy a planned setup. Paste the same string
-here. Live talent order is reconstructed because the client does not expose the original spending
-history. A browser cannot read WoW APIs or send addon whispers; clickable in-game receipts remain
-addon-only.
+In-game Character can capture live talents, stats and available gear, or copy a planned setup. Paste
+the same string here. Live talent order is reconstructed because the client does not expose the
+original spending history. A browser cannot read WoW APIs or send addon whispers; clickable in-game
+receipts remain addon-only.
+
+Character holds the shared gear/stat workspace. Simulator edits and its Paste skill inputs control
+are temporary; they leave that character unchanged. See the [simulator guide](../docs/SIMULATOR.md)
+for formulas, evidence and accuracy limits.
 
 See [feature ownership](../docs/FEATURE-PARITY.md) and [update requirements](../AGENTS.md) before
 editing either platform. Release packages include content ownership notices and bundled software

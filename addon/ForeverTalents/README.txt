@@ -1,4 +1,4 @@
-FOREVER TALENTS 1.1.2
+FOREVER TALENTS 1.2.0
 An offline talent planner for World of Warcraft Forever (Interface 16001).
 Free, unofficial community project. Not affiliated with or endorsed by
 Blizzard Entertainment. Game artwork and text belong to their rights holders.
@@ -106,31 +106,38 @@ Mismatched client talents stop the import and preserve the draft. Structured
 Classic APIs support matching spell IDs; legacy API imports may require
 English talent names. Planning itself uses English source descriptions.
 
-WHAT IF?
-Open a skill, choose a rank and click What if? for an estimate of one use.
-Start with bonus spell/healing power, crit chance and damage stopped. Use my
-stats copies reported values from your current character. Base critical chance
-is the chance before the modeled talent bonuses. When learned talents can be
-read, recognized passive general/school crit bonuses are removed from reported
-crit before your planned bonuses are added. The notes show the adjustment.
-Other reported values can include buffs; edit values that already include a
-bonus listed as Included. Target bleeding,
-frozen and active-cooldown toggles enable supported simple talent conditions.
+CHARACTER AND SIMULATOR
+Character opens a central workspace shared by all skill simulations for this
+class. Choose Base + gear to create custom items and add extra bonuses, or
+Overall stats to enter totals before modeled passives. Gold numbers show the
+result after recognized race, level and talent changes. Base stats and stat
+conversions are approximate references; captured live totals are preferred.
 
-Normal use, Critical use and Expected average include direct and captured
-periodic amounts. The comparison uses the same assumptions without selected
-talent modifiers. Advanced exposes attack power, weapon hit range, chance to
-land, scaling coefficients, another multiplier and a manual base range. Hover
-fields and How this works explain each input and the formula.
+Capture in game records reported stats and available equipped-item details.
+Captured gear is reference only: reported totals already include equipment and
+buffs. Original captures are retained, so planned passive changes do not compound.
+When item information is still loading, open Character and capture again.
+Weapon details currently require English item tooltip text. Feral weapon hit
+ranges need measured form totals; equipped weapon damage is not claw damage.
 
-Read the Included and Omitted notes. This is a planning estimate, not a full
-combat simulator. Some direct coefficients come from an older Forever beta
-datamine; other spells use a client cast-time approximation or zero when the
-coefficient is unknown. Unknown periodic scaling starts at zero. Advanced
-can replace these assumptions. Proc uptime, rotations, forms, racial bonuses,
-combo-point/resource rules, multi-target hits and complex intrinsic conditions
-are not automatically simulated. Coefficient/manual overrides are cleared
-when switching to a different skill; character and target assumptions persist.
+Open a skill, choose a rank and select Simulator. Only inputs used by its model
+appear. Target conditions, resource inputs and active-cooldown assumptions are
+shown where applicable. Temporary edits, pasted skill inputs and scaling
+experiments leave the central character unchanged. Reset skill overrides returns
+to the character's current values. Edit character changes the shared workspace.
+
+Results estimate one use against one target, including full periodic duration.
+Damage, healing, shield capacity and self-health costs are separate effects.
+Expected total includes eligible critical rolls and the assumed chance to land.
+Calculation & sources explains numeric steps, coefficients, ticks, talent-rank
+text and evidence. Advanced accepts measured scaling or replacement amounts.
+Periodic overrides describe the entire effect, not the coefficient per tick.
+
+Effects use the reviewed Forever client build 70009, with selected corrections
+from development notes. Unknown coefficients, scripted interactions, unmodeled
+talents and uncertain low-rank scaling produce a Partial estimate. Rotations,
+proc uptime, automatic armor/resistance, most pets and off-hand attacks remain
+outside this model. Accuracy notes describe the limits for the selected skill.
 
 QUICK COMMANDS
 /ftc or /forevertalents  Open/close the planner
@@ -160,22 +167,22 @@ Code license and third-party attribution are in LICENSE.txt and NOTICE.txt.
 
 CHARACTER AND FULL-LIBRARY SYNC (ADDON <-> WEB / MOBILE)
 Open Character on the toolbar, or /ftc character. Copy planned character
-exports level, exact talents/order and simulation settings (FC1). Copy
-simulation stats exports only the estimate inputs (FS1); importing FS1 keeps
+exports level, exact talents/order, central stats and equipment (FC1). Copy
+character stats exports stats/equipment (FS2); importing FS1 or FS2 keeps
 your current talents and target level. Live captures include reported power
 and crit by school, healing power, AP and normal weapon damage. Recognized
 source-talent crit bonuses can be removed before planned bonuses are added.
 Reported numbers can include buffs; hit, mitigation and target states remain
-assumptions. Select a skill's What if? panel to edit all estimate inputs.
+assumptions. Select a skill's Simulator panel to edit all estimate inputs.
 
-Read logged-in character captures live talents, level and stats. Read only
+Read logged-in character captures live talents, level, stats and available gear. Read only
 live stats still works when talents are unreadable, with a crit-normalization
 note. If talents are unavailable or their layout differs, import stops and
 keeps the draft. Open the game's Talents window and retry after login. Original
 spending order is not exposed by the client: imports derive a legal order.
 
 Copy whole library exports FL1: all named profiles, checkpoint parents/titles,
-class drafts, undo/redo and simulation stats. Copy one large string with Ctrl+C
+class drafts, undo/redo and central character workspaces. Copy one large string with Ctrl+C
 and paste it into Import in the PWA or this Character panel. Preview counts
 before loading. Library imports merge saved profiles and skip exact duplicates;
 optionally check Replace class drafts. Export first to keep a backup. Window
@@ -187,3 +194,8 @@ Explicit FT1/FC1 imports retain their shared target level and exit Auto mode;
 Undo restores the previous allocation and mode. Preview exports use the
 level actually displayed. The PWA cannot directly read a running WoW client;
 capture in the addon and paste the snapshot into the PWA instead.
+
+
+Simulator Copy/Paste inputs uses FS1/FS2 for temporary skill experiments.
+Character import intentionally changes the central workspace; the simulator
+paste control does not. Old FS1 strings remain supported.

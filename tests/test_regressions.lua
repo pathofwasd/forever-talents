@@ -94,7 +94,9 @@ mod = isolated(11, "Vengeance", 5, heal, healingParsed)
 check(mod.critBonus == 0, "spell critical damage bonus applied to healing")
 local priestHeal = FT.Skills.Prepare(5).byName["Flash Heal"]
 mod = isolated(5, "Holy Specialization", 5, priestHeal, Sim.Parse(priestHeal.ranks[1], priestHeal))
-check(mod.crit == 5 and mod.statsCrit == 5, "healing school crit was omitted")
+-- The reviewed client represents this as a spell modifier (aura 107),
+-- so the bonus applies to the heal but is not subtracted from paper-doll crit.
+check(mod.crit == 5 and mod.statsCrit == 0, "spell modifier was mistaken for reported crit")
 local linked = false
 for _, link in ipairs(heal.related) do
     if link.id == talent(11, "Gift of Nature").id then

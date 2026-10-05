@@ -47,4 +47,47 @@ for _, cid in ipairs(FT.classOrder) do
     output("export", { kind = "character" })
     output("preview", {})
 end
+output("switch", { classID = 11 })
+output("auto", { enabled = false })
+output("level", { level = 25 })
+output("characterMode", { mode = "gear" })
+output("characterSave", {
+    sheet = {
+        schema = 1,
+        mode = "gear",
+        name = "Shared character",
+        form = "cat",
+        weaponType = "none",
+        stats = { power = 123.25, hit = 93 },
+        gear = {
+            mainHand = {
+                name = "Dagger",
+                stats = { strength = 10, intellect = 23, attackPower = 14 },
+                low = 10,
+                high = 20,
+                speed = 1.8,
+                weaponType = "dagger",
+            },
+        },
+    },
+})
+output("character")
+output("export", { kind = "stats" })
+output("export", { kind = "character" })
+output("statsForSkill", { name = "Wrath", rank = 4, overrides = { coefficient = 75 } })
+output("simulate", { name = "Wrath", rank = 4, overrides = { power = 900, crit = 13 } })
+output(
+    "simulate",
+    { name = "Wrath", rank = 4, overrides = { power = 900, crit = 13 }, withTalents = false }
+)
+output("character")
 output("export", { kind = "library" })
+output(
+    "simulate",
+    { name = "Wrath", rank = 4, overrides = { attackPower = 1000, apCoefficient = 20 } }
+)
+output("export", {
+    kind = "stats",
+    skillName = "Wrath",
+    state = { attackPower = 1000, apCoefficient = 20, dotAPCoefficient = 30 },
+})

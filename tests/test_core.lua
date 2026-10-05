@@ -336,7 +336,9 @@ test("skill estimates respect source ranges, states, crit, power and mitigation"
     local skill = FT.Skills.Prepare(11).byName.Wrath
     local rank = skill.ranks[1]
     local result = Sim.Calculate(b, skill, rank, { power = 100, crit = 0, reduction = 0 })
-    check(math.abs(result.min - 57.9) < 0.01)
+    -- Rank-one client values grow through level five before bonus scaling.
+    local minimum = 15 * (1 - 0.153846 / 2) + (5 - 1) * 0.4 + 100 * 0.429
+    check(math.abs(result.min - minimum) < 0.01)
     local crit = Sim.Calculate(b, skill, rank, { power = 100, crit = 100 })
     check(math.abs(crit.expected - result.average * 1.5) < 0.01)
     local blocked = Sim.Calculate(b, skill, rank, { power = 100, crit = 0, reduction = 50 })

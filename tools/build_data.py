@@ -3,9 +3,10 @@
 
 import hashlib
 import json
+import math
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "addon/ForeverTalents"
@@ -104,6 +105,52 @@ def validate(data, icons):
     assert compatibility_tag(data["classes"]) == meta["tag"], (
         "Talent compatibility changed; review the data tag and sharing migration."
     )
+    simulation = data["simulation"]
+    assert (
+        simulation["schema"] == 1
+        and simulation["sources"]
+        and simulation["patchSource"].startswith("https://")
+    )
+    for model in simulation["spells"].values():
+        assert model["attack"] in ("spell", "melee", "ranged")
+        assert model["components"] and 0 <= model["level"] <= 60
+        assert model["maxLevel"] >= 0 and isinstance(model["channel"], bool)
+        for effect in model["components"]:
+            assert effect["kind"] in ("damage", "healing", "absorption")
+            assert effect["part"] in ("direct", "periodic")
+            assert isinstance(effect["crit"], bool) and isinstance(effect["scalingKnown"], bool)
+            for key in ("low", "high", "sp", "ap", "weapon", "growth", "combo", "rage", "interval"):
+                value = effect.get(key, 0)
+                assert isinstance(value, (int, float)) and math.isfinite(value) and value >= 0, (
+                    key,
+                    effect,
+                )
+            assert effect["high"] >= effect["low"] and 1 <= effect.get("ticks", 1) <= 1000
+    for cls in data["classes"].values():
+        for tree in cls["trees"]:
+            for talent in tree["talents"]:
+                ranks = simulation["statsCrit"][talent["id"]]
+                assert len(ranks) == talent["max"] and all(
+                    isinstance(value, bool) for value in ranks
+                )
+    reference = simulation["character"]
+    assert set(reference["classes"]) == set(data["classes"])
+    assert set(reference["races"]) == set(data["races"])
+    for cls in reference["classes"].values():
+        for key in (
+            "strength",
+            "agility",
+            "stamina",
+            "intellect",
+            "spirit",
+            "baseMana",
+            "baseHealth",
+            "meleeCritPerAgi",
+            "spellCritPerInt",
+        ):
+            assert len(cls[key]) == 60 and all(
+                math.isfinite(value) and value >= 0 for value in cls[key]
+            )
     for icon in icons:
         assert icon and all(char.isalnum() or char == "_" for char in icon)
         for size in ("medium", "large"):
@@ -133,6 +180,45 @@ def build_icons(icons):
         image.save(OUT / "Media" / f"{name}.tga")
 
 
+def build_character_art():
+    """Render the project's own paper-doll illustration from shared vector geometry."""
+    source = json.loads((ROOT / "data/ui/character.json").read_text())
+    width, height = source["width"], source["height"]
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}">']
+    for shape in source["shapes"]:
+        kind, points = shape["type"], shape["points"]
+        fill, outline = shape.get("fill"), shape.get("outline")
+        stroke = shape.get("width", 2)
+        if kind == "ellipse":
+            draw.ellipse(points, fill=fill, outline=outline, width=stroke)
+            x1, y1, x2, y2 = points
+            svg.append(
+                f'<ellipse cx="{(x1 + x2) / 2}" cy="{(y1 + y2) / 2}" rx="{(x2 - x1) / 2}" ry="{(y2 - y1) / 2}" fill="{fill}" stroke="{outline}" stroke-width="{stroke}"/>'
+            )
+        else:
+            coordinates = [tuple(point) for point in points]
+            if kind == "polygon":
+                draw.polygon(coordinates, fill=fill)
+                if outline:
+                    draw.line(
+                        coordinates + [coordinates[0]], fill=outline, width=stroke, joint="curve"
+                    )
+            else:
+                draw.line(coordinates, fill=outline, width=stroke)
+            positions = " ".join(f"{x},{y}" for x, y in coordinates)
+            tag = "polygon" if kind == "polygon" else "polyline"
+            svg.append(
+                f'<{tag} points="{positions}" fill="{fill or "none"}" stroke="{outline or "none"}" stroke-width="{stroke}" stroke-linejoin="round"/>'
+            )
+    svg.append("</svg>")
+    image.save(OUT / "Media/Character.tga")
+    destination = ROOT / "web/public/generated/character.svg"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text("\n".join(svg) + "\n")
+
+
 def main():
     data = numeric_keys(json.loads((ROOT / "data/catalog.json").read_text()))
     icons = json.loads((ROOT / "data/icons.json").read_text())["icons"]
@@ -144,17 +230,18 @@ def main():
         encoding="utf-8",
     )
     build_icons(icons)
+    build_character_art()
     classes = data["classes"].values()
-    manifest = dict(
-        schema=1,
-        dataTag=data["meta"]["tag"],
-        classes=len(data["classes"]),
-        trees=sum(len(cls["trees"]) for cls in classes),
-        talents=sum(len(tree["talents"]) for cls in classes for tree in cls["trees"]),
-        skillRanks=sum(len(skill["ranks"]) for cls in classes for skill in cls["skills"]),
-        icons=len(icons),
-        dataSha256=hashlib.sha256(target.read_bytes()).hexdigest(),
-    )
+    manifest = {
+        "schema": 1,
+        "dataTag": data["meta"]["tag"],
+        "classes": len(data["classes"]),
+        "trees": sum(len(cls["trees"]) for cls in classes),
+        "talents": sum(len(tree["talents"]) for cls in classes for tree in cls["trees"]),
+        "skillRanks": sum(len(skill["ranks"]) for cls in classes for skill in cls["skills"]),
+        "icons": len(icons),
+        "dataSha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+    }
     (ROOT / "docs/data-build.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(json.dumps(manifest))
 

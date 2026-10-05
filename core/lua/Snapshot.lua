@@ -27,8 +27,8 @@ local function envelope(body)
     return body .. ":" .. C.Checksum(body)
 end
 local function verified(code, prefix)
-    if type(code) ~= "string" or #code > 8192 then
-        return nil, "Paste a complete sharing string (at most 8192 characters)."
+    if type(code) ~= "string" or #code > 65536 then
+        return nil, "Paste a complete sharing string (at most 65536 characters)."
     end
     code = code:match("^%s*(.-)%s*$")
     local body, check = code:match("^(.*):([%x]+)$")
@@ -60,19 +60,26 @@ function P.Stats(state, build, skillName, note)
     }
 end
 function P.Current(build, skillName, state)
-    local settings = FT.Store.db.settings
-    local profile = not state and settings.statsProfile and FT.Copy(settings.statsProfile)
-        or P.Stats(state or settings.scenario, build, skillName or settings.scenarioSkill)
-    if profile.classID ~= build.classID then
-        profile.raw, profile.learnedCode = nil, nil
+    if state then
+        return P.Stats(state, build, skillName)
     end
+    local sheet = FT.Character.Get(build)
+    local computed = FT.Character.Compute(build, sheet)
+    local profile = sheet.capture and FT.Copy(sheet.capture)
+        or P.Stats({
+            power = computed.totals.power,
+            attackPower = computed.totals.attackPower,
+            weaponMin = computed.totals.weaponMin,
+            weaponMax = computed.totals.weaponMax,
+            crit = computed.totals.spellCrit,
+            hit = computed.totals.hit,
+        }, build, skillName, computed.source)
     profile.classID, profile.raceID, profile.level = build.classID, build.raceID, build.level
-    if skillName then
-        profile.skillName = FT.SafeText(skillName, 80)
-    end
+    profile.character = sheet
+    profile.skillName = FT.SafeText(skillName, 80)
     return profile
 end
-function P.EncodeStats(profile)
+local function encodeLegacy(profile)
     if type(profile) ~= "table" or type(profile.state) ~= "table" then
         return nil, "No simulation stats to share."
     end
@@ -116,7 +123,7 @@ function P.EncodeStats(profile)
         C.Base64(profile.learnedCode or ""),
     }, ":"))
 end
-function P.DecodeStats(code)
+local function decodeLegacy(code)
     local body, why = verified(code, "FS1")
     if not body then
         return nil, why
@@ -216,6 +223,107 @@ function P.DecodeStats(code)
         learnedCode = learned ~= "" and learned or nil,
     }
 end
+local extended = {
+    "apCoefficient",
+    "dotAPCoefficient",
+    "periodicBase",
+    "scalingFactor",
+    "weaponSpeed",
+    "comboPoints",
+    "rage",
+    "weaponType",
+    "racialWeaponType",
+    "targetType",
+    "effectMode",
+    "form",
+    "executeRange",
+}
+function P.EncodeStats(profile)
+    local legacy, why = encodeLegacy(profile)
+    if not legacy then
+        return nil, why
+    end
+    local extra = { state = {} }
+    local needed = profile.character ~= nil
+    for _, key in ipairs(extended) do
+        local value = profile.state[key]
+        if
+            value ~= nil
+            and value ~= "none"
+            and value ~= "other"
+            and value ~= "caster"
+            and value ~= false
+        then
+            extra.state[key] = value
+            needed = true
+        end
+    end
+    if not needed then
+        return legacy
+    end
+    if profile.character then
+        extra.character, why = FT.Character.Normalize(profile.character, true)
+        if not extra.character then
+            return nil, why
+        end
+        if extra.character.capture and extra.character.capture.classID ~= profile.classID then
+            return nil, "Captured character class differs from the profile."
+        end
+    end
+    local code = envelope("FS2:" .. C.Base64(legacy) .. ":" .. C.Base64(FT.Library.Pack(extra)))
+    if #code > 65536 then
+        return nil, "Character stats and gear exceed the 64 KB sharing limit."
+    end
+    return code
+end
+function P.DecodeStats(code)
+    if type(code) ~= "string" or not code:match("^%s*FS2:") then
+        return decodeLegacy(code)
+    end
+    local body, why = verified(code, "FS2")
+    if not body then
+        return nil, why
+    end
+    local parts = split(body, ":")
+    if #parts ~= 3 then
+        return nil, "Invalid character stats string."
+    end
+    local legacy, payload = C.Unbase64(parts[2]), C.Unbase64(parts[3])
+    if not legacy or not payload then
+        return nil, "Invalid stats encoding."
+    end
+    local profile
+    profile, why = decodeLegacy(legacy)
+    if not profile then
+        return nil, why
+    end
+    local ok, extra = pcall(FT.Library.Unpack, payload)
+    if not ok or type(extra) ~= "table" or type(extra.state) ~= "table" then
+        return nil, "Invalid extended stats."
+    end
+    local merged = FT.Copy(profile.state)
+    for _, key in ipairs(extended) do
+        if extra.state[key] ~= nil then
+            merged[key] = extra.state[key]
+        end
+    end
+    profile.state = Sim.State(merged)
+    for _, key in ipairs(extended) do
+        if extra.state[key] ~= nil and profile.state[key] ~= extra.state[key] then
+            return nil, "Invalid simulation setting: " .. key
+        end
+    end
+    if extra.character then
+        profile.character, why = FT.Character.Normalize(extra.character, true)
+        if not profile.character then
+            return nil, why
+        end
+        if profile.character.capture and profile.character.capture.classID ~= profile.classID then
+            return nil, "Captured character class differs from the profile."
+        end
+    end
+    return profile
+end
 function P.EncodeCharacter(build, profile)
     local code, why = C.Encode(build)
     if not code then
@@ -244,7 +352,7 @@ function P.Decode(code)
         local b, why = C.Decode(code)
         return b and { kind = "build", build = b } or nil, why
     end
-    if code:sub(1, 4) == "FS1:" then
+    if code:sub(1, 4) == "FS1:" or code:sub(1, 4) == "FS2:" then
         local p, why = P.DecodeStats(code)
         return p and { kind = "stats", stats = p } or nil, why
     end
@@ -271,15 +379,21 @@ function P.Decode(code)
     end
     return { kind = "character", build = b, stats = p }
 end
-function P.ForSkill(profile, skill, rank, build)
+function P.ForSkill(profile, skill, rank, build, effectMode)
+    if profile and profile.character then
+        local state, character, note =
+            FT.Character.ForSkill(build, skill, rank, profile.character, nil, effectMode)
+        return state, note or character.source
+    end
     local state = Sim.State(profile and profile.state)
     if not profile then
         return state
     end
     local note = profile.note or ""
-    local parsed = Sim.Parse(rank, skill)
+    local parsed = Sim.Parse(rank, skill, build.level, effectMode or state.effectMode)
     local raw = profile.raw
-    local ranged = skill.name == "Auto Shot"
+    local ranged = parsed and parsed.attack == "ranged"
+        or skill.name == "Auto Shot"
         or skill.name == "Aimed Shot"
         or skill.name == "Multi-Shot"
     if raw and ranged and profile.classID == build.classID then
@@ -292,18 +406,28 @@ function P.ForSkill(profile, skill, rank, build)
         local schools =
             { Physical = 1, Holy = 2, Fire = 3, Nature = 4, Frost = 5, Shadow = 6, Arcane = 7 }
         local school = schools[parsed.school] or 7
-        if parsed.kind == "healing" and raw.healing then
+        if
+            (
+                parsed.kind == "healing"
+                or (parsed.kind == "absorption" and skill.name == "Power Word: Shield")
+            ) and raw.healing
+        then
             state.power = raw.healing
         elseif raw.power and raw.power[school] then
             state.power = raw.power[school]
         end
-        local crit = parsed.school == "Physical" and (ranged and raw.rangedCrit or raw.meleeCrit)
+        local crit = (parsed.attack ~= "spell" and parsed.kind == "damage")
+                and (ranged and raw.rangedCrit or raw.meleeCrit)
             or (raw.crit and raw.crit[school])
         if crit then
             local learned = profile.learnedCode and C.Decode(profile.learnedCode)
             local bonus = learned
-                    and Sim.Modifiers(learned, skill, parsed, Sim.Defaults()).statsCrit
+                    and Sim.Modifiers(learned, skill, parsed, { form = profile.form }).statsCrit
                 or 0
+            if learned then
+                bonus = bonus
+                    + Sim.Racial(learned, { weaponType = profile.weaponType }, parsed).crit
+            end
             state.crit = math.max(0, crit - bonus)
             note = string.format(
                 "Reported crit %.1f%% minus %.1f%% recognized source-talent bonus. Reported power and weapon values can include buffs.",
@@ -314,6 +438,7 @@ function P.ForSkill(profile, skill, rank, build)
     end
     if profile.skillName ~= "" and profile.skillName ~= skill.name then
         state.coefficient, state.dotCoefficient, state.manual = nil, nil, false
+        state.apCoefficient, state.dotAPCoefficient = nil, nil
     end
     return state, note
 end
@@ -335,6 +460,9 @@ function P.Apply(snapshot)
     if snapshot.stats then
         FT.Store.db.settings.statsProfile = FT.Copy(snapshot.stats)
         FT.Store.db.settings.scenario = Sim.State(snapshot.stats.state)
+        local character = snapshot.stats.character or FT.Character.FromSnapshot(snapshot.stats)
+        FT.Store.db.settings.characters = FT.Store.db.settings.characters or {}
+        FT.Store.db.settings.characters[snapshot.stats.classID] = FT.Copy(character)
     end
     FT.Changed(
         snapshot.kind == "stats" and "Simulation stats loaded. Your talents and level are kept."

@@ -102,6 +102,26 @@ function S.Init(classID, raceID, level)
             db.settings.statsProfile = nil
         end
     end
+    if db.settings.characters ~= nil then
+        local cleaned = {}
+        if type(db.settings.characters) == "table" then
+            for id, raw in pairs(db.settings.characters) do
+                local character = FT.Character.Normalize(raw, true)
+                if FT.Model.Class(id) and character then
+                    cleaned[id] = character
+                else
+                    db.recovered = db.recovered or {}
+                    db.recovered[#db.recovered + 1] =
+                        { kind = "character", id = id, value = FT.Copy(raw) }
+                end
+            end
+        else
+            db.recovered = db.recovered or {}
+            db.recovered[#db.recovered + 1] =
+                { kind = "characters", value = FT.Copy(db.settings.characters) }
+        end
+        db.settings.characters = cleaned
+    end
     for id, draft in pairs(db.drafts) do
         if type(draft) ~= "table" or not validBuild(draft.build) or draft.build.classID ~= id then
             db.recovered = db.recovered or {}

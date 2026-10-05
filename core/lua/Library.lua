@@ -106,6 +106,7 @@ local function portable(db)
             scenario = FT.Copy(db.settings.scenario),
             scenarioSkill = db.settings.scenarioSkill,
             statsProfile = FT.Copy(db.settings.statsProfile),
+            characters = FT.Copy(db.settings.characters),
         },
     }
 end
@@ -247,6 +248,12 @@ function L.Merge(snapshot, includeDrafts)
     end
     if db.settings and db.settings.scenario then
         S.db.settings.statsProfile = FT.Copy(db.settings.statsProfile)
+        if db.settings.characters then
+            S.db.settings.characters = S.db.settings.characters or {}
+            for cid, character in pairs(db.settings.characters) do
+                S.db.settings.characters[cid] = FT.Copy(character)
+            end
+        end
         S.db.settings.scenario = FT.Simulation.State(db.settings.scenario)
         S.db.settings.scenarioSkill = FT.SafeText(db.settings.scenarioSkill, 80)
     end

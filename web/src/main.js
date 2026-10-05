@@ -1,5 +1,6 @@
 import './style.css';
 import { createEngine, list } from './engine.js';
+import { createSimulatorUI } from './simulator.js';
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (v) =>
   String(v ?? '').replace(
@@ -95,7 +96,7 @@ function render() {
     race = catalog.races[state.view.raceID],
     allTrees = list(c.trees),
     points = order().length;
-  app.innerHTML = `<header class="topbar"><a class="brand" href="./" aria-label="Forever Talents home"><img src="./icon.svg" alt="" width="36" height="36"><span>Forever <strong>Talents</strong><small><span class="desktop-brand">PLAN YOUR JOURNEY</span><span class="mobile-brand">${esc(status)}</span></small></span></a><div class="top-actions"><span class="connection" id="offline-status">${esc(status)}</span>${btn('Install', 'install', '', 'quiet')}${btn('Guide', 'help', '', 'quiet')}${btn('Import', 'import')}${btn('Share', 'share', '', 'primary')}</div></header>
+  app.innerHTML = `<header class="topbar"><a class="brand" href="./" aria-label="Forever Talents home"><img src="./icon.svg" alt="" width="36" height="36"><span>Forever <strong>Talents</strong><small><span class="desktop-brand">PLAN YOUR JOURNEY</span><span class="mobile-brand">${esc(status)}</span></small></span></a><div class="top-actions"><span class="connection" id="offline-status">${esc(status)}</span>${btn('Install', 'install', '', 'quiet')}${btn('<svg class="character-button-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="character-button-label">Character</span>', 'character-sheet', 'aria-label="Character" title="Character stats and equipment"', 'quiet character-button')}${btn('Guide', 'help', '', 'quiet')}${btn('Import', 'import')}${btn('Share', 'share', '', 'primary')}</div></header>
   <div id="update-banner" class="update-banner" hidden>A new version is ready. Your saved builds will be kept. ${btn('Update now', 'update', '', 'primary')}</div>
   <main><section class="controls" aria-label="Character and build controls"><div class="class-choices" aria-label="Class">${list(
     catalog.classOrder
@@ -133,7 +134,7 @@ function render() {
     )}</select><div class="skill-list" id="skill-list"></div>${btn('Clear highlights', 'clear-highlights', '', 'wide')}</aside>
   <section class="talents-panel" aria-label="Talent trees"><div class="talent-heading"><h2>Talent trees</h2><input id="talent-search" type="search" placeholder="Search talents or effects…" value="${esc(talentQuery)}" aria-label="Search talents"></div><nav class="tree-tabs" aria-label="Talent tree">${allTrees.map((t, i) => btn(`${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b>`, 'tree-tab', `data-index="${i}" aria-pressed="${i === treeTab}"`, i === treeTab ? 'active' : '')).join('')}</nav><div class="trees">${allTrees.map((tree, i) => renderTree(tree, i)).join('')}</div><p class="tree-hint"><span class="desktop-hint">Click +1 · right-click −1 · Shift fills / clears · Ctrl inspects</span><span class="touch-hint">Tap a talent to read it, then choose Add or Remove.</span></p><div class="racials"><h2>Racial traits</h2><div id="racial-list"></div></div></section>
   <aside class="panel builds-panel" aria-label="Build library and talent order"><div class="section-heading"><h2>Your journey</h2><span class="saved-dot">${state.readOnly || storageBlocked ? 'Saving paused' : 'Autosaved'}</span></div><div class="build-actions">${btn('Save build', 'save', '', 'primary')}${btn('Checkpoint', 'checkpoint', '', '', !state.activeProfile)}</div><div id="history-graph"></div><div class="section-heading order-heading"><h3>Talent order</h3><span>${list(state.build.order).length} ${list(state.build.order).length === 1 ? 'step' : 'steps'}</span></div><div class="order-list">${renderOrder()}</div>${btn('Library & sync', 'library', '', 'wide')}</aside>
-  <section class="panel more-panel"><h2>Atlas & tools</h2>${storageBlocked || state.readOnly ? `<p class="callout">Saving is paused to preserve unreadable or newer browser data. Export this session’s work as sharing strings. ${btn('Download original saved data', 'recovery')}</p>` : ''}<p class="muted">Your whole library lives on this device. Use Library & sync to move it between devices and the addon.</p><div class="tool-grid">${btn('Library & sync', 'library')}${btn('Character & stats', 'share')}${btn('Race & class atlas', 'races')}${btn('Hunter pet atlas', 'pets')}${btn('Forever perks', 'perks')}${btn('How to use', 'help')}${btn('Install app', 'install')}</div><p class="muted">Forever ${esc(catalog.meta.build)} · data ${esc(catalog.meta.tag)} · v${esc(catalog.version)}</p><p><a href="./NOTICE.txt" target="_blank" rel="noopener">Data & artwork credits</a> · <a href="./LICENSE.txt" target="_blank" rel="noopener">License</a> · <a href="./THIRD-PARTY.txt" target="_blank" rel="noopener">Runtime credits</a></p></section></div>
+  <section class="panel more-panel"><h2>Atlas & tools</h2>${storageBlocked || state.readOnly ? `<p class="callout">Saving is paused to preserve unreadable or newer browser data. Export this session’s work as sharing strings. ${btn('Download original saved data', 'recovery')}</p>` : ''}<p class="muted">Your whole library lives on this device. Use Library & sync to move it between devices and the addon.</p><div class="tool-grid">${btn('Library & sync', 'library')}${btn('Character & simulator', 'character-sheet')}${btn('Race & class atlas', 'races')}${btn('Hunter pet atlas', 'pets')}${btn('Forever perks', 'perks')}${btn('How to use', 'help')}${btn('Install app', 'install')}</div><p class="muted">Forever ${esc(catalog.meta.build)} · data ${esc(catalog.meta.tag)} · v${esc(catalog.version)}</p><p><a href="./NOTICE.txt" target="_blank" rel="noopener">Data & artwork credits</a> · <a href="./LICENSE.txt" target="_blank" rel="noopener">License</a> · <a href="./THIRD-PARTY.txt" target="_blank" rel="noopener">Runtime credits</a></p></section></div>
   <footer><span>Forever ${esc(catalog.meta.build)} · v${esc(catalog.version)} · data ${esc(catalog.meta.tag)}</span><div>${btn('Pet atlas', 'pets', '', 'quiet')}${btn('Perks', 'perks', '', 'quiet')}${btn('Library & sync', 'library', '', 'quiet')}</div><p class="project-notice"><span>Free, unofficial community project. Not affiliated with or endorsed by Blizzard Entertainment.</span><span>World of Warcraft artwork and text © Blizzard Entertainment and respective rights holders.</span><a href="./NOTICE.txt" target="_blank" rel="noopener">Copyright & ownership notice <span class="notice-link-hint">(opens in a new tab)</span></a></p></footer></main>
   <nav class="mobile-nav" aria-label="Calculator sections">${[
     ['trees', '◇', 'Trees'],
@@ -310,7 +311,7 @@ function showSkill(name) {
     const rel = list(s.related);
     openDialog(
       s.name,
-      `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3><span class="badge">${esc(s.kind)}</span></div>${s.unlock ? `<p class="callout">Unlocked by <b>${esc(s.unlock.name)}</b> in ${esc(s.unlock.treeName)}, row ${s.unlock.row + 1} (${s.unlock.gate} points in tree first).</p>` : `<p class="muted">First learned at level ${s.firstLevel}. All captured ranks appear below.</p>`}<label class="pin"><input type="checkbox" data-skill-check="${esc(s.name)}" ${selected.has(skillKey(s)) ? 'checked' : ''}>Keep talent highlights</label><div class="skill-ranks">${ranks.map((r, i) => `<article class="rank-card ${r.live ? '' : 'archived'}"><div><b>${esc(r.label || 'Ability')}</b><span>Lv. ${r.level}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}${r.fromLevel ? ` · Lv. ${r.fromLevel}–${r.toLevel || 60}` : ''}${r.live ? '' : ' · archived'}</span></div><p>${esc(r.text || 'No description recorded in the captured snapshot.')}</p>${btn('What if? Estimate', 'simulate', `data-name="${esc(s.name)}" data-rank="${i + 1}"`, 'quiet')}</article>`).join('')}</div><h3>Talent interactions <span class="muted">${rel.length}</span></h3>${rel.length ? rel.map((r) => `<div class="relation">${btn(esc(talent(r.id)?.name || r.id), 'locate', `data-id="${r.id}"`)}<p>${esc(r.reason)}</p></div>`).join('') : '<p class="muted">No specific talent interaction is described in the captured data.</p>'}`
+      `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3><span class="badge">${esc(s.kind)}</span></div>${s.unlock ? `<p class="callout">Unlocked by <b>${esc(s.unlock.name)}</b> in ${esc(s.unlock.treeName)}, row ${s.unlock.row + 1} (${s.unlock.gate} points in tree first).</p>` : `<p class="muted">First learned at level ${s.firstLevel}. All captured ranks appear below.</p>`}<label class="pin"><input type="checkbox" data-skill-check="${esc(s.name)}" ${selected.has(skillKey(s)) ? 'checked' : ''}>Keep talent highlights</label><div class="skill-ranks">${ranks.map((r, i) => `<article class="rank-card ${r.live ? '' : 'archived'}"><div><b>${esc(r.label || 'Ability')}</b><span>Lv. ${r.level}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}${r.fromLevel ? ` · Lv. ${r.fromLevel}–${r.toLevel || 60}` : ''}${r.live ? '' : ' · archived'}</span></div><p>${esc(r.text || 'No description recorded in the captured snapshot.')}</p>${btn('Open simulator', 'simulate', `data-name="${esc(s.name)}" data-rank="${i + 1}"`, 'quiet')}</article>`).join('')}</div><h3>Talent interactions <span class="muted">${rel.length}</span></h3>${rel.length ? rel.map((r) => `<div class="relation">${btn(esc(talent(r.id)?.name || r.id), 'locate', `data-id="${r.id}"`)}<p>${esc(r.reason)}</p></div>`).join('') : '<p class="muted">No specific talent interaction is described in the captured data.</p>'}`
     );
   } catch (e) {
     toast(e.message, true);
@@ -319,7 +320,7 @@ function showSkill(name) {
 function showImport(code = '') {
   openDialog(
     'Import from addon or another device',
-    `<p class="muted">Build <b>FT1</b> · character <b>FC1</b> · stats <b>FS1</b> · full library <b>FL1</b>. Your draft stays here until you load.</p><label class="field-label" for="import-code">Paste a complete sharing string</label><textarea id="import-code" rows="5" maxlength="3145728" spellcheck="false" autocapitalize="off" autocomplete="off">${esc(code)}</textarea><div id="import-preview" class="callout">Paste a string to preview it.</div><label class="pin" id="import-drafts-label" hidden><input id="import-drafts" type="checkbox">Also replace class drafts when merging the library</label><p class="muted" id="import-note"></p><div class="dialog-actions">${btn('Load snapshot', 'import-load', '', 'primary', true)}${btn('Cancel', 'close')}</div>`
+    `<p class="muted">Build <b>FT1</b> · character <b>FC1</b> · stats & gear <b>FS2</b> (FS1 supported) · full library <b>FL1</b>. Your draft stays here until you load.</p><label class="field-label" for="import-code">Paste a complete sharing string</label><textarea id="import-code" rows="5" maxlength="3145728" spellcheck="false" autocapitalize="off" autocomplete="off">${esc(code)}</textarea><div id="import-preview" class="callout">Paste a string to preview it.</div><label class="pin" id="import-drafts-label" hidden><input id="import-drafts" type="checkbox">Also replace class drafts when merging the library</label><p class="muted" id="import-note"></p><div class="dialog-actions">${btn('Load snapshot', 'import-load', '', 'primary', true)}${btn('Cancel', 'close')}</div>`
   );
   if (code) previewImport();
   $('#import-code').focus();
@@ -338,10 +339,10 @@ function previewImport() {
         : `${catalog.classes[(snap.build || snap.stats).classID].name} · ${catalog.races[(snap.build || snap.stats).raceID].name} · level ${(snap.build || snap.stats).level} · ${snap.kind}${snap.build ? ` · ${list(snap.build.order).length} points` : ''}`;
     $('#import-note').textContent =
       snap.kind === 'library'
-        ? 'Profiles merge without replacing existing profiles; exact duplicates are skipped. Simulation settings also sync. Checked above: incoming class drafts replace drafts for those classes. Export your library first for a backup.'
+        ? 'Profiles merge without replacing existing profiles; exact duplicates are skipped. Character workspaces and simulation settings also sync. Checked above: incoming class drafts replace drafts for those classes. Export your library first for a backup.'
         : snap.kind === 'stats'
           ? 'Loads simulation stats only. Your talents, race and level stay as they are.'
-          : 'Loads the shared class, race, level and talent order. Character snapshots also load simulation stats. Undo can restore talents; stats stay editable.';
+          : 'Loads the shared class, race, level and talent order. Character snapshots also load the central stat/equipment workspace. Undo restores talents; character stats stay separate.';
   } catch (e) {
     load.disabled = true;
     $('#import-drafts-label').hidden = true;
@@ -354,8 +355,8 @@ function showShare(kind = 'build', context = {}) {
     'Copy & share',
     `<p class="muted">These strings work in both the addon and PWA. Friends need the same data version for talent builds. Stats-only strings keep their current talents.</p><label class="field-label" for="share-kind">What to copy</label><select id="share-kind">${[
       ['build', 'Talent build + ordered points'],
-      ['character', 'Character: level + talents + simulation stats'],
-      ['stats', 'Simulation stats only'],
+      ['character', 'Character: level + talents + stats + gear'],
+      ['stats', 'Character stats + gear (or temporary skill inputs)'],
       ['library', 'Whole library: builds + branches + drafts'],
     ]
       .map(
@@ -377,7 +378,7 @@ function refreshShare() {
       kind === 'library'
         ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
         : kind === 'stats'
-          ? 'Stats belong to the selected skill when scaling or manual base overrides are present. Live captures retain reported power/crit by school.'
+          ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
           : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
   } catch (e) {
     toast(e.message, true);
@@ -449,111 +450,19 @@ function showRaces() {
 function showHelp() {
   openDialog(
     'A quick guide',
-    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>What if? estimates one skill use. Advanced explains every field. Procs, rotations, forms and resource limits are omitted; read the Included / Omitted lines.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Tap a talent-order step to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level and simulation stats. FS1 shares stats only. FL1 transfers your full build library, branches and class drafts. Open Character in the addon to capture the logged-in character.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Coefficients may use older beta values or zero when unknown; edit them in Advanced.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
+    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Tap a talent-order step to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. Open Character in the addon to capture the logged-in character.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
     true
   );
 }
-let simulation;
-const fields = [
-  [
-    'power',
-    'Bonus spell / healing power',
-    'Bonus power from gear and buffs. Direct scaling determines how much this skill uses.',
-  ],
-  [
-    'crit',
-    'Base critical chance (%)',
-    'Chance before the listed talent bonuses. Live captures subtract recognized source-talent crit bonuses.',
-  ],
-  [
-    'reduction',
-    'Damage stopped (%)',
-    'Assumed total armor / resistance reduction. Does not reduce healing.',
-  ],
-  ['attackPower', 'Attack Power', 'Used only when the tooltip explicitly scales from AP.'],
-  [
-    'weaponMin',
-    'Weapon hit · low',
-    'Normal weapon hit including its usual AP contribution. No additional AP / 14 is added.',
-  ],
-  [
-    'weaponMax',
-    'Weapon hit · high',
-    'Upper end of a normal weapon hit, with the normal AP contribution included.',
-  ],
-  [
-    'coefficient',
-    'Direct scaling (%)',
-    '57 means 100 bonus power adds 57 damage or healing. Blank uses the captured coefficient; unknown defaults to zero.',
-  ],
-  [
-    'dotCoefficient',
-    'Over-time scaling (%)',
-    'Total bonus power used by the full periodic effect, not per tick. Blank defaults to zero.',
-  ],
-  [
-    'hit',
-    'Chance to land (%)',
-    'Combined chance to land. Changes expected average; healing always lands.',
-  ],
-  ['extra', 'Other bonus (%)', 'A separate multiplier for effects not listed as included.'],
-  [
-    'baseMin',
-    'Manual base · low',
-    'Base amount before power and talents. Enable Manual base to replace the tooltip; periodic effects are then omitted.',
-  ],
-  [
-    'baseMax',
-    'Manual base · high',
-    'Upper end of your manual base range. Must be at least the lower amount.',
-  ],
-];
-function fieldHtml([key, label, tip]) {
-  return `<label class="sim-field">${label}<input type="number" data-stat="${key}" id="stat-${key}" value="${simulation.state[key] ?? ''}" step="any" ${key === 'extra' ? 'min="-99"' : 'min="0"'} ${['crit', 'hit', 'reduction'].includes(key) ? 'max="100"' : ''}><small>${esc(tip)}</small></label>`;
-}
-function showSimulation(name, rank) {
-  const skill = engine.call('skill', { name });
-  const saved = engine.call('statsForSkill', { name, rank });
-  simulation = { name, rank, skill, state: saved.state, note: saved.note };
-  openDialog(
-    `What if? ${name}`,
-    `<p class="muted">${esc(list(skill.ranks)[rank - 1].label || 'Ability')} · learned at level ${list(skill.ranks)[rank - 1].level} · evaluating the displayed build · one use</p><div class="sim-fields">${fields.slice(0, 3).map(fieldHtml).join('')}</div><div class="scenario-toggles">${[
-      ['bleeding', 'Target is bleeding'],
-      ['frozen', 'Target is frozen'],
-      ['cooldowns', 'Include active cooldowns'],
-    ]
-      .map(
-        ([key, label]) =>
-          `<label class="pin"><input type="checkbox" data-stat="${key}" ${simulation.state[key] ? 'checked' : ''}>${label}</label>`
-      )
-      .join(
-        ''
-      )}</div><div id="sim-results"></div><details class="advanced"><summary>Advanced · scaling, weapon & target assumptions</summary><div class="sim-fields">${fields.slice(3).map(fieldHtml).join('')}</div><label class="pin"><input type="checkbox" data-stat="manual" ${simulation.state.manual ? 'checked' : ''}>Use a manual base instead of the captured amount</label><p class="muted">Normal effect = (base + power × scaling + weapon/AP contribution) × talents × other bonus × damage remaining. Critical effect multiplies the direct part; periodic damage does not crit. Expected average includes crit chance and chance to land.</p>${btn('Reset assumptions', 'reset-sim')}</details><div class="dialog-actions">${btn('Copy simulation stats', 'share-stats', '', 'primary')}${btn('Paste stats / character', 'import')}${btn('Back to skill', 'related-skill', `data-name="${esc(name)}"`)}</div><p class="muted">Capture live stats using Character in the WoW addon, then paste the FS1 or FC1 string here. No live game connection is needed.</p>`,
-    true
-  );
-  renderSimulation();
-}
-function renderSimulation() {
-  try {
-    const r = engine.call('simulate', {
-      name: simulation.name,
-      rank: simulation.rank,
-      state: simulation.state,
-    });
-    const baseline = engine.call('simulate', {
-      name: simulation.name,
-      rank: simulation.rank,
-      state: simulation.state,
-      withTalents: false,
-    });
-    const fmt = (n) => Math.round(n).toLocaleString();
-    $('#sim-results').innerHTML =
-      `<div class="result-cards"><article><small>Normal use</small><strong>${fmt(r.min + r.periodic)}–${fmt(r.max + r.periodic)}</strong><span>${esc(r.parsed.kind)} · ${r.periodic > 0 ? 'includes full periodic effect' : 'direct effect'}</span></article><article><small>Critical use</small><strong>${fmt(r.critMin + r.periodic)}–${fmt(r.critMax + r.periodic)}</strong><span>Only the direct effect crits</span></article><article><small>Expected average</small><strong>${fmt(r.expected)}</strong><span>${r.crit.toFixed(1)}% crit · ${r.hit.toFixed(1)}% lands</span></article></div><p class="callout">Without selected talents: ${fmt(baseline.expected)} → this build: ${fmt(r.expected)}${baseline.expected > 0 ? ` (${((r.expected / baseline.expected - 1) * 100).toFixed(1)}%)` : ''}<br>${esc(r.source)}</p><p class="muted">${esc(simulation.note || '')}</p><p><b>Included talents:</b> ${esc(list(r.modifiers.included).join(', ') || 'No simple numeric modifier applies.')}</p><p class="muted"><b>Other interactions omitted:</b> ${esc(list(r.modifiers.omitted).join(', ') || 'None identified in this build.')}<br>Procs, forms, intrinsic conditions, haste, resource limits, racial passives, target debuffs and rotations are omitted. This is a planning estimate.</p>`;
-  } catch (e) {
-    $('#sim-results').innerHTML =
-      `<p class="callout">${esc(e.message)}</p><p class="muted">Choose a skill with a numeric amount, or enable a manual base in Advanced.</p>`;
-  }
-}
+const simulator = createSimulatorUI({
+  engine: () => engine,
+  state: () => state,
+  openDialog,
+  showShare,
+  showImport,
+  persist,
+  toast,
+});
 let pet = { mode: 'skills', family: '', query: '', page: 1 };
 function showPets() {
   openDialog(
@@ -660,6 +569,7 @@ document.addEventListener('click', async (event) => {
     profileID = node.dataset.profile,
     nodeID = Number(node.dataset.node);
   try {
+    if (simulator.action(a, node)) return;
     switch (a) {
       case 'close':
         closeDialog();
@@ -860,27 +770,6 @@ document.addEventListener('click', async (event) => {
         pet.page++;
         renderPets();
         break;
-      case 'simulate':
-        showSimulation(node.dataset.name, Number(node.dataset.rank));
-        break;
-      case 'share-stats':
-        showShare('stats', { state: simulation.state, skillName: simulation.name });
-        break;
-      case 'reset-sim':
-        simulation.state = {
-          power: 0,
-          crit: 5,
-          reduction: 0,
-          attackPower: 0,
-          weaponMin: 40,
-          weaponMax: 60,
-          hit: 100,
-          extra: 0,
-        };
-        engine.call('scenario', { state: simulation.state, name: simulation.name, manual: true });
-        persist();
-        showSimulation(simulation.name, simulation.rank);
-        break;
       case 'install':
         if (installPrompt) {
           await installPrompt.prompt();
@@ -926,18 +815,20 @@ document.addEventListener('input', (event) => {
     pet.page = 1;
     renderPets();
   }
-  if (t.dataset.stat) {
-    const key = t.dataset.stat;
-    simulation.state[key] =
-      t.type === 'checkbox' ? t.checked : t.value === '' ? undefined : Number(t.value);
-    simulation.note = '';
-    engine.call('scenario', { state: simulation.state, name: simulation.name, manual: true });
-    persist();
-    renderSimulation();
+  try {
+    simulator.inputEvent(t);
+  } catch (e) {
+    toast(e.message, true);
   }
 });
 document.addEventListener('change', async (event) => {
   const t = event.target;
+  try {
+    if (simulator.changeEvent(t)) return;
+  } catch (e) {
+    toast(e.message, true);
+    return;
+  }
   if (t.id === 'race') {
     for (const [key, s] of selected) if (s.kind === 'racial') selected.delete(key);
     act('race', { raceID: Number(t.value) });

@@ -342,6 +342,30 @@ end
 sim.stats:Click()
 check(sim.fields.crit:GetText() == "10", "copied learned crit bonus counted twice")
 check(sim.statsNote:find("4.0%", 1, true))
+
+-- The central workspace and skill overrides have separate lifetimes.
+UI.CharacterSheet()
+local characterSheet = UI.dialogs.characterSheet
+check(characterSheet:IsShown() and characterSheet.gearButtons.head:IsShown())
+characterSheet.modeButtons.manual:Click()
+characterSheet.fields.power:UserText("321")
+check(FT.Character.Get(S.View()).stats.power == 321)
+UI.GearDialog("head")
+local gearEditor = UI.dialogs.gear
+check(not gearEditor.weaponFields.low:IsShown() and not gearEditor.weaponLabels.low:IsShown())
+gearEditor.name:SetText("Test circlet")
+gearEditor.fields.intellect:SetText("20")
+gearEditor.equip:Click()
+check(FT.Character.Get(S.View()).gear.head.name == "Test circlet")
+UI.SimulationDialog(FT.Skills.Prepare(11).byName.Wrath, FT.Skills.Prepare(11).byName.Wrath.ranks[1])
+sim.fields.power:UserText("999")
+check(FT.Character.Get(S.View()).stats.power == 321, "skill edit changed central stats")
+sim.reset:Click()
+check(sim.fields.power:GetText() == "321")
+UI.CharacterSheet()
+check(UI.dialogs.characterSheet.fields.power:GetText() == "321")
+UI.CloseDialog()
+
 FT.ReadPlayerBuild, GetSpellCritChance = oldRead, oldCrit
 UI.SimulationHelp()
 check(UI.dialogs.simulationHelp:IsShown())

@@ -198,7 +198,7 @@ function UI.ImportDialog(code)
             13,
             W.colors.muted
         )
-        f.input = W.Edit(f, "FT1 / FC1 / FS1 / FL1:…", 22, -118, 636, nil, 3 * 1024 * 1024)
+        f.input = W.Edit(f, "FT1 / FC1 / FS2 / FL1:…", 22, -118, 636, nil, 3 * 1024 * 1024)
         f.input:SetHeight(48)
         f.input:SetMultiLine(true)
         f.input:SetTextInsets(10, 25, 8, 8)
@@ -334,7 +334,7 @@ function UI.SkillDialog(skill)
         f.icon = W.Icon(f, "class_druid", 22, -60, 40)
         f.title = W.Text(f, "", 76, -61, 554, 19, W.colors.gold)
         f.source = W.Text(f, "", 76, -89, 570, 12, W.colors.muted)
-        f.sim = W.Button(f, "What if?", 690, -64, 188, nil, true, 32)
+        f.sim = W.Button(f, "Simulator", 690, -64, 188, nil, true, 32)
         local desc = W.Panel(f, 22, -122, 512, 124, { 0.05, 0.065, 0.082 })
         f.descScroll = W.Scroll(desc, 12, -12, 488, 100)
         f.description = W.Text(f.descScroll.content, "", 0, 0, 466, 13)
@@ -749,7 +749,7 @@ function UI.HelpDialog()
         W.Text(f, "Find the skill, understand the talents", 22, -172, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nCheck boxes to keep multiple highlights; Clear highlights unchecks all. Click a skill for ranks.\nCtrl click a talent to inspect skills. What if? estimates one use; Advanced explains its assumptions.",
+            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nCheck boxes to keep multiple highlights; Clear highlights unchecks all. Click a skill for ranks.\nCtrl click a talent to inspect skills. Simulator estimates one use; Advanced explains its assumptions.",
             22,
             -204,
             806,

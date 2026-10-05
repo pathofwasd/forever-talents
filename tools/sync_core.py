@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 """Generate both platform copies from canonical Lua; --check rejects drift."""
 
-from pathlib import Path
 import argparse
 import hashlib
 import json
 import re
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULES = ["Namespace", "Model", "Codec", "Skills", "Simulation", "Store", "Snapshot", "Library"]
+MODULES = [
+    "Namespace",
+    "Model",
+    "Codec",
+    "Skills",
+    "Simulation",
+    "Character",
+    "Store",
+    "Snapshot",
+    "Library",
+]
 
 
 def outputs():
@@ -19,7 +29,7 @@ def outputs():
     assert re.search(r'FT.name, FT.version = name, "([^"]+)"', namespace)[1] == version, (
         "Update core Namespace and package.json to the same release version."
     )
-    assert re.search(r"^## Version: (.+)$", native, re.M)[1].strip() == version, (
+    assert re.search(r"^## Version: (.+)$", native, re.MULTILINE)[1].strip() == version, (
         "Addon TOC version differs from the shared/PWA release."
     )
     data_tag = json.loads((ROOT / "docs/data-build.json").read_text())["dataTag"]
@@ -35,6 +45,7 @@ def outputs():
         "Codec",
         "Skills",
         "Simulation",
+        "Character",
         "Store",
         "Snapshot",
         "Library",

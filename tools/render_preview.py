@@ -4,11 +4,11 @@
 Client-supplied WoW textures are unavailable in these previews.
 """
 
-from pathlib import Path
 import html
 import json
 import math
 import re
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCREENS = [
@@ -16,7 +16,7 @@ SCREENS = [
     ("checkpoints", "Checkpoint tree"),
     ("graph", "Expanded graph"),
     ("skill", "Skill ranks"),
-    ("simulation", "What if?"),
+    ("simulation", "Simulator"),
     ("advanced", "Advanced"),
     ("races", "Races"),
     ("pets", "Pets"),
@@ -235,15 +235,15 @@ def render(snapshot):
                 css.append("white-space:nowrap;overflow:hidden;text-overflow:ellipsis")
             content = colored(o.get("text", ""))
             bounds.append(
-                dict(
-                    id=o["id"],
-                    text=plain(o.get("text")),
-                    x=x,
-                    y=y,
-                    width=w,
-                    height=h,
-                    size=o.get("fontSize", 13),
-                )
+                {
+                    "id": o["id"],
+                    "text": plain(o.get("text")),
+                    "x": x,
+                    "y": y,
+                    "width": w,
+                    "height": h,
+                    "size": o.get("fontSize", 13),
+                }
             )
         elif o["kind"] == "EditBox":
             if o.get("text"):

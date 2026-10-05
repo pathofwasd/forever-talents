@@ -16,7 +16,8 @@ collapsed. The **Source code** downloads are for developers.
 - Track your leveling order with Auto level, undo/redo and branching checkpoints.
 - Share builds as text or through addon whispers. Transfer character stats or your entire saved
   library between the addon and web app.
-- Estimate damage and healing with simple controls and optional advanced settings.
+- Build a central character with custom gear or live stats. Simulate individual skills with
+  applicable inputs, calculation steps and clear accuracy notes.
 
 ## Install
 
@@ -47,6 +48,17 @@ Desktop web app:
 <p><img src="docs/screenshots/mobile.jpg" width="390" alt="Mobile planner with tree tabs, rank controls and skill highlights"></p>
 
 </details>
+
+<details>
+<summary>Character and Simulator (web)</summary>
+
+![Character equipment and stat workspace](docs/screenshots/character.png)
+![Per-skill Simulator with applicable inputs and live results](docs/screenshots/simulator.png)
+
+</details>
+
+Character and Simulator share a central gear/stat workspace. Try skill changes temporarily and
+inspect the formulas, sources and accuracy notes. See the [simulator guide](docs/SIMULATOR.md).
 
 ## Development and license
 

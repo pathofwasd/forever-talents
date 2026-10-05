@@ -209,18 +209,57 @@ local commands = {
         end
         return true
     end,
-    statsForSkill = function(p)
-        local skill = FT.Skills.Prepare(S.Build().classID).byName[p.name]
-        if not skill then
-            return nil, "Choose a trained skill."
+    character = function()
+        return FT.Character.View(S.View())
+    end,
+    characterMode = function(p)
+        return FT.Character.SetMode(S.View(), p.mode)
+    end,
+    characterSave = function(p)
+        return FT.Character.Save(S.View(), plain(p.sheet))
+    end,
+    simulationInputs = function(p)
+        for _, entry in ipairs(A.List(S.View(), 60, "", "all")) do
+            if entry.skill.name == p.name then
+                local rank = entry.skill.ranks[p.rank or #entry.skill.ranks]
+                if not rank then
+                    return nil, "Choose a valid skill rank."
+                end
+                return FT.Simulation.ImportInputs(S.View(), entry.skill, rank, p.code)
+            end
         end
-        local state, note = FT.Snapshot.ForSkill(
-            FT.Snapshot.Current(S.View()),
+        return nil, "Choose a valid skill."
+    end,
+    statsForSkill = function(p)
+        local skill
+        for _, entry in ipairs(A.List(S.View(), 60, "", "all")) do
+            if entry.skill.name == p.name then
+                skill = entry.skill
+                break
+            end
+        end
+        if not skill or not skill.ranks[p.rank or #skill.ranks] then
+            return nil, "Choose a valid skill rank."
+        end
+        local rank = skill.ranks[p.rank or #skill.ranks]
+        local state, character, note = FT.Character.ForSkill(
+            S.View(),
             skill,
-            skill.ranks[p.rank or #skill.ranks],
-            S.View()
+            rank,
+            nil,
+            nil,
+            p.overrides and p.overrides.effectMode
         )
-        return { state = state, note = note }
+        for key, value in pairs(p.overrides or {}) do
+            state[key] = value
+        end
+        return {
+            state = state,
+            note = note,
+            character = character,
+            inputs = FT.Simulation.Inputs(S.View(), skill, rank, state),
+            parsed = FT.Simulation.Parse(rank, skill, S.View().level),
+        }
     end,
     talentSkills = function(p)
         return A.TalentSkills(S.Build().classID, p.id)
@@ -261,13 +300,14 @@ local commands = {
         if not skill then
             return nil, "Skill not found."
         end
-        return FT.Simulation.Calculate(
-            S.View(),
-            skill,
-            skill.ranks[p.rank or #skill.ranks],
-            p.state,
-            p.withTalents
-        )
+        local rank = skill.ranks[p.rank or #skill.ranks]
+        if not rank then
+            return nil, "Choose a valid skill rank."
+        end
+        if p.state then
+            return FT.Simulation.Calculate(S.View(), skill, rank, p.state, p.withTalents)
+        end
+        return FT.Simulation.Run(S.View(), skill, rank, p.overrides, p.withTalents)
     end,
 }
 function webInit(saved)

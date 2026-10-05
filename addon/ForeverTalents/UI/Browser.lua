@@ -146,7 +146,7 @@ function UI.SkillTooltip(owner, skill)
         end
     end
     GameTooltip:AddLine(
-        "\nCheck the box to keep related talents highlighted.\nClick for every rank, unlock details and What if?",
+        "\nCheck the box to keep related talents highlighted.\nClick for every rank, unlock details and Simulator",
         0.56,
         0.63,
         0.68,

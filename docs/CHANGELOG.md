@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+Rebuilt the per-use Simulator from reviewed client effects and documented corrections. Added a
+central character/equipment workspace, native stats/item capture, portable FS2 gear sharing and
+scoped simulator experiments. Results now distinguish direct effects, ticks, shields and health
+costs, expose applicable inputs, and include formulas, evidence and missing-mechanic notes. The PWA
+uses the same engine and adds a responsive workspace and live phone result summary. Existing
+FT1/FS1/FC1/FL1 data remains supported. See [Simulator](SIMULATOR.md) and
+[release notes](RELEASE-1.2.0.md).
+
 ## 1.1.2
 
 - Consolidate the catalog and local assets into a self-contained build pipeline.

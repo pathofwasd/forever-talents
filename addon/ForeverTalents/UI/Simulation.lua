@@ -1,381 +1,488 @@
 local _, FT = ...
 local UI, W, S, Sim = FT.UI, FT.UI.W, FT.Store, FT.Simulation
-local function rounded(n)
-    return string.format("%.0f", n or 0)
+local function fmt(n)
+    return string.format("%.1f", n or 0):gsub("%.0$", "")
 end
-
-function UI.SimulationDialog(skill, rank)
-    local f, first = UI.Dialog("simulation", "What if? • one skill use", 900, 582)
+local function range(a, b)
+    return fmt(a) .. (math.abs(a - b) > 0.05 and " – " .. fmt(b) or "")
+end
+local function choices(key, options)
+    if options then
+        return options
+    end
+    if key == "weaponType" or key == "racialWeaponType" then
+        return FT.Character.weaponTypes
+    end
+    if key == "form" then
+        return {
+            { key = "caster", name = "Caster" },
+            { key = "cat", name = "Cat" },
+            { key = "bear", name = "Bear" },
+        }
+    end
+    if key == "effectMode" then
+        return { { key = "damage", name = "Damage" }, { key = "healing", name = "Healing" } }
+    end
+    return {
+        { key = "other", name = "Other creature" },
+        { key = "beast", name = "Beast" },
+        { key = "elemental", name = "Elemental" },
+        { key = "humanoid", name = "Humanoid" },
+        { key = "giant", name = "Giant" },
+    }
+end
+function UI.SimulationDialog(skill, rank, overrides)
+    local f, first = UI.Dialog("simulation", "Simulator", 920, 668)
     if first then
-        f.title = W.Text(f, "", 22, -65, 636, 18, W.colors.gold)
-        f.rank = W.Text(f, "", 22, -94, 856, 12, W.colors.muted)
-        f.fields = {}
-        f.state = Sim.Defaults()
-        local function field(parent, key, label, x, y, width, tip)
-            W.Text(parent, label, x, y, width, 11, W.colors.muted)
-            local e = W.Edit(parent, "0", x, y - 21, width, function(text, user)
-                if user and not f.updating then
-                    S.db.settings.statsProfile = nil
-                    f.state[key] = tonumber(text) or 0
-                    if key == "crit" then
-                        f.statsNote = nil
-                    end
-                    f.update()
-                end
-            end, 8)
-            e:SetTextInsets(10, 10, 0, 0)
-            e.clear:Hide()
-            e.tip = tip
-            e:HookScript("OnEnter", function(self)
-                W.Tooltip(self, label, { tip })
-            end)
-            e:HookScript("OnLeave", function()
-                GameTooltip:Hide()
-            end)
-            f.fields[key] = e
-            return e
-        end
-        field(
-            f,
-            "power",
-            "Bonus spell / healing power",
-            22,
-            -132,
-            258,
-            "Bonus power from gear and buffs. The coefficient determines how much this skill uses. For weapon skills, use the Advanced weapon and Attack Power fields."
-        )
-        field(
-            f,
-            "crit",
-            "Base critical chance (%)",
-            300,
-            -132,
-            176,
-            "Chance before the modeled talent bonuses listed below. A 20% chance means one critical hit in five on average. Use my stats subtracts recognized general/school crit bonuses from your learned talents when readable. Periodic damage is treated as unable to crit."
-        )
-        field(
-            f,
-            "reduction",
-            "Damage stopped (%)",
-            496,
-            -132,
-            176,
-            "An assumed total reduction from armor or resistances. 20 stops one fifth of damage. This does not reduce healing."
-        )
-        f.stats = W.Button(f, "Use my stats", 690, -153, 188, nil, false, 30)
-        f.stats.tip =
-            "Copy the logged-in character's reported power, attack power and weapon range. Recognized passive general/school crit bonuses are removed before your planned talent bonuses are added. Other reported values can include buffs: edit values to avoid including a bonus twice."
-        f.toggles = {}
-        for i, spec in ipairs({
-            { "bleeding", "Target is bleeding" },
-            { "frozen", "Target is frozen" },
-            { "cooldowns", "Include active cooldowns" },
-        }) do
-            local key = spec[1]
-            local b = W.Button(f, spec[2], 22 + (i - 1) * 286, -208, 270, function(self)
-                f.state[key] = not f.state[key]
-                self:SetActive(f.state[key])
-                f.update()
-            end)
-            b.tip = key == "cooldowns"
-                    and "Include simple learned cooldown bonuses such as Death Wish. Proc uptime and rotations remain outside this estimate."
-                or "A hypothetical target state. Relevant simple talent bonuses are included only when this state is on."
-            f.toggles[key] = b
-        end
-        f.cards = {}
-        for i, title in ipairs({ "Normal use", "Critical use", "Expected average" }) do
-            local p = W.Panel(f, 22 + (i - 1) * 286, -254, 270, 92, { 0.047, 0.066, 0.083 })
-            W.Text(p, title, 14, -12, 242, 12, W.colors.muted)
-            local value =
-                W.Text(p, "—", 14, -36, 242, 25, i == 3 and W.colors.gold or W.colors.text)
-            local detail = W.Text(p, "", 14, -69, 242, 10, W.colors.muted)
-            f.cards[i] = { value = value, detail = detail }
-        end
-        f.compare = W.Text(f, "", 22, -366, 856, 14, W.colors.teal)
-        f.advancedButton = W.Button(f, "Advanced  v", 22, -408, 176, function()
-            f.advanced = not f.advanced
-            f.advancedPanel:SetShown(f.advanced)
-            f:SetHeight(f.advanced and 806 or 582)
-            f.advancedButton:SetActive(f.advanced)
-            f.advancedButton:SetText(f.advanced and "Advanced  ^" or "Advanced  v")
-        end)
-        W.Button(f, "How this works", 210, -408, 180, function()
-            UI.SimulationHelp()
-        end)
-        f.notesScroll = W.Scroll(f, 22, -451, 856, 108)
-        f.notes = W.Text(f.notesScroll.content, "", 0, 0, 824, 12, W.colors.muted)
-        local function notes(text)
-            f.notes:SetText(text)
-            f.notesScroll:SetContentHeight(f.notes:GetStringHeight() + 4)
-        end
-        local advanced = W.Panel(f, 22, -578, 856, 204, { 0.047, 0.066, 0.083 })
-        f.advancedPanel = advanced
-        field(
-            advanced,
-            "attackPower",
-            "Attack Power",
-            12,
-            -14,
-            148,
-            "Used for skills that explicitly scale from Attack Power, such as Bloodthirst. Weapon hit values already include their normal AP contribution."
-        )
-        field(
-            advanced,
-            "weaponMin",
-            "Weapon hit • low",
-            180,
-            -14,
-            148,
-            "Normal weapon hit range including its usual Attack Power bonus. Weapon-based skills add their captured flat bonus to this range."
-        )
-        field(
-            advanced,
-            "weaponMax",
-            "Weapon hit • high",
-            348,
-            -14,
-            148,
-            "Upper end of a normal weapon hit. Include AP in this value; no extra AP / 14 is added to weapon damage."
-        )
-        field(
-            advanced,
-            "coefficient",
-            "Direct scaling (%)",
-            516,
-            -14,
-            156,
-            "Percent of bonus power used by the direct effect. 57 means 100 bonus power adds 57 damage or healing. Defaults come from an older Forever datamine, a cast-time approximation, or zero when unknown."
-        )
-        field(
-            advanced,
-            "dotCoefficient",
-            "Over-time scaling (%)",
-            692,
-            -14,
-            152,
-            "Total bonus-power coefficient for the entire periodic effect, not per tick. Unknown periodic scaling defaults to zero. Enter a known total to include it."
-        )
-        field(
-            advanced,
-            "hit",
-            "Chance to land (%)",
-            12,
-            -84,
-            148,
-            "A manual combined chance to land a damaging skill. It changes expected average, not the hit range. Healing always lands in this model."
-        )
-        field(
-            advanced,
-            "extra",
-            "Other bonus (%)",
-            180,
-            -84,
-            148,
-            "A separate damage or healing multiplier for effects outside the modeled talent set. Do not include bonuses already listed as included."
-        )
-        field(
-            advanced,
-            "baseMin",
-            "Manual base • low",
-            348,
-            -84,
-            148,
-            "A base damage or healing range you supply. Enable Manual base to replace the captured tooltip amount; periodic components are then omitted."
-        )
-        field(
-            advanced,
-            "baseMax",
-            "Manual base • high",
-            516,
-            -84,
-            156,
-            "Upper end of your base range before power, talents, crit and reductions. Use the same value twice for a fixed amount."
-        )
-        f.manual = W.Button(advanced, "Manual base", 692, -105, 152, function(self)
-            f.state.manual = not f.state.manual
-            self:SetActive(f.state.manual)
-            f.update()
-        end)
-        W.Text(
-            advanced,
-            "Hover any field for a plain-language explanation. Scaling and manual values can be reset below.",
-            12,
-            -154,
-            832,
+        local character = W.Panel(f, 22, -62, 876, 96)
+        f.portrait = W.Icon(character, "class_druid", 14, -16, 58)
+        f.character = W.Text(character, "", 86, -13, 562, 16, W.colors.gold)
+        f.characterStats = W.Text(character, "", 86, -39, 562, 12, W.colors.muted)
+        f.characterSource = W.Text(character, "", 86, -65, 562, 10, W.colors.muted)
+        W.Button(character, "Character sheet", 660, -13, 202, UI.CharacterSheet, false, 30)
+        f.stats = W.Button(character, "Capture my character", 660, -52, 202, nil, false, 30)
+        f.scroll = W.Scroll(f, 22, -174, 876, 470)
+        local content = f.scroll.content
+        f.title = W.Text(content, "", 0, 0, 840, 19, W.colors.gold)
+        f.rank = W.Text(content, "", 0, -29, 840, 12, W.colors.muted)
+        f.overrideHint = W.Text(
+            content,
+            "Temporary changes below affect this skill only. Your character sheet is kept.",
+            0,
+            -53,
+            840,
             11,
-            W.colors.muted
+            W.colors.teal
         )
-        W.Button(advanced, "Reset assumptions", 12, -174, 832, function()
-            f.statsNote = nil
-            f.state = Sim.Defaults()
-            f.state.baseMin = f.parsed and f.parsed.min or 0
-            f.state.baseMax = f.parsed and f.parsed.max or 0
-            f.populate()
+        f.fields, f.labels, f.choiceButtons, f.toggles = {}, {}, {}, {}
+        f.overrides, f.choiceOptions = {}, {}
+        f.cards = {}
+        for i, title in ipairs({
+            "Non-critical total",
+            "If every eligible effect crits",
+            "Expected total",
+        }) do
+            local p = W.Panel(content, (i - 1) * 286, 0, 270, 90, { 0.047, 0.066, 0.083 })
+            W.Text(p, title, 12, -12, 246, 11, W.colors.muted)
+            f.cards[i] = {
+                panel = p,
+                value = W.Text(p, "—", 12, -33, 246, 26, W.colors.gold),
+                detail = W.Text(p, "", 12, -67, 246, 10, W.colors.muted),
+            }
+        end
+        f.compare = W.Text(content, "", 0, 0, 846, 13, W.colors.teal)
+        f.status = W.Text(content, "", 0, 0, 846, 11, W.colors.gold)
+        f.advancedButton = W.Button(content, "Advanced", 0, 0, 176, function()
+            f.advanced = not f.advanced
             f.update()
-        end, false, 22)
+        end)
+        f.how = W.Button(content, "Calculation & sources", 188, 0, 232, function()
+            UI.SimulationHelp(f.result)
+        end)
+        f.reset = W.Button(content, "Reset skill overrides", 432, 0, 232, function()
+            f.overrides = {}
+            f.update()
+            f.populate()
+        end)
+        f.share = W.Button(content, "Copy / paste", 676, 0, 170, function()
+            local profile = FT.Snapshot.Stats(
+                f.state,
+                S.ExportView(),
+                f.skill.name,
+                "Temporary simulator inputs; character sheet is separate."
+            )
+            UI.SimulationInputsDialog(
+                f.skill,
+                f.selectedRank,
+                FT.Snapshot.EncodeStats(profile),
+                f.overrides
+            )
+        end)
+        f.advancedPanel = W.Panel(content, 0, 0, 846, 30)
+        f.manual = W.Button(content, "Use manual amounts", 0, 0, 270, function()
+            f.overrides.manual = not f.state.manual
+            if f.overrides.manual then
+                f.overrides.baseMin = f.parsed and f.parsed.min or 0
+                f.overrides.baseMax = f.parsed and f.parsed.max or 0
+                f.overrides.periodicBase = f.parsed and f.parsed.periodic or 0
+            end
+            f.update()
+            f.populate()
+        end)
+        f.notes = W.Text(content, "", 0, 0, 846, 12, W.colors.muted)
         f.populate = function()
             f.updating = true
-            local auto = f.parsed and select(1, Sim.Coefficient(f.selectedRank, f.parsed)) or 0
             for key, e in pairs(f.fields) do
-                e:SetText(tostring(f.state[key] or (key == "coefficient" and auto * 100 or 0)))
+                local value = f.state and f.state[key]
+                e:SetText(value ~= nil and tostring(value) or "")
                 e.clear:Hide()
             end
-            for key, b in pairs(f.toggles) do
-                b:SetActive(f.state[key])
-            end
-            f.manual:SetActive(f.state.manual)
             f.updating = false
         end
+        local function create(spec)
+            f.choiceOptions[spec.key] = spec.choices
+            local key = spec.key
+            if spec.type == "boolean" or spec.type == "choice" then
+                if not f.choiceButtons[key] then
+                    f.choiceButtons[key] = W.Button(content, spec.label, 0, 0, 270, function()
+                        if spec.type == "boolean" then
+                            f.overrides[key] = not f.state[key]
+                        else
+                            local list, pos = choices(key, f.choiceOptions[key]), 1
+                            for i, choice in ipairs(list) do
+                                if choice.key == f.state[key] then
+                                    pos = i
+                                end
+                            end
+                            f.overrides[key] = list[pos % #list + 1].key
+                        end
+                        f.update()
+                    end)
+                    f.toggles[key] = f.choiceButtons[key]
+                end
+                local b = f.choiceButtons[key]
+                b.tip = spec.help
+                b:SetActive(f.state[key] == true)
+                if spec.type == "choice" then
+                    local value = f.state[key]
+                    for _, choice in ipairs(choices(key, spec.choices)) do
+                        if choice.key == value then
+                            value = choice.name
+                        end
+                    end
+                    b:SetText(spec.label .. ": " .. (value or "Choose"))
+                end
+                return b
+            end
+            if not f.fields[key] then
+                f.labels[key] = W.Text(content, spec.label, 0, 0, 270, 11, W.colors.muted)
+                local e = W.Edit(content, "Automatic", 0, 0, 270, function(text, user)
+                    if user and not f.updating then
+                        if text ~= "" and not tonumber(text) then
+                            return
+                        end
+                        f.overrides[key] = text ~= "" and tonumber(text) or nil
+                        f.update()
+                    end
+                end, 12)
+                e.clear:Hide()
+                e.hideClear = true
+                e:HookScript("OnEnter", function(self)
+                    W.Tooltip(self, spec.label, { self.tip })
+                end)
+                e:HookScript("OnLeave", function()
+                    GameTooltip:Hide()
+                end)
+                f.fields[key] = e
+            end
+            f.fields[key].tip = spec.help .. " This is a temporary override."
+            return f.fields[key]
+        end
         f.update = function()
-            S.db.settings.scenario = Sim.State(f.state)
-            S.db.settings.scenarioSkill = f.skill.name
-            local result, why = Sim.Calculate(S.View(), f.skill, f.selectedRank, f.state)
-            if not result then
-                for _, c in ipairs(f.cards) do
-                    c.value:SetText("—")
-                    c.detail:SetText("No numeric estimate")
+            f.parsed = Sim.Parse(f.selectedRank, f.skill, S.View().level)
+            local result, why = Sim.Run(S.View(), f.skill, f.selectedRank, f.overrides)
+            f.result = result
+            f.statsNote = result and result.statsNote
+            local state, character = FT.Character.ForSkill(
+                S.View(),
+                f.skill,
+                f.selectedRank,
+                nil,
+                nil,
+                f.overrides.effectMode
+            )
+            for key, value in pairs(f.overrides) do
+                state[key] = value
+            end
+            f.state = result and result.state or Sim.State(state)
+            f.portrait:SetTexture(
+                "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\"
+                    .. FT.Model.Class(S.View().classID).icon
+                    .. ".tga"
+            )
+            f.character:SetText(
+                character.sheet.name
+                    .. " • "
+                    .. FT.Data.races[S.View().raceID].name
+                    .. " "
+                    .. FT.Model.Class(S.View().classID).name
+                    .. " • level "
+                    .. S.View().level
+            )
+            f.characterStats:SetText(
+                "Power "
+                    .. fmt(character.totals.power)
+                    .. " • Healing "
+                    .. fmt(character.totals.healing)
+                    .. " • Melee AP "
+                    .. fmt(character.totals.attackPower)
+                    .. " • Ranged AP "
+                    .. fmt(character.totals.rangedAP)
+            )
+            f.characterSource:SetText(
+                character.source .. " • Edit the central sheet to keep changes for every skill."
+            )
+            local specs = result and result.inputs
+                or Sim.Inputs(S.View(), f.skill, f.selectedRank, f.state, f.parsed)
+            for key, e in pairs(f.fields) do
+                e:Hide()
+                f.labels[key]:Hide()
+            end
+            for _, b in pairs(f.choiceButtons) do
+                b:Hide()
+            end
+            local y = -86
+            local function group(name)
+                local count = 0
+                for _, spec in ipairs(specs) do
+                    if spec.group == name then
+                        local control = create(spec)
+                        local col, row = count % 3, math.floor(count / 3)
+                        local height = name == "condition" and 40 or 64
+                        local top = y - row * height
+                        control:ClearAllPoints()
+                        control:SetPoint(
+                            "TOPLEFT",
+                            col * 286,
+                            top - (spec.type == "number" and 20 or 0)
+                        )
+                        control:Show()
+                        if spec.type == "number" then
+                            if not control:HasFocus() or f.overrides[spec.key] == nil then
+                                f.updating = true
+                                control:SetText(
+                                    f.state[spec.key] ~= nil and tostring(f.state[spec.key]) or ""
+                                )
+                                f.updating = false
+                            end
+                            local label = f.labels[spec.key]
+                            label:ClearAllPoints()
+                            label:SetPoint("TOPLEFT", col * 286, top)
+                            label:Show()
+                        end
+                        count = count + 1
+                    end
+                end
+                if count > 0 then
+                    y = y - math.ceil(count / 3) * (name == "condition" and 40 or 64) - 10
+                end
+            end
+            group("character")
+            group("target")
+            group("condition")
+            for _, card in ipairs(f.cards) do
+                card.panel:ClearAllPoints()
+                card.panel:SetPoint("TOPLEFT", (_ - 1) * 286, y)
+            end
+            if result then
+                f.cards[1].value:SetText(range(result.normalMin, result.normalMax))
+                f.cards[2].value:SetText(
+                    result.critEligible and range(result.criticalMin, result.criticalMax)
+                        or "Cannot crit"
+                )
+                f.cards[3].value:SetText(fmt(result.expected))
+                f.cards[1].detail:SetText(
+                    (result.parsed.displayKind or result.parsed.kind)
+                        .. " • one target, full duration"
+                )
+                f.cards[2].detail:SetText("Each eligible tick/hit crits; an upper scenario")
+                f.cards[3].detail:SetText(
+                    fmt(result.crit) .. "% crit • " .. fmt(result.hit) .. "% lands"
+                )
+                local baseline = Sim.Run(S.View(), f.skill, f.selectedRank, f.overrides, false)
+                f.compare:SetText(
+                    "Without selected talents "
+                        .. fmt(baseline.expected)
+                        .. " → this build "
+                        .. fmt(result.expected)
+                        .. (
+                            baseline.expected > 0
+                                and string.format(
+                                    " (%+.1f%%)",
+                                    (result.expected / baseline.expected - 1) * 100
+                                )
+                            or ""
+                        )
+                )
+                f.status:SetText(result.confidence .. " • " .. result.source)
+            else
+                for _, card in ipairs(f.cards) do
+                    card.value:SetText("—")
+                    card.detail:SetText("No supported numeric model")
                 end
                 f.compare:SetText(
-                    "Utility or complex skill • choose a damage/healing skill, or enter a manual base."
+                    why or "Choose a supported skill, or supply manual amounts in Advanced."
                 )
-                notes(
-                    why
-                        .. "\n\nThis panel models one skill use, with the build currently shown. It does not simulate a rotation."
-                )
-                return
+                f.status:SetText("Utility or unsupported effect • your character sheet is kept")
             end
-            local baseline = Sim.Calculate(S.View(), f.skill, f.selectedRank, f.state, false)
-            local function range(a, b)
-                return rounded(a) .. (math.abs(a - b) > 0.5 and " – " .. rounded(b) or "")
+            y = y - 108
+            f.compare:ClearAllPoints()
+            f.compare:SetPoint("TOPLEFT", 0, y)
+            y = y - math.max(28, f.compare:GetStringHeight() + 8)
+            f.status:ClearAllPoints()
+            f.status:SetPoint("TOPLEFT", 0, y)
+            y = y - 36
+            for _, b in ipairs({ f.advancedButton, f.how, f.reset, f.share }) do
+                local x = b == f.advancedButton and 0
+                    or b == f.how and 188
+                    or b == f.reset and 432
+                    or 676
+                b:ClearAllPoints()
+                b:SetPoint("TOPLEFT", x, y)
             end
-            f.cards[1].value:SetText(
-                range(result.min + result.periodic, result.max + result.periodic)
-            )
-            f.cards[2].value:SetText(
-                range(result.critMin + result.periodic, result.critMax + result.periodic)
-            )
-            f.cards[3].value:SetText(rounded(result.expected))
-            f.cards[1].detail:SetText(
-                result.parsed.kind
-                    .. (
-                        result.periodic > 0 and " • includes full periodic effect"
-                        or " • direct effect"
-                    )
-            )
-            f.cards[2].detail:SetText("Direct part crits • periodic part does not")
-            f.cards[3].detail:SetText(
-                string.format("%.1f%% crit • %.1f%% lands", result.crit, result.hit)
-            )
-            local delta = baseline.expected > 0 and (result.expected / baseline.expected - 1) * 100
-                or 0
-            f.compare:SetText(
-                "Without selected talents: "
-                    .. rounded(baseline.expected)
-                    .. "  →  This build: "
-                    .. rounded(result.expected)
-                    .. string.format("  (%+.1f%%)", delta)
-            )
-            local included = table.concat(result.modifiers.included, ", ")
-            local omitted = table.concat(result.modifiers.omitted, ", ")
-            notes(
-                "Estimate • "
-                    .. result.source
-                    .. (result.parsed.descriptionSource == "client" and " Base amount supplied by your client; absent from the snapshot." or "")
-                    .. "\nIncluded talents: "
-                    .. (included ~= "" and included or "No simple numeric modifier applies.")
-                    .. "\nOther interactions omitted: "
-                    .. (omitted ~= "" and omitted or "None identified in this build.")
-                    .. (result.periodic > 0 and "\nPeriodic total: " .. rounded(result.periodic) .. " over " .. result.duration .. " sec; unknown scaling defaults to zero." or "")
-                    .. (f.statsNote and "\n" .. f.statsNote or "")
-                    .. "\nProcs, forms, intrinsic conditional effects, haste, resource limits, target debuffs and rotations are omitted."
-            )
+            f.advancedButton:SetActive(f.advanced == true)
+            y = y - 46
+            f.advancedPanel:SetShown(f.advanced == true)
+            f.manual:SetShown(f.advanced == true)
+            if f.advanced then
+                f.advancedPanel:ClearAllPoints()
+                f.advancedPanel:SetPoint("TOPLEFT", 0, y)
+                f.advancedPanel:SetHeight(34)
+                f.manual:ClearAllPoints()
+                f.manual:SetPoint("TOPLEFT", 10, y - 3)
+                f.manual:SetActive(f.state.manual)
+                y = y - 50
+                group("advanced")
+            end
+            local text = result
+                    and ("Included talents: " .. (table.concat(result.modifiers.included, ", ") ~= "" and table.concat(
+                        result.modifiers.included,
+                        ", "
+                    ) or "None affect this modeled amount.") .. "\nIncluded racials: " .. (table.concat(
+                        result.racials,
+                        ", "
+                    ) ~= "" and table.concat(result.racials, ", ") or "None apply to this use.") .. (#result.modifiers.omitted > 0 and "\nOther interactions: " .. table.concat(
+                        result.modifiers.omitted,
+                        ", "
+                    ) or "") .. "\n\n" .. table.concat(result.warnings, "\n") .. "\n\n" .. result.limits)
+                or why
+                or ""
+            f.notes:SetText(text)
+            f.notes:ClearAllPoints()
+            f.notes:SetPoint("TOPLEFT", 0, y)
+            f.scroll:SetContentHeight(-y + f.notes:GetStringHeight() + 20)
         end
         f.stats:SetScript("OnClick", function()
-            local profile = FT.ReadPlayerStats(f.skill, f.selectedRank)
-            S.db.settings.statsProfile = profile
-            f.state, f.statsNote = FT.Snapshot.ForSkill(profile, f.skill, f.selectedRank, S.View())
-            f.populate()
+            local profile = FT.ReadPlayerStats()
+            local gear = FT.ReadPlayerEquipment and FT.ReadPlayerEquipment() or {}
+            local ok, why = FT.Character.Save(S.View(), FT.Character.FromSnapshot(profile, gear))
+            if not ok then
+                UI.Status(why)
+                return
+            end
+            f.overrides = {}
             f.update()
+            f.populate()
         end)
-        W.Button(f, "Copy / paste stats", 404, -408, 212, UI.CharacterDialog)
     end
-    f.skill, f.selectedRank, f.parsed = skill, rank, Sim.Parse(rank, skill)
-    f.classID = S.Build().classID
-    f.statsNote = nil
-    f.state = Sim.State(S.db.settings.scenario)
-    f.state, f.statsNote =
-        FT.Snapshot.ForSkill(FT.Snapshot.Current(S.View()), skill, rank, S.View())
-    -- Reset spell-specific overrides; retain character stats and target conditions.
-    if not S.db.settings.statsProfile or S.db.settings.statsProfile.skillName ~= skill.name then
-        f.state.coefficient, f.state.dotCoefficient, f.state.manual = nil, nil, false
-    end
-    f.state.baseMin = f.parsed and f.parsed.min or 0
-    f.state.baseMax = f.parsed and f.parsed.max or 0
+    f.skill, f.selectedRank, f.classID = skill, rank, S.Build().classID
+    f.overrides, f.state = FT.Copy(overrides or {}), Sim.Defaults()
     f.title:SetText(skill.name)
     f.rank:SetText(
-        (rank.label ~= "" and rank.label .. " • " or "")
-            .. "Learned at level "
-            .. rank.level
-            .. " • evaluating the currently shown build"
+        (rank.label or "Ability")
+            .. " • learned at level "
+            .. (rank.level or 1)
+            .. " • displayed build • one use"
     )
-    f.advancedPanel:SetShown(f.advanced == true)
-    f:SetHeight(f.advanced and 806 or 582)
-    f.populate()
     f.update()
+    f.populate()
+    f.scroll:ScrollTo(0)
+end
+function UI.SimulationHelp(result)
+    local f, first = UI.Dialog("simulationHelp", "Simulator • calculation & evidence", 880, 626)
+    if first then
+        f.scroll = W.Scroll(f, 22, -64, 836, 536)
+        f.text = W.Text(f.scroll.content, "", 0, 0, 808, 13)
+    end
+    local lines = {
+        "Expected total averages random critical effects and unsuccessful casts. It is not a guaranteed hit or rotation DPS.",
+        "\nFor each effect: (base + power × coefficient + AP × ratio + weapon + resource) × bonuses × damage remaining.",
+        "Expected effect = mean non-critical total × (1 + crit chance × (crit multiplier − 1)) × chance to land.",
+        "Periodic coefficients are stored per tick; a manual periodic override is a total coefficient across all ticks. Eligible ticks roll critical effects independently. Shields do not crit.",
+    }
+    if result then
+        lines[#lines + 1] = "\n" .. result.confidence .. " • " .. result.source
+        for _, b in ipairs(result.breakdown) do
+            lines[#lines + 1] = "\n" .. b.label .. " • spell " .. (b.sourceSpell or 0)
+            lines[#lines + 1] = b.formula
+            lines[#lines + 1] = b.averageFormula
+            lines[#lines + 1] = "Power scaling "
+                .. fmt(b.coefficient * 100)
+                .. "% • AP scaling "
+                .. fmt((b.apCoefficient or 0) * 100)
+                .. "%"
+                .. (b.part == "periodic" and " per tick" or " direct")
+            if b.part == "periodic" then
+                lines[#lines + 1] = b.ticks
+                    .. " ticks"
+                    .. (
+                        b.interval > 0 and " every " .. b.interval .. " seconds"
+                        or " • timing unknown"
+                    )
+            end
+            lines[#lines + 1] = b.critEligible
+                    and (fmt(b.crit) .. "% crit • multiplier " .. fmt(b.critMultiplier))
+                or "This effect cannot crit."
+        end
+        for _, e in ipairs(result.modifiers.evidence) do
+            lines[#lines + 1] = "\n" .. e.name .. " rank " .. e.rank .. ": " .. e.text
+        end
+        lines[#lines + 1] = "\n" .. table.concat(result.warnings, "\n")
+        lines[#lines + 1] = "\n" .. result.limits
+        for _, source in ipairs(result.sources) do
+            lines[#lines + 1] = "\n" .. source.label .. "\n" .. source.url
+        end
+    else
+        lines[#lines + 1] =
+            "\nChoose a skill to see its numeric substitutions, included talents, sources and missing mechanics."
+    end
+    f.text:SetText(table.concat(lines, "\n"))
+    f.scroll:SetContentHeight(f.text:GetStringHeight() + 16)
+    f.scroll:ScrollTo(0)
 end
 
-function UI.SimulationHelp()
-    local f, first = UI.Dialog("simulationHelp", "Understand the estimate", 860, 604)
+function UI.SimulationInputsDialog(skill, rank, code, previous)
+    local f, first =
+        UI.Dialog("simulationInputs", "Simulator • copy / paste temporary inputs", 860, 514)
     if first then
-        W.Text(f, "Start with three easy inputs", 22, -67, 816, 16, W.colors.gold)
-        W.Text(
-            f,
-            "Bonus power is the number from your gear. Crit chance changes the average result.\nDamage stopped represents armor or resistance as a single percentage. Use my stats fills\nvalues from your current character; values stay editable when planning another character.",
-            22,
-            -100,
-            816,
-            13
-        )
-        W.Text(
-            f,
-            "The calculation is visible and deliberately small",
-            22,
-            -176,
-            816,
-            16,
-            W.colors.gold
-        )
-        W.Text(
-            f,
-            "Normal effect = (captured base + bonus power × scaling + weapon / AP contribution)\n                        × simple talent bonuses × other bonus × damage remaining\nCritical effect = direct effect × crit multiplier + periodic total\nExpected average = (average direct effect including crits + periodic total) × chance to land\nSelected talent bonuses are summed within each modeled category. Other bonus multiplies separately.",
-            22,
-            -209,
-            816,
-            13
-        )
-        W.Text(f, "Scaling explained", 22, -310, 816, 16, W.colors.gold)
-        W.Text(
-            f,
-            "57% direct scaling uses 57 of each 100 bonus power. Over-time scaling means the entire\nperiodic effect, not one tick. A small set of spells uses older Forever client observations.\nOther casts can use cast time / 3.5 sec as an approximation; unknown scaling uses zero.\nAdvanced lets you replace coefficients and the base range when you have better numbers.",
-            22,
-            -343,
-            816,
-            13
-        )
-        W.Text(f, "Read the Included and Omitted lines", 22, -437, 816, 16, W.colors.gold)
-        W.Text(
-            f,
-            "Only simple, applicable damage/healing/crit modifiers are automatically modeled. Bleeding,\nfrozen and active-cooldown toggles enable the supported conditional bonuses. Proc chances,\nstacks, multi-hit targeting, resource limits, racial passives and rotations are omitted.\nThe tooltip snapshot can contain beta placeholders; a numeric estimate is a planning aid.",
-            22,
-            -470,
-            816,
-            13
-        )
-        W.Button(f, "Back to the skill", 22, -554, 816, function()
-            local sim = UI.dialogs.simulation
-            if sim then
-                UI.SimulationDialog(sim.skill, sim.selectedRank)
+        f.info = W.Text(f, "", 22, -64, 816, 13, W.colors.muted)
+        f.scroll = W.Scroll(f, 22, -120, 816, 210)
+        f.output = W.Edit(f.scroll.content, "FS1 / FS2:…", 0, 0, 790, nil, 65536)
+        f.output:SetHeight(210)
+        f.output:SetMultiLine(true)
+        f.output:SetTextInsets(12, 28, 10, 10)
+        f.summary = W.Text(f, "", 22, -350, 816, 12, W.colors.teal)
+        f.load = W.Button(f, "Use temporary inputs", 22, -444, 390, function()
+            local inputs, why = Sim.ImportInputs(S.View(), f.skill, f.rank, f.output:GetText())
+            if inputs then
+                UI.SimulationDialog(f.skill, f.rank, inputs)
+            else
+                f.summary:SetText(why)
             end
-        end, true, 28)
+        end, true, 32)
+        W.Button(f, "Back to simulator", 428, -444, 410, function()
+            UI.SimulationDialog(f.skill, f.rank, f.previous)
+        end, false, 32)
+        f.output:SetScript("OnTextChanged", function()
+            f.scroll:SetContentHeight(math.max(210, f.output:GetNumLines() * 16 + 24))
+            local inputs, why = Sim.ImportInputs(S.View(), f.skill, f.rank, f.output:GetText())
+            f.load:SetEnabled(inputs ~= nil)
+            f.summary:SetText(
+                inputs
+                        and "Ready • Ctrl+C copies the entire selected string. Pasted inputs affect this skill only."
+                    or why
+                    or "Paste a stats string."
+            )
+        end)
     end
+    f.skill, f.rank, f.previous = skill, rank, FT.Copy(previous or {})
+    f.info:SetText(
+        "Copy these inputs or paste an FS1 / FS2 stats string for "
+            .. skill.name
+            .. ".\nThe central character sheet, equipment and talent build stay unchanged."
+    )
+    f.output:SetText(code or "")
+    f.output:SetFocus()
+    f.output:HighlightText()
+    f.scroll:ScrollTo(0)
 end

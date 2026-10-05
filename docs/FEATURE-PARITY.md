@@ -4,14 +4,15 @@
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Captured data, authentic grid positions, ranks, prerequisites             | `data/catalog.json` → `tools/build_data.py` → addon Data.lua → shared browser engine |
 | Budget, gates, allocation, removal and point reordering                   | `core/lua/Model.lua`                                                                 |
-| FT1 build, FS1 stats, FC1 character formats                               | `core/lua/Codec.lua`, `Snapshot.lua`                                                 |
+| FT1 build, FS1/FS2 stats and gear, FC1 character formats                  | `core/lua/Codec.lua`, `Snapshot.lua`                                                 |
 | Full FL1 library encoding, validation, merge and duplicate handling       | `core/lua/Library.lua`                                                               |
 | Drafts, Auto level, undo/redo, immutable checkpoints and subtree deletion | `core/lua/Store.lua`                                                                 |
 | Skill ranks, search, unlocks and related talent evidence                  | `core/lua/Skills.lua`                                                                |
-| Per-use numerical estimate and assumptions                                | `core/lua/Simulation.lua`                                                            |
-| Native talent API and school-specific character stats capture             | addon `Player.lua`; export portable data for the PWA                                 |
+| Per-use numerical estimate, applicable inputs, evidence and assumptions   | `core/lua/Simulation.lua`                                                            |
+| Central character, custom gear, stat passives and scoped skill overrides  | `core/lua/Character.lua`, `Simulation.lua`                                           |
+| Native talent API, school stats and equipped-item capture                 | addon `Player.lua`; export portable data for the PWA                                 |
 | Native frames, chat receipts, keybind and minimap                         | addon `UI/`, `Comms.lua`, `Bootstrap.lua`                                            |
-| Responsive layout, keyboard/touch interaction, clipboard/files            | `web/src/main.js`, `style.css`                                                       |
+| Responsive layout, keyboard/touch interaction, clipboard/files            | `web/src/main.js`, `simulator.js`, `style.css`                                       |
 | Browser object/table adaptation, whitelisted engine calls                 | `web/lua/bridge.lua`                                                                 |
 | Shared module copies, engine hashes, local WASM/icon assets               | `tools/sync_core.py`                                                                 |
 | Atomic offline cache, update lifecycle and static archive                 | `tools/build_pwa.mjs`                                                                |
@@ -39,9 +40,12 @@ automatic connection is implied.
 Live stats/talents capture, client descriptions/cast times and clickable whisper receipts need WoW
 and stay native. The PWA imports their portable snapshots. Captured school power/crit and source
 talents support recognized crit normalization across skill selections. Reported stats can include
-buffs; hit, reduction, procs and rotations are assumptions/omissions. Unknown web scaling has a
-clear zero fallback and editable coefficients. Pet/perk data is reference-only in both interfaces;
-it is not silently added to class builds.
+buffs; hit, reduction, procs and rotations are assumptions/omissions. Unknown scaling is explicitly
+unverified in both interfaces; a coefficient override can supply a measured value. Character
+reference conversions are marked approximate. Native item capture retains reported totals and
+available item details, without reconstructing procs or set bonuses. The PWA accepts portable
+character/gear snapshots; simulator pastes remain temporary. Pet/perk data is reference-only in both
+interfaces; it is not silently added to class builds.
 
 ## Update checklist
 

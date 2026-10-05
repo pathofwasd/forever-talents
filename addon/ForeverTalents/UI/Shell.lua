@@ -153,7 +153,7 @@ function UI.Create()
         UI.Status("Build reset. Undo restores it.")
     end)
     UI.reset.tip = "Clear all trees. Your checkpoints stay saved; Undo restores this draft."
-    W.Button(toolbar, "Character", 1066, -8, 94, UI.CharacterDialog)
+    W.Button(toolbar, "Character", 1066, -8, 94, UI.CharacterSheet)
     W.Button(toolbar, "Help", 1168, -8, 72, UI.HelpDialog)
     local hero = W.Panel(f, 16, -112, 1248, 62, { 0.067, 0.097, 0.123 })
     UI.heroIcon = W.Icon(hero, "class_druid", 12, -8, 46)
@@ -358,6 +358,15 @@ function UI.Refresh()
     UI.RefreshBrowser()
     UI.RefreshHistory()
     UI.RefreshRacials()
+    local character = UI.dialogs and UI.dialogs.characterSheet
+    if
+        character
+        and character:IsVisible()
+        and character.classID == build.classID
+        and character.refresh
+    then
+        character.refresh()
+    end
     local sim = UI.dialogs and UI.dialogs.simulation
     if sim and sim:IsVisible() and sim.classID == build.classID and sim.update then
         sim.update()

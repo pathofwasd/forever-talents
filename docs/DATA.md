@@ -13,6 +13,8 @@ inputs. No network access is needed to regenerate the data.
 - `racials`: class ID → race ID → racial records.
 - `pets`: families, tameable beasts, zone names, and skill rank records.
 - `perks`: reference trees, separate from allocated class talents.
+- `simulation`: separately versioned client effects, attack categories, reported-crit aura flags,
+  evidence URLs/checksums, documented corrections and approximate character reference tables.
 
 Tree talents preserve their original row and column. Rows and columns start at zero; talent indices
 are one-based across all three class trees. Records contain ID, icon, maximum rank, row gate,
@@ -38,3 +40,13 @@ tag. The compiler refuses unexpected rules or a mismatched identity.
 
 Current catalog: 9 classes, 27 trees, 466 talents, 1,314 talent ranks, 1,519 class-skill ranks, 10
 races, 604 icons, 17 pet families, 750 tameable beasts, 102 pet skill records, and 3 perk trees.
+
+## Simulator inputs
+
+`tools/import_simulation_data.py` normalizes an already downloaded, reviewed set of client CSV
+tables. It does not fetch data. Normal project builds only consume the canonical catalog. Keep
+acquisition files outside the repository; the catalog records table URLs, checksums and build age.
+
+`data/ui/character.json` owns the original paper-doll vector geometry. The compiler renders an RGBA
+TGA for WoW and an SVG for the browser. The numerical model, sources and current coverage are
+described in [SIMULATOR.md](SIMULATOR.md).

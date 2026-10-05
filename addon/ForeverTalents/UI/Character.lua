@@ -10,7 +10,7 @@ function UI.CharacterDialog(code)
     if first then
         W.Text(
             f,
-            "Copy a full character (FC1), simulation stats (FS1), or your whole library (FL1).\nPaste strings from the PWA or addon here. Builds still support the original FT1 format.",
+            "Copy a full character (FC1), stats and equipment (FS2; FS1 supported), or your whole library (FL1).\nPaste strings from the PWA or addon here. Builds still support the original FT1 format.",
             22,
             -65,
             816,
@@ -47,7 +47,7 @@ function UI.CharacterDialog(code)
             local p = P.Current(b)
             export(P.EncodeCharacter(b, p))
         end)
-        W.Button(f, "Copy simulation stats", 300, -428, 260, function()
+        W.Button(f, "Copy character stats", 300, -428, 260, function()
             local sim = UI.dialogs.simulation
             local p = P.Current(S.ExportView(), sim and sim.skill and sim.skill.name or nil)
             export(P.EncodeStats(p))

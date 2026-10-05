@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Build a reproducible, single-folder WoW addon ZIP and its SHA-256 manifest."""
 
-from pathlib import Path
 import hashlib
 import json
 import re
@@ -9,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / "addon/ForeverTalents"
@@ -20,9 +20,9 @@ def main():
         cwd=ROOT,
         check=True,
     )
-    version = re.search(r"^## Version: (.+)$", (ADDON / "ForeverTalents.toc").read_text(), re.M)[
-        1
-    ].strip()
+    version = re.search(
+        r"^## Version: (.+)$", (ADDON / "ForeverTalents.toc").read_text(), re.MULTILINE
+    )[1].strip()
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
     path = dist / f"ForeverTalents-{version}.zip"
@@ -40,21 +40,21 @@ def main():
             info.external_attr = 0o100644 << 16
             archive.writestr(info, content, compresslevel=9)
             entries.append(
-                dict(path=name, bytes=len(content), sha256=hashlib.sha256(content).hexdigest())
+                {"path": name, "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()}
             )
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     share = dist / "ForeverTalents.zip"
     shutil.copyfile(path, share)
-    manifest = dict(
-        addon="ForeverTalents",
-        version=version,
-        interface=16001,
-        archive=path.name,
-        shareArchive=share.name,
-        bytes=path.stat().st_size,
-        sha256=digest,
-        files=entries,
-    )
+    manifest = {
+        "addon": "ForeverTalents",
+        "version": version,
+        "interface": 16001,
+        "archive": path.name,
+        "shareArchive": share.name,
+        "bytes": path.stat().st_size,
+        "sha256": digest,
+        "files": entries,
+    }
     (dist / "release-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (dist / f"{path.name}.sha256").write_text(f"{digest}  {path.name}\n")
     (dist / f"{share.name}.sha256").write_text(f"{digest}  {share.name}\n")

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Cross-platform release gate. No live-client actions or external publishing."""
 
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -15,7 +15,7 @@ def run(*args):
 (ROOT / "preview").mkdir(exist_ok=True)
 run("python3", "tools/build_data.py")
 run("python3", "tools/sync_core.py")
-for suite in ["core", "regressions", "auto_level", "nodes", "portability", "ui"]:
+for suite in ["core", "regressions", "auto_level", "nodes", "portability", "simulation", "ui"]:
     run("lua5.1", f"tests/test_{suite}.lua")
 run("python3", "tools/check_package.py", "--source-only")
 run("node", "--test", "tests/web/engine.test.mjs")

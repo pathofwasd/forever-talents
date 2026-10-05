@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Validate TOC inputs, native icon formats, Lua syntax and the built archive."""
 
-from pathlib import Path, PurePosixPath
 import argparse
 import hashlib
 import json
@@ -11,6 +10,7 @@ import struct
 import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / "addon/ForeverTalents"
@@ -57,9 +57,9 @@ def main():
         raw = path.read_bytes()
         ident, colormap, kind = raw[:3]
         width, height, bits = struct.unpack_from("<HHB", raw, 12)
-        assert colormap == 0 and kind == 2 and bits == 24, f"Unsupported TGA format {path}"
+        assert colormap == 0 and kind == 2 and bits in (24, 32), f"Unsupported TGA format {path}"
         assert width & (width - 1) == 0 and height & (height - 1) == 0, f"Texture dimensions {path}"
-        assert len(raw) >= 18 + ident + width * height * 3, f"Truncated texture {path}"
+        assert len(raw) >= 18 + ident + width * height * (bits // 8), f"Truncated texture {path}"
         if path.parent.name == "Icons":
             assert width == 64 and height == 64
     bundled = {p.stem for p in (ADDON / "Media/Icons").glob("*.tga")}
@@ -100,7 +100,7 @@ def main():
                 len(raw) == expected[name]["bytes"]
                 and hashlib.sha256(raw).hexdigest() == expected[name]["sha256"]
             )
-    version = re.search(r"^## Version: (.+)$", toc, re.M)[1].strip()
+    version = re.search(r"^## Version: (.+)$", toc, re.MULTILINE)[1].strip()
     assert manifest["version"] == version and manifest["interface"] == 16001
     print(
         f"Release package valid: {path.name}, {count} files, {path.stat().st_size:,} bytes; all entries match source."

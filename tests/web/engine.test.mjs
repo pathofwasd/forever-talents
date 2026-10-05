@@ -64,7 +64,49 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     run('export', { kind: 'character' });
     run('preview', {});
   }
+  run('switch', { classID: 11 });
+  run('auto', { enabled: false });
+  run('level', { level: 25 });
+  run('characterMode', { mode: 'gear' });
+  run('characterSave', {
+    sheet: {
+      schema: 1,
+      mode: 'gear',
+      name: 'Shared character',
+      form: 'cat',
+      weaponType: 'none',
+      stats: { power: 123.25, hit: 93 },
+      gear: {
+        mainHand: {
+          name: 'Dagger',
+          stats: { strength: 10, intellect: 23, attackPower: 14 },
+          low: 10,
+          high: 20,
+          speed: 1.8,
+          weaponType: 'dagger',
+        },
+      },
+    },
+  });
+  run('character');
+  run('export', { kind: 'stats' });
+  run('export', { kind: 'character' });
+  run('statsForSkill', { name: 'Wrath', rank: 4, overrides: { coefficient: 75 } });
+  run('simulate', { name: 'Wrath', rank: 4, overrides: { power: 900, crit: 13 } });
+  run('simulate', {
+    name: 'Wrath',
+    rank: 4,
+    overrides: { power: 900, crit: 13 },
+    withTalents: false,
+  });
+  run('character');
   run('export', { kind: 'library' });
+  run('simulate', { name: 'Wrath', rank: 4, overrides: { attackPower: 1000, apCoefficient: 20 } });
+  run('export', {
+    kind: 'stats',
+    skillName: 'Wrath',
+    state: { attackPower: 1000, apCoefficient: 20, dotAPCoefficient: 30 },
+  });
   assert.deepEqual(results, native);
   h.close();
 });
