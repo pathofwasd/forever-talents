@@ -4,6 +4,11 @@ A free, unofficial talent planner for **World of Warcraft Forever**, with an in-
 installable web app for desktop and mobile. Not affiliated with or endorsed by Blizzard
 Entertainment.
 
+[![Download Forever Talents addon — open the latest release](docs/download.svg)](https://github.com/pathofwasd/forever-talents/releases/latest)
+
+**On the release page, scroll to Assets and download `ForeverTalents.zip`.** Expand Assets if it is
+collapsed. The **Source code** downloads are for developers.
+
 ## Features
 
 - All nine classes, original talent layouts, rank descriptions and prerequisite checks.
@@ -15,9 +20,9 @@ Entertainment.
 
 ## Install
 
-Download **ForeverTalents.zip** from the repository's **Releases** section. Extract the
-**ForeverTalents** folder into your game's **Interface/AddOns** directory, enable it in the AddOns
-menu, then type **`/ftc`** in game. No other addons are required.
+Click the download button above, then choose **ForeverTalents.zip** under **Assets** on the release
+page. Extract the **ForeverTalents** folder into your game's **Interface/AddOns** directory, enable
+it in the AddOns menu, then type **`/ftc`** in game. No other addons are required.
 
 To update, replace the addon folder. Keep your `WTF` folder—it contains your saved builds. See the
 [addon guide](addon/ForeverTalents/README.txt) for controls and sharing.

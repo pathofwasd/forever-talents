@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="68" viewBox="0 0 384 68" role="img" aria-labelledby="title desc">
+  <title id="title">Download Forever Talents addon</title>
+  <desc id="desc">Open the latest GitHub release to download ForeverTalents.zip.</desc>
+  <rect x="1" y="1" width="382" height="66" rx="10" fill="#edbb70" stroke="#c79242" stroke-width="2"/>
+  <path d="M32 19v22m-8-8 8 8 8-8M21 44v7h22v-7" fill="none" stroke="#17212b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="61" y="31" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#17212b">DOWNLOAD ADDON</text>
+  <text x="61" y="51" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#243340">Forever Talents · latest release</text>
+</svg>
