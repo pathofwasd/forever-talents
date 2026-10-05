@@ -773,6 +773,15 @@ function UI.HelpDialog()
             806,
             13
         )
+        W.Text(
+            f,
+            "Free, unofficial community project. Not affiliated with or endorsed by Blizzard Entertainment.\nWorld of Warcraft artwork and text © Blizzard Entertainment and respective rights holders. See NOTICE.txt.",
+            22,
+            -480,
+            806,
+            11,
+            W.colors.muted
+        )
         f.data = W.Text(f, "", 22, -514, 806, 11, W.colors.muted)
         W.Button(f, "Hunter pet atlas", 22, -552, 210, UI.PetDialog)
         W.Button(f, "Forever perk reference", 244, -552, 230, UI.PerkDialog)

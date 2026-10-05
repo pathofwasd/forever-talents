@@ -56,3 +56,6 @@ it is not silently added to class builds.
 A release is incomplete if an applicable addon feature is stale in the PWA. The GitHub Pages
 workflow publishes on manual request. Hosted PWA updates use the offline cache lifecycle; addon
 releases are distributed as ZIPs.
+
+The browser footer and addon guide identify the project as free and unofficial, with game-content
+ownership notices. The PWA footer links to the bundled `NOTICE.txt`, including during offline use.

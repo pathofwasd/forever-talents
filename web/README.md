@@ -4,6 +4,9 @@ The browser app runs the shared Lua engine through Wasmoon (Lua 5.4/WebAssembly)
 layouts use the same catalog and bundled icons as the addon. It works offline once the status shows
 **Ready offline**.
 
+Forever Talents is a free, unofficial community project. The footer identifies game-content
+ownership and links to the bundled `NOTICE.txt`, which remains available offline.
+
 ## Develop and package
 
 Follow the root [development setup](../CONTRIBUTING.md), then run:

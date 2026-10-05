@@ -10,3 +10,5 @@
 - Start detail dialogs at the top, label them for screen readers, and give the close control a
   larger touch target.
 - Add desktop/mobile screenshots, a shorter installation README, and GitHub Pages deployment setup.
+- Identify the project as free and unofficial in both guides and the browser footer; link the
+  browser footer to the offline ownership notice.

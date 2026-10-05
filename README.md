@@ -1,7 +1,8 @@
 # Forever Talents
 
-A talent planner for **World of Warcraft Forever**, with an in-game addon and an installable web app
-for desktop and mobile.
+A free, unofficial talent planner for **World of Warcraft Forever**, with an in-game addon and an
+installable web app for desktop and mobile. Not affiliated with or endorsed by Blizzard
+Entertainment.
 
 ## Features
 

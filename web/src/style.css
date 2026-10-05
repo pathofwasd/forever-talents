@@ -822,6 +822,7 @@ h1 span {
 }
 footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -835,6 +836,29 @@ footer div {
 }
 footer button {
   font-size: 11px;
+}
+.project-notice {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.project-notice a {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 4px;
+  min-height: 44px;
+}
+.notice-link-hint {
+  color: var(--muted);
 }
 .mobile-nav {
   display: none;
