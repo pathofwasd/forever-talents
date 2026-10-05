@@ -1,13 +1,12 @@
 # Forever Talents PWA
 
-The real addon engine runs here through Wasmoon (Lua 5.4/WebAssembly). It is not a mock screenshot
-or a separate JavaScript implementation of the rules. Desktop and touch layouts use the same
-generated dataset and bundled icons. The browser app works offline after its first successful cache
-installation.
+The browser app runs the shared Lua engine through Wasmoon (Lua 5.4/WebAssembly). Desktop and touch
+layouts use the same catalog and bundled icons as the addon. It works offline once the status shows
+**Ready offline**.
 
 ## Develop and package
 
-Install Node.js 22.12+ or 24+, Python 3 and pnpm 11.19.0, then from the root:
+Follow the root [development setup](../CONTRIBUTING.md), then run:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -26,7 +25,8 @@ Serve the directory through HTTP for local use, or deploy it on an HTTPS static 
 sharing/installation on other devices. Opening index.html as a local file does not provide fetch,
 service-worker or clipboard support. Use a stable URL so browser saves stay with the same origin.
 The relative manifest, engine, WASM, icon and cache paths support a subdirectory deployment. Do not
-expose the development server publicly. No external deployment has been configured or performed.
+expose the development server publicly. See [GitHub Pages setup](../docs/HOSTING.md) to publish the
+production build.
 
 On Windows/Linux/Android, use an install-capable browser's Install menu. On iPhone/iPad, open in
 Safari, Share → Add to Home Screen. Browser and OS support determine the available install prompt. A
@@ -62,5 +62,6 @@ here. Live talent order is reconstructed because the client does not expose the 
 history. A browser cannot read WoW APIs or send addon whispers; clickable in-game receipts remain
 addon-only.
 
-See `docs/FEATURE-PARITY.md` and root `AGENTS.md` before editing either platform. Release packages
-include content ownership notices and bundled software licenses.
+See [feature ownership](../docs/FEATURE-PARITY.md) and [update requirements](../AGENTS.md) before
+editing either platform. Release packages include content ownership notices and bundled software
+licenses.

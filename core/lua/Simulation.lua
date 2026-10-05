@@ -4,7 +4,7 @@ FT.Simulation = Sim
 
 -- Numeric facts from the Forever 1.60.1.69893 SpellEffect comparison, 2026-09-17:
 -- https://github.com/gunba/wow-forever-sim/blob/forever/docs/spell-data-2026-09-17.md
--- These are older-beta observations, not promises about a later client build.
+-- Coefficients reflect that beta build; later patches may change them.
 local coefficients = {
     [133] = 0.429,
     [143] = 0.571,

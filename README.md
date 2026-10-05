@@ -1,73 +1,51 @@
 # Forever Talents
 
-A talent planner for World of Warcraft Forever, available as an in-game addon and an offline web app
+A talent planner for **World of Warcraft Forever**, with an in-game addon and an installable web app
 for desktop and mobile.
 
-## Install the addon
+## Features
 
-Download **ForeverTalents.zip** from Releases, extract it, and place the **ForeverTalents** folder
-in your Forever client's **Interface/AddOns** folder. The final path should be
-`Interface/AddOns/ForeverTalents/ForeverTalents.toc`. Enable it in the character-selection AddOns
-menu, then type `/ftc` in game. There are no addon dependencies.
+- All nine classes, original talent layouts, rank descriptions and prerequisite checks.
+- Search skills and racials, see rank unlock levels, and highlight related talents.
+- Track your leveling order with Auto level, undo/redo and branching checkpoints.
+- Share builds as text or through addon whispers. Transfer character stats or your entire saved
+  library between the addon and web app.
+- Estimate damage and healing with simple controls and optional advanced settings.
 
-To update, replace only the addon folder. Your saved builds live separately in WoW's `WTF` folder;
-keep that folder when updating. The included [guide](addon/ForeverTalents/README.txt) explains
-controls and sharing.
+## Install
 
-## Plan and share
+Download **ForeverTalents.zip** from the repository's **Releases** section. Extract the
+**ForeverTalents** folder into your game's **Interface/AddOns** directory, enable it in the AddOns
+menu, then type **`/ftc`** in game. No other addons are required.
 
-- Nine classes with their authentic talent grids, rank descriptions, prerequisites, legal point
-  order, and race restrictions.
-- Searchable skills, rank unlock levels, racials, and persistent checkboxes highlighting related
-  talents.
-- Manual or automatic level, undo/redo, leveling previews, named builds, and branching checkpoints.
-  Removing a checkpoint removes its descendants.
-- Copy/paste builds, character setups, simulation stats, or the whole library between the addon and
-  web app. Addon whispers also support clickable receipts.
-- Simple and advanced per-use damage/healing estimates with editable assumptions. These estimates do
-  not model a complete combat rotation.
-
-Sharing formats: **FT1** for one build, **FC1** for character setup, **FS1** for simulation stats,
-and **FL1** for the whole saved library. Import previews and validates the string before loading.
-Export FL1 periodically as a backup.
+To update, replace the addon folder. Keep your `WTF` folder—it contains your saved builds. See the
+[addon guide](addon/ForeverTalents/README.txt) for controls and sharing.
 
 ## Web and mobile
 
-The web app runs the same Lua engine and catalog as the addon. It works offline after its first
-successful cache installation and can be installed from a supported browser. Saves stay on your
-device; there is no account or cloud service. Export your library before clearing browser data or
-switching sites.
+The web app uses the same talent rules and data. Install it from your browser and use it offline
+once it says **Ready offline**. Saves stay on your device; export your library to back it up or move
+it between devices. No account is needed.
 
-The browser imports character snapshots captured in the addon. Reading live WoW stats/talents and
-sending game whispers require the in-game client. See the [web guide](web/README.md) for
-installation and deployment details.
+[Web guide](web/README.md) · [GitHub Pages hosting](docs/HOSTING.md)
 
-## Develop
+## Screenshots
 
-Requirements: Node.js 22.12+ or 24+, pnpm 11.19.0, Python 3.11+, Pillow, and Lua 5.1 with `luac5.1`.
-Python tooling can be installed in a virtual environment with `pip install -r requirements-dev.txt`.
+Desktop web app:
 
-```sh
-pnpm install --frozen-lockfile
-pnpm dev
-pnpm verify
-pnpm build
-python3 tools/package_addon.py
-python3 tools/check_package.py
-```
+![Desktop planner with talent trees, skill highlights and checkpoints](docs/screenshots/desktop.jpg)
 
-`pnpm build` creates the static site in `web/dist/` and its ZIP in `dist/`. `package_addon.py`
-creates both a versioned ZIP and `ForeverTalents.zip`. No build tools are needed by users of either
-packaged application.
+<details>
+<summary>Mobile web app</summary>
 
-Edit shared behavior in `core/lua/`, and catalog content in `data/catalog.json`. Build commands
-generate platform copies; do not edit those copies directly. See [development guidance](AGENTS.md),
-[feature ownership](docs/FEATURE-PARITY.md), and [data documentation](docs/DATA.md). Addon updates
-must also update the PWA, including its phone layouts.
+<p><img src="docs/screenshots/mobile.jpg" width="390" alt="Mobile planner with tree tabs, rank controls and skill highlights"></p>
 
-## Data and license
+</details>
 
-The bundled snapshot covers Forever 1.60.1, build 69876, collected October 4, 2026. Later game
-patches may differ. The code is MIT licensed; game data and artwork retain their owners' rights. See
-[LICENSE.txt](LICENSE.txt) and [NOTICE.txt](NOTICE.txt). Third-party runtime licenses are included
-in web builds.
+## Development and license
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, builds and tests.
+
+Code is [MIT licensed](LICENSE.txt). Game data and artwork retain their owners' rights; see
+[NOTICE.txt](NOTICE.txt). The bundled data covers Forever **1.60.1**. Damage and healing results are
+estimates for individual skill uses.

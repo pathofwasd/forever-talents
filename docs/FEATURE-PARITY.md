@@ -15,6 +15,7 @@
 | Browser object/table adaptation, whitelisted engine calls                 | `web/lua/bridge.lua`                                                                 |
 | Shared module copies, engine hashes, local WASM/icon assets               | `tools/sync_core.py`                                                                 |
 | Atomic offline cache, update lifecycle and static archive                 | `tools/build_pwa.mjs`                                                                |
+| GitHub Pages verification, build and manual deployment                    | `.github/workflows/pages.yml`; setup in `docs/HOSTING.md`                            |
 | Code license and content ownership                                        | Root NOTICE/LICENSE copied into addon and PWA                                        |
 
 ## Features required in both interfaces
@@ -52,6 +53,6 @@ it is not silently added to class builds.
 6. Keep version/data tag aligned and update release notes. Back up installed addon files outside
    AddOns before replacing code; never rewrite player SavedVariables.
 
-A release is incomplete if an applicable addon feature is stale in the PWA. No publishing is
-automatic. Static hosting can later distribute PWA updates without users downloading a new ZIP,
-while addon releases remain ordinary ZIPs.
+A release is incomplete if an applicable addon feature is stale in the PWA. The GitHub Pages
+workflow publishes on manual request. Hosted PWA updates use the offline cache lifecycle; addon
+releases are distributed as ZIPs.

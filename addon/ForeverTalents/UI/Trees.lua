@@ -98,8 +98,7 @@ function UI.CreateTrees(parent)
         fallback:SetAllPoints()
         fallback:SetTexture("Interface\\AddOns\\ForeverTalents\\Media\\Tree" .. i .. ".tga")
         panel.art = {}
-        -- Classic backgrounds consist of four client texture tiles. Keep the
-        -- authentic art and actual grid, rather than flattening into a list.
+        -- Assemble the four Classic background tiles at their original proportions.
         local left, top = 244 * 256 / 300, 410 * 256 / 331
         local tiles = {
             { "TopLeft", 0, 0, left, top },

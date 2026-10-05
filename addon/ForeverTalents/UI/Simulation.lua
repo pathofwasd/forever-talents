@@ -305,8 +305,7 @@ function UI.SimulationDialog(skill, rank)
     f.state = Sim.State(S.db.settings.scenario)
     f.state, f.statsNote =
         FT.Snapshot.ForSkill(FT.Snapshot.Current(S.View()), skill, rank, S.View())
-    -- Scaling and base overrides are spell-specific and never carried blindly
-    -- from the previous skill. Shared character stats and target states persist.
+    -- Reset spell-specific overrides; retain character stats and target conditions.
     if not S.db.settings.statsProfile or S.db.settings.statsProfile.skillName ~= skill.name then
         f.state.coefficient, f.state.dotCoefficient, f.state.manual = nil, nil, false
     end

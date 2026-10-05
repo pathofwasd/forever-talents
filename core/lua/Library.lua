@@ -151,8 +151,7 @@ function L.Decode(code)
     then
         return nil, "Invalid library structure."
     end
-    -- Reuse the store's full validation/recovery, but reject damaged exports
-    -- rather than silently throwing away profiles during a merge.
+    -- Validate through the store, rejecting any export that requires recovery.
     local old = {
         db = S.db,
         classID = S.classID,

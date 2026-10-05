@@ -169,8 +169,7 @@ function M.Remove(build, id, all)
     if not found then
         return nil, "No points are spent in this talent."
     end
-    -- Replaying the retained order proves both the final allocation and every
-    -- leveling step remain legal. Never pop an unrelated last point.
+    -- Validate every leveling step after removing the selected point.
     local ok, why = M.Validate(result)
     if not ok then
         return nil, "Remove dependent points first. " .. why

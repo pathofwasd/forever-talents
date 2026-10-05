@@ -143,7 +143,7 @@ Settings controls size, position and the minimap button. The window fits the
 screen automatically. Drag its title to move it; drag the minimap button to
 move that button around the minimap. Escape closes dialogs/window.
 
-DATA AND VALIDATION
+DATA
 Bundled snapshot: 2026-10-04, Forever 1.60.1 build 69876.
 9 classes, 27 trees, 466 talents, 1,314 talent ranks, 1,519 skill-rank records,
 10 races, 604 icons, 17 pet families, 750 beasts, 102 pet skill records,
@@ -151,10 +151,6 @@ and 3 perk trees. The addon runs entirely from its bundled Lua and textures.
 Seven class-skill records and the pet skill table have no captured description;
 their spell IDs allow a client-description fallback when the client exposes it.
 
-Rules, data coverage, share round trips, persistence, branch navigation,
-simulation math and UI callbacks were tested in Lua 5.1 with a WoW API
-harness. Browser layout previews render the actual Lua widget geometry.
-Live-client visual, communication, and API verification is still pending.
 The snapshot can differ from a later game patch. Source and verification
 instructions live in the development repository.
 

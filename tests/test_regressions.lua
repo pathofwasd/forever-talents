@@ -23,8 +23,7 @@ local function isolated(cid, name, rank, skill, parsed, state)
     return Sim.Modifiers(build, skill, parsed, state or Sim.Defaults())
 end
 
--- These checks exercise real multi-effect descriptions, not a copy of the
--- implementation. Each allocation isolates one talent's numerical effect.
+-- Use multi-effect descriptions to isolate each talent's numerical effect.
 local druid = FT.Skills.Prepare(11)
 local moon = druid.byName.Moonfire
 local moonParsed = Sim.Parse(moon.ranks[1])

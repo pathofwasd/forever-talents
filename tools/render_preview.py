@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Render widget snapshots from the Lua test harness for geometry/visual review.
+"""Render Lua test-harness widget snapshots for layout inspection.
 
-This is a QA view, not a second implementation of the talent calculator.
-Native WoW texture art is supplied by the game and is absent in this browser.
+Client-supplied WoW textures are unavailable in these previews.
 """
 
 from pathlib import Path

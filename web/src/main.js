@@ -632,8 +632,7 @@ function changeContext() {
   hovered = null;
   treeTab = 0;
 }
-// Delegate DOM events so rerenders retain behavior and storage always follows
-// the shared engine, without a second JS model of builds or checkpoints.
+// Event delegation survives rerenders; build changes go through the shared engine.
 document.addEventListener('click', async (event) => {
   const node = event.target.closest('[data-action]');
   if (!node) {
