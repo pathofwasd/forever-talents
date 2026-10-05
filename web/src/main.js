@@ -80,12 +80,16 @@ function order() {
 }
 function highlight() {
   const ids = new Set();
+  if (state.simpleView) return ids;
   for (const skill of [...selected.values(), ...(hovered ? [hovered] : [])])
     for (const relation of list(skill.related)) ids.add(relation.id);
   return ids;
 }
 function skillKey(s) {
   return `${s.kind}:${s.name}`;
+}
+function currentSkillFilter() {
+  return state.simpleView && skillFilter !== 'now' ? 'all' : skillFilter;
 }
 function render() {
   const focus = document.activeElement;
@@ -96,9 +100,10 @@ function render() {
     race = catalog.races[state.view.raceID],
     allTrees = list(c.trees),
     points = order().length;
-  app.innerHTML = `<header class="topbar"><a class="brand" href="./" aria-label="Forever Talents home"><img src="./icon.svg" alt="" width="36" height="36"><span>Forever <strong>Talents</strong><small><span class="desktop-brand">PLAN YOUR JOURNEY</span><span class="mobile-brand">${esc(status)}</span></small></span></a><div class="top-actions"><span class="connection" id="offline-status">${esc(status)}</span>${btn('Install', 'install', '', 'quiet')}${btn('<svg class="character-button-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="character-button-label">Character</span>', 'character-sheet', 'aria-label="Character" title="Character stats and equipment"', 'quiet character-button')}${btn('Guide', 'help', '', 'quiet')}${btn('Import', 'import')}${btn('Share', 'share', '', 'primary')}</div></header>
+  app.dataset.simpleView = String(state.simpleView);
+  app.innerHTML = `<header class="topbar"><a class="brand" href="./" aria-label="Forever Talents home"><img src="./icon.svg" alt="" width="36" height="36"><span>Forever <strong>Talents</strong><small><span class="desktop-brand">PLAN YOUR JOURNEY</span><span class="mobile-brand">${esc(status)}</span></small></span></a><div class="top-actions"><span class="connection" id="offline-status">${esc(status)}</span>${btn('Install', 'install', '', 'quiet')}${btn('<svg class="character-button-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span class="character-button-label">Character</span>', 'character-sheet', 'data-full-view aria-label="Character" title="Character stats and equipment"', 'quiet character-button')}${btn('Guide', 'help', '', 'quiet')}${btn('Import', 'import', 'data-full-view')}${btn('Share', 'share', 'data-full-view', 'primary')}</div></header>
   <div id="update-banner" class="update-banner" hidden>A new version is ready. Your saved builds will be kept. ${btn('Update now', 'update', '', 'primary')}</div>
-  <main><section class="controls" aria-label="Character and build controls"><div class="class-choices" aria-label="Class">${list(
+  <main><div class="view-options"><label class="view-toggle" title="Show class, talent trees and skill levels; keep your saved builds and character settings."><input id="simple-view" type="checkbox" ${state.simpleView ? 'checked' : ''} aria-describedby="view-caption"><span>Simple view</span></label><span id="view-caption" class="sr-only">Hide extra tools without changing your builds. Turn off to restore the full view.</span></div>${storageBlocked || state.readOnly ? `<aside class="recovery-banner callout">Saving is paused to preserve unreadable or newer browser data. ${btn('Download original saved data', 'recovery')}</aside>` : ''}<section class="controls" aria-label="Character and build controls"><div class="class-choices" aria-label="Class">${list(
     catalog.classOrder
   )
     .map((id) =>
@@ -109,39 +114,51 @@ function render() {
         Number(id) === state.view.classID ? 'class-choice active' : 'class-choice'
       )
     )
-    .join('')}</div><label class="race-select">Race<select id="race">${list(c.races)
+    .join('')}</div><label class="race-select" data-full-view>Race<select id="race">${list(c.races)
     .map(
       (id) =>
         `<option value="${id}" ${Number(id) === state.view.raceID ? 'selected' : ''}>${esc(catalog.races[id].name)}</option>`
     )
     .join(
       ''
-    )}</select></label>${btn('Race atlas', 'races', '', 'quiet')}<div class="level-controls"><label for="level">${state.auto ? 'Level' : 'Target'}</label>${btn('−', 'level-down', '', 'square', state.auto || state.preview !== undefined)}<input id="level" type="number" min="1" max="60" value="${state.viewLevel}" aria-label="Character target level" ${state.auto || state.preview !== undefined ? 'disabled' : ''}>${btn('+', 'level-up', '', 'square', state.auto || state.preview !== undefined)}${btn('Auto', 'auto', `aria-pressed="${state.auto}"`, state.auto ? 'active' : '')}</div><div class="edit-controls">${btn('↶ Undo', 'undo', '', '', !state.undo)}${btn('↷ Redo', 'redo', '', '', !state.redo)}${btn('Reset', 'reset')}</div></section>
-  <section class="hero"><div>${img(c.icon, 'hero-icon')}<div><p class="eyebrow">${esc(race.name)} · ${esc(race.faction)}</p><h1>${esc(c.name)} <span>${esc(state.build.name)}</span></h1><p class="spec-counts">${allTrees.map((t) => `<span class="spec-item">${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b></span>`).join('<span class="spec-divider">/</span>')}</p></div></div><div class="hero-level"><strong>Level ${state.viewLevel}</strong><span>${points} / ${state.budget} points · ${Math.max(0, state.budget - points)} left</span><small>${state.preview !== undefined ? 'Leveling preview · editing paused' : state.auto ? 'Auto follows spent talents' : `Spent talents require level ${state.requiredLevel}`}</small></div></section>
+    )}</select></label>${btn('Race atlas', 'races', 'data-full-view', 'quiet')}<div class="level-controls"><label for="level">${state.auto ? 'Level' : 'Target'}</label>${btn('−', 'level-down', '', 'square', state.auto || state.preview !== undefined)}<input id="level" type="number" min="1" max="60" value="${state.viewLevel}" aria-label="Character target level" ${state.auto || state.preview !== undefined ? 'disabled' : ''}>${btn('+', 'level-up', '', 'square', state.auto || state.preview !== undefined)}${btn('Auto', 'auto', `aria-pressed="${state.auto}"`, state.auto ? 'active' : '')}</div><div class="edit-controls">${btn('↶ Undo', 'undo', '', '', !state.undo)}${btn('↷ Redo', 'redo', '', '', !state.redo)}${btn('Reset', 'reset')}</div></section>
+  <section class="hero"><div>${img(c.icon, 'hero-icon')}<div><p class="eyebrow" data-full-view>${esc(race.name)} · ${esc(race.faction)}</p><h1>${esc(c.name)} <span data-full-view>${esc(state.build.name)}</span></h1><p class="spec-counts">${allTrees.map((t) => `<span class="spec-item">${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b></span>`).join('<span class="spec-divider">/</span>')}</p></div></div><div class="hero-level"><strong>Level ${state.viewLevel}</strong><span>${points} / ${state.budget} points · ${Math.max(0, state.budget - points)} left</span><small>${state.preview !== undefined ? 'Leveling preview · editing paused' : state.auto ? 'Auto follows spent talents' : `Spent talents require level ${state.requiredLevel}`}</small></div></section>
   ${state.preview !== undefined ? `<aside class="preview-banner">Previewing point ${state.preview} of ${list(state.build.order).length}. ${btn('Full build', 'full')}${btn('Branch here', 'branch', '', 'primary')}</aside>` : ''}
-  <div class="workspace" data-panel="${panel}"><aside class="panel skills-panel" aria-label="Skills and ranks"><div class="section-heading"><h2>Skills & ranks</h2><span>${state.viewLevel} LV</span></div><p class="muted">Check to keep talent highlights.</p><input id="skill-search" type="search" placeholder="Search skills or effects…" value="${esc(skillQuery)}" aria-label="Search skills"><select id="skill-filter" aria-label="Skill category">${[
-    ['all', 'All skills & racials'],
-    ['now', 'Available at this level'],
-    ['talent', 'Unlocked by talents'],
-    ['racial', 'Racial traits'],
-  ]
+  <div class="workspace" data-panel="${panel}"><aside class="panel skills-panel" aria-label="Skills and ranks"><div class="section-heading"><h2>Skills & ranks</h2><span>${state.viewLevel} LV</span></div><p class="muted">${state.simpleView ? 'Click a skill for unlock and upgrade levels.' : 'Check to keep talent highlights.'}</p><input id="skill-search" type="search" placeholder="Search skills or effects…" value="${esc(skillQuery)}" aria-label="Search skills"><select id="skill-filter" aria-label="Skill category">${(state.simpleView
+    ? [
+        ['all', 'All class skills'],
+        ['now', 'Available at this level'],
+      ]
+    : [
+        ['all', 'All skills & racials'],
+        ['now', 'Available at this level'],
+        ['talent', 'Unlocked by talents'],
+        ['racial', 'Racial traits'],
+      ]
+  )
     .map(
       ([key, label]) =>
-        `<option value="${key}" ${skillFilter === key ? 'selected' : ''}>${label}</option>`
+        `<option value="${key}" ${currentSkillFilter() === key ? 'selected' : ''}>${label}</option>`
     )
     .join(
       ''
-    )}</select><div class="skill-list" id="skill-list"></div>${btn('Clear highlights', 'clear-highlights', '', 'wide')}</aside>
-  <section class="talents-panel" aria-label="Talent trees"><div class="talent-heading"><h2>Talent trees</h2><input id="talent-search" type="search" placeholder="Search talents or effects…" value="${esc(talentQuery)}" aria-label="Search talents"></div><nav class="tree-tabs" aria-label="Talent tree">${allTrees.map((t, i) => btn(`${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b>`, 'tree-tab', `data-index="${i}" aria-pressed="${i === treeTab}"`, i === treeTab ? 'active' : '')).join('')}</nav><div class="trees">${allTrees.map((tree, i) => renderTree(tree, i)).join('')}</div><p class="tree-hint"><span class="desktop-hint">Click +1 · right-click −1 · Shift fills / clears · Ctrl inspects</span><span class="touch-hint">Tap a talent to read it, then choose Add or Remove.</span></p><div class="racials"><h2>Racial traits</h2><div id="racial-list"></div></div></section>
-  <aside class="panel builds-panel" aria-label="Build library and talent order"><div class="section-heading"><h2>Your journey</h2><span class="saved-dot">${state.readOnly || storageBlocked ? 'Saving paused' : 'Autosaved'}</span></div><div class="build-actions">${btn('Save build', 'save', '', 'primary')}${btn('Checkpoint', 'checkpoint', '', '', !state.activeProfile)}</div><div id="history-graph"></div><div class="section-heading order-heading"><h3>Talent order</h3><span>${list(state.build.order).length} ${list(state.build.order).length === 1 ? 'step' : 'steps'}</span></div><div class="order-list">${renderOrder()}</div>${btn('Library & sync', 'library', '', 'wide')}</aside>
-  <section class="panel more-panel"><h2>Atlas & tools</h2>${storageBlocked || state.readOnly ? `<p class="callout">Saving is paused to preserve unreadable or newer browser data. Export this session’s work as sharing strings. ${btn('Download original saved data', 'recovery')}</p>` : ''}<p class="muted">Your whole library lives on this device. Use Library & sync to move it between devices and the addon.</p><div class="tool-grid">${btn('Library & sync', 'library')}${btn('Character & simulator', 'character-sheet')}${btn('Race & class atlas', 'races')}${btn('Hunter pet atlas', 'pets')}${btn('Forever perks', 'perks')}${btn('How to use', 'help')}${btn('Install app', 'install')}</div><p class="muted">Forever ${esc(catalog.meta.build)} · data ${esc(catalog.meta.tag)} · v${esc(catalog.version)}</p><p><a href="./NOTICE.txt" target="_blank" rel="noopener">Data & artwork credits</a> · <a href="./LICENSE.txt" target="_blank" rel="noopener">License</a> · <a href="./THIRD-PARTY.txt" target="_blank" rel="noopener">Runtime credits</a></p></section></div>
-  <footer><span>Forever ${esc(catalog.meta.build)} · v${esc(catalog.version)} · data ${esc(catalog.meta.tag)}</span><div>${btn('Pet atlas', 'pets', '', 'quiet')}${btn('Perks', 'perks', '', 'quiet')}${btn('Library & sync', 'library', '', 'quiet')}</div><p class="project-notice"><span>Free, unofficial community project. Not affiliated with or endorsed by Blizzard Entertainment.</span><span>World of Warcraft artwork and text © Blizzard Entertainment and respective rights holders.</span><a href="./NOTICE.txt" target="_blank" rel="noopener">Copyright & ownership notice <span class="notice-link-hint">(opens in a new tab)</span></a></p></footer></main>
-  <nav class="mobile-nav" aria-label="Calculator sections">${[
-    ['trees', '◇', 'Trees'],
-    ['skills', '☷', 'Skills'],
-    ['builds', '⑂', 'Builds'],
-    ['more', '⋯', 'More'],
-  ]
+    )}</select><div class="skill-list" id="skill-list"></div>${btn('Clear highlights', 'clear-highlights', 'data-full-view', 'wide')}</aside>
+  <section class="talents-panel" aria-label="Talent trees"><div class="talent-heading"><h2>Talent trees</h2><input id="talent-search" type="search" placeholder="Search talents or effects…" value="${esc(talentQuery)}" aria-label="Search talents"></div><nav class="tree-tabs" aria-label="Talent tree">${allTrees.map((t, i) => btn(`${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b>`, 'tree-tab', `data-index="${i}" aria-pressed="${i === treeTab}"`, i === treeTab ? 'active' : '')).join('')}</nav><div class="trees">${allTrees.map((tree, i) => renderTree(tree, i)).join('')}</div><p class="tree-hint"><span class="desktop-hint">Click +1 · right-click −1 · Shift fills / clears · Ctrl inspects</span><span class="touch-hint">Tap a talent to read it, then choose Add or Remove.</span></p><div class="racials" data-full-view><h2>Racial traits</h2><div id="racial-list"></div></div></section>
+  <aside class="panel builds-panel" data-full-view aria-label="Build library and talent order"><div class="section-heading"><h2>Your journey</h2><span class="saved-dot">${state.readOnly || storageBlocked ? 'Saving paused' : 'Autosaved'}</span></div><div class="build-actions">${btn('Save build', 'save', '', 'primary')}${btn('Checkpoint', 'checkpoint', '', '', !state.activeProfile)}</div><div id="history-graph"></div><div class="section-heading order-heading"><h3>Talent order</h3><span>${list(state.build.order).length} ${list(state.build.order).length === 1 ? 'step' : 'steps'}</span></div><div class="order-list">${renderOrder()}</div>${btn('Library & sync', 'library', '', 'wide')}</aside>
+  <section class="panel more-panel" data-full-view><h2>Atlas & tools</h2><p class="muted">Your whole library lives on this device. Use Library & sync to move it between devices and the addon.</p><div class="tool-grid">${btn('Library & sync', 'library')}${btn('Character & simulator', 'character-sheet')}${btn('Race & class atlas', 'races')}${btn('Hunter pet atlas', 'pets')}${btn('Forever perks', 'perks')}${btn('How to use', 'help')}${btn('Install app', 'install')}</div><p class="muted">Forever ${esc(catalog.meta.build)} · data ${esc(catalog.meta.tag)} · v${esc(catalog.version)}</p><p><a href="./NOTICE.txt" target="_blank" rel="noopener">Data & artwork credits</a> · <a href="./LICENSE.txt" target="_blank" rel="noopener">License</a> · <a href="./THIRD-PARTY.txt" target="_blank" rel="noopener">Runtime credits</a></p></section></div>
+  <footer><span>Forever ${esc(catalog.meta.build)} · v${esc(catalog.version)} · data ${esc(catalog.meta.tag)}</span><div data-full-view>${btn('Pet atlas', 'pets', '', 'quiet')}${btn('Perks', 'perks', '', 'quiet')}${btn('Library & sync', 'library', '', 'quiet')}</div><p class="project-notice"><span>Free, unofficial community project. Not affiliated with or endorsed by Blizzard Entertainment.</span><span>World of Warcraft artwork and text © Blizzard Entertainment and respective rights holders.</span><a href="./NOTICE.txt" target="_blank" rel="noopener">Copyright & ownership notice <span class="notice-link-hint">(opens in a new tab)</span></a></p></footer></main>
+  <nav class="mobile-nav" aria-label="Calculator sections">${(state.simpleView
+    ? [
+        ['trees', '◇', 'Trees'],
+        ['skills', '☷', 'Skills'],
+      ]
+    : [
+        ['trees', '◇', 'Trees'],
+        ['skills', '☷', 'Skills'],
+        ['builds', '⑂', 'Builds'],
+        ['more', '⋯', 'More'],
+      ]
+  )
     .map(([id, icon, label]) =>
       btn(
         `<span>${icon}</span>${label}`,
@@ -195,12 +212,12 @@ function renderTree(tree, i) {
     )}</div><div class="tree-bottom">${btn('Reset tree', 'reset-tree', `data-id="${tree.id}"`, 'wide')}</div></article>`;
 }
 function renderSkills() {
-  const entries = list(engine.call('skills', { query: skillQuery, filter: skillFilter }));
+  const entries = list(engine.call('skills', { query: skillQuery, filter: currentSkillFilter() }));
   $('#skill-list').innerHTML = entries.length
     ? entries
         .map(
           ({ skill: s, current }) =>
-            `<div class="skill-row"><input type="checkbox" data-skill-check="${esc(s.name)}" aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}">${img(s.icon)}<span><strong>${esc(s.name)}</strong><small>${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${current ? esc(current.label || 'available') : 'not yet available'}</small></span></button></div>`
+            `<div class="skill-row"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}">${img(s.icon)}<span><strong>${esc(s.name)}</strong><small>${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${current ? esc(current.label || 'available') : 'not yet available'}</small></span></button></div>`
         )
         .join('')
     : '<p class="empty">No matches. Try another effect or category.</p>';
@@ -299,12 +316,21 @@ function showTalent(id) {
       .map((r, i) => `<p><b>Rank ${i + 1}</b><br>${esc(r.text)}</p>`)
       .join(
         ''
-      )}</details>${related.length ? `<h3>Related skills</h3><div class="chips">${related.map((n) => btn(esc(n), 'related-skill', `data-name="${esc(n)}"`)).join('')}</div>` : ''}`
+      )}</details>${!state.simpleView && related.length ? `<h3>Related skills</h3><div class="chips">${related.map((n) => btn(esc(n), 'related-skill', `data-name="${esc(n)}"`)).join('')}</div>` : ''}`
   );
 }
 function showSkill(name) {
   try {
     const s = engine.call('skill', { name });
+    if (state.simpleView) {
+      const progression = engine.call('skillLevels', { name });
+      const levels = list(progression.ranks);
+      openDialog(
+        `${s.name} · Skill levels`,
+        `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3></div>${s.unlock ? `<p class="muted">Unlocked by ${esc(s.unlock.name)} in ${esc(s.unlock.treeName)}. Earliest talent level ${progression.unlockLevel}.</p>` : `<p class="muted">First learned at level ${levels[0]?.level ?? s.firstLevel}.</p>`}<div class="skill-levels">${levels.length ? levels.map((r) => `<div class="skill-level"><b>${esc(r.label)}</b><span>Level ${r.level}${r.toLevel ? `–${r.toLevel}` : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}</span></div>`).join('') : '<p class="empty">No trainable rank levels recorded.</p>'}</div>${s.unlock ? '<p class="muted">Talent skills also require their talent to be learned.</p>' : ''}`
+      );
+      return;
+    }
     hovered = s;
     paintHighlights();
     const ranks = list(s.ranks);
@@ -448,6 +474,13 @@ function showRaces() {
   );
 }
 function showHelp() {
+  if (state.simpleView) {
+    openDialog(
+      'Simple view',
+      '<p>Pick a class and fill its talent trees. Auto follows spent points; Undo / Redo restore edits. On phones, tap a talent, then choose Add or Remove.</p><p>Click a skill to see its unlock level and rank upgrade levels. The availability filter follows the level and talents in your current build.</p><p>Your class drafts still autosave on this device. Turn off <b>Simple view</b> above the class picker to restore race, character, sharing and checkpoint tools. Your saved builds and character settings are kept.</p>'
+    );
+    return;
+  }
   openDialog(
     'A quick guide',
     `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Tap a talent-order step to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. Open Character in the addon to capture the logged-in character.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
@@ -833,6 +866,12 @@ document.addEventListener('change', async (event) => {
     for (const [key, s] of selected) if (s.kind === 'racial') selected.delete(key);
     act('race', { raceID: Number(t.value) });
   }
+  if (t.id === 'simple-view') {
+    if (t.checked && !['trees', 'skills'].includes(panel)) panel = 'trees';
+    hovered = null;
+    closeDialog();
+    act('simpleView', { enabled: t.checked });
+  }
   if (t.id === 'level') act('level', { level: Number(t.value) });
   if (t.id === 'skill-filter') {
     skillFilter = t.value;
@@ -865,7 +904,7 @@ document.addEventListener('change', async (event) => {
 document.addEventListener('mouseover', (event) => {
   if (matchMedia('(max-width: 1050px), (pointer: coarse)').matches) return;
   const s = event.target.closest('[data-skill]');
-  if (s) {
+  if (s && !state.simpleView) {
     hovered = engine.call('skill', { name: s.dataset.skill });
     paintHighlights();
   }
@@ -976,7 +1015,7 @@ try {
   } catch {
     storageBlocked = true;
     toast(
-      'Saved browser data could not be read. Autosaving is paused to preserve it; More contains the recovery download.',
+      'Saved browser data could not be read. Autosaving is paused to preserve it. Use the recovery download above the calculator.',
       true
     );
   }

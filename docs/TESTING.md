@@ -34,6 +34,12 @@ drafts, saved profiles, and checkpoint branches remain. Stop the local server an
 offline startup. Back up an existing library before using it for manual tests; prefer a separate
 test origin.
 
+Check Classic / Simple view in both interfaces: all classes and talent edits still work, skills show
+only unlock/upgrade levels, and race/racials and extra tools disappear. Turn it off and confirm the
+library, gear, selected highlights and full skill tools return. Enter from a leveling preview and
+confirm editing resumes. Verify the preference persists locally, remains independent of FL1 library
+imports, and never hides browser recovery controls.
+
 ## Native release checks
 
 Use the Forever client with the matching interface version. Check window fitting at multiple
@@ -69,3 +75,23 @@ history. With the local server stopped, reload and calculation still worked with
 
 Live WoW character/item capture and native visual behavior still require in-client verification; API
 fixtures and browser screenshots do not establish live-client compatibility.
+
+## Version 1.2.1 validation
+
+Passed 50,010 native assertions, five browser-engine tests, exact native/WASM parity, generated-file
+drift checks, the production build, format/lint checks and addon archive validation. Reduced-view
+tests cover all nine classes, live skill rank progression, talent unlock requirements, local
+preference persistence, preview exit, legal edits, undo/redo and full-view restoration. FT1/FC1/FL1
+strings remain identical when the view changes; library imports keep the recipient's preference.
+
+Production browser checks covered 320, 375, 600, 768, 1050, 1366 and 1600 px widths, plus 844×390
+landscape. All class buttons stayed visible without horizontal overflow. Phone navigation retained
+Trees / Skills, explicit talent edits and readable level-only skill dialogs. Keyboard toggling,
+focus restoration, invalid allocation rejection, Auto and Undo/Redo worked. Switching the view
+preserved the exact full-library export. Unreadable and newer save fixtures retained their original
+data and exposed recovery controls in Simple view.
+
+Accepting the final service-worker update preserved saved branches, character gear and the view
+preference. With the preview server paused, reload and skill rank inspection still worked. Native
+mock geometry was reviewed for the compact window, Settings and skill-level dialog; live WoW visual
+behavior remains unverified.

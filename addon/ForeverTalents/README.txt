@@ -1,4 +1,4 @@
-FOREVER TALENTS 1.2.0
+FOREVER TALENTS 1.2.1
 An offline talent planner for World of Warcraft Forever (Interface 16001).
 Free, unofficial community project. Not affiliated with or endorsed by
 Blizzard Entertainment. Game artwork and text belong to their rights holders.
@@ -13,6 +13,17 @@ INSTALL
    under WoW's Key Bindings > Forever Talents.
 
 No other addon or internet connection is required.
+
+CLASSIC MODE
+Settings > Classic mode reduces the planner to class, talents and skill levels.
+The window becomes smaller. Race, racials, character/simulator, sharing and
+checkpoint controls are hidden. Click a skill for its unlock and upgrade levels.
+Talent descriptions, search, Auto level and Undo/Redo keep working normally.
+Class drafts still save between sessions. Uncheck Classic mode to restore all
+tools with your builds, checkpoints, race and character settings intact.
+The preference stays on this device and is not included in library sharing.
+Use /ftc classic to toggle it, or /ftc full to return to the full view.
+Classic mode uses the same current Forever talents and rules.
 
 FIRST BUILD
 Choose a class icon and an available race. Races opens the complete class/race

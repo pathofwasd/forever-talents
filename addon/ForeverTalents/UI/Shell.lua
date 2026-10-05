@@ -14,8 +14,65 @@ function UI.Fit()
     if not UI.frame then
         return
     end
-    local fit = math.min((UIParent:GetWidth() - 24) / WIDTH, (UIParent:GetHeight() - 24) / HEIGHT)
+    local fit = math.min(
+        (UIParent:GetWidth() - 24) / UI.frame:GetWidth(),
+        (UIParent:GetHeight() - 24) / UI.frame:GetHeight()
+    )
     UI.frame:SetScale(math.min(S.db.settings.scale or 1, fit))
+end
+
+function UI.RefreshViewMode()
+    local simple = S.SimpleView()
+    if UI.lastSimpleView == simple then
+        return
+    end
+    UI.lastSimpleView = simple
+    local width, height = simple and 1028 or WIDTH, simple and 758 or HEIGHT
+    UI.frame:SetSize(width, height)
+    UI.drag:SetWidth(width - (simple and 80 or 430))
+    UI.toolbar:SetWidth(width - 32)
+    UI.hero:SetWidth(width - 32)
+    for _, control in ipairs(UI.fullControls) do
+        control:SetShown(not simple)
+    end
+    for _, item in ipairs({
+        { UI.levelLabel, 653, -16 },
+        { UI.levelMinus, 706, -8 },
+        { UI.levelInput, 734, -8 },
+        { UI.levelPlus, 776, -8 },
+        { UI.levelAuto, 804, -8 },
+        { UI.undo, 862, -8 },
+        { UI.redo, 926, -8 },
+        { UI.reset, 990, -8 },
+    }) do
+        item[1]:ClearAllPoints()
+        item[1]:SetPoint("TOPLEFT", item[2] - (simple and 273 or 0), item[3])
+    end
+    for _, item in ipairs({ { UI.heroLevel, -10 }, { UI.heroBudget, -39 } }) do
+        item[1]:ClearAllPoints()
+        item[1]:SetPoint("TOPRIGHT", -16, item[2])
+        item[1]:SetWidth(simple and 226 or 282)
+    end
+    for _, item in ipairs({ { UI.heroTrees, -16 }, { UI.heroHint, -39 } }) do
+        item[1]:ClearAllPoints()
+        item[1]:SetPoint("TOPLEFT", simple and 300 or 376, item[2])
+        item[1]:SetWidth(simple and 434 or (item[1] == UI.heroTrees and 512 or 572))
+    end
+    UI.status:ClearAllPoints()
+    UI.status:SetPoint("TOPLEFT", 22, -(height - 23))
+    UI.status:SetWidth(width - 150)
+    UI.closeButton:ClearAllPoints()
+    UI.closeButton:SetPoint("TOPRIGHT", -20, -13)
+    UI.settingsButton:ClearAllPoints()
+    UI.settingsButton:SetPoint("BOTTOMRIGHT", -16, 8)
+    if UI.dialogs and not (UI.dialogs.settings and UI.dialogs.settings:IsVisible()) then
+        UI.CloseDialog()
+    end
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
+    UI.hoverSkill = nil
+    UI.Fit()
 end
 
 local function changeLevel(delta)
@@ -42,6 +99,7 @@ function UI.Create()
     UI.frame = f
     table.insert(UISpecialFrames, "ForeverTalentsWindow")
     local drag = CreateFrame("Frame", nil, f)
+    UI.drag = drag
     drag:SetPoint("TOPLEFT", 1, -1)
     drag:SetSize(WIDTH - 430, 50)
     drag:EnableMouse(true)
@@ -64,13 +122,14 @@ function UI.Create()
     UI.shareButton = W.Button(f, "Share", 1024, -13, 90, function()
         UI.ShareDialog()
     end, false, 31)
-    W.Button(f, "Import", 1126, -13, 86, function()
+    UI.importButton = W.Button(f, "Import", 1126, -13, 86, function()
         UI.ImportDialog()
     end, false, 31)
-    W.Button(f, "x", 1224, -13, 36, function()
+    UI.closeButton = W.Button(f, "x", 1224, -13, 36, function()
         f:Hide()
     end, false, 31)
     local toolbar = W.Panel(f, 16, -58, 1248, 44, { 0.069, 0.081, 0.096 })
+    UI.toolbar = toolbar
     UI.classButtons = {}
     for i, cid in ipairs(FT.classOrder) do
         local c = M.Class(cid)
@@ -97,7 +156,7 @@ function UI.Create()
         end
         W.Menu(self, options, 286)
     end)
-    W.Button(toolbar, "Races", 592, -8, 52, UI.RaceDialog)
+    UI.racesButton = W.Button(toolbar, "Races", 592, -8, 52, UI.RaceDialog)
     UI.levelLabel = W.Text(toolbar, "Target", 653, -16, 52, 11, W.colors.muted)
     UI.levelMinus = W.Button(toolbar, "−", 706, -8, 24, function()
         changeLevel(-1)
@@ -153,9 +212,10 @@ function UI.Create()
         UI.Status("Build reset. Undo restores it.")
     end)
     UI.reset.tip = "Clear all trees. Your checkpoints stay saved; Undo restores this draft."
-    W.Button(toolbar, "Character", 1066, -8, 94, UI.CharacterSheet)
-    W.Button(toolbar, "Help", 1168, -8, 72, UI.HelpDialog)
+    UI.characterButton = W.Button(toolbar, "Character", 1066, -8, 94, UI.CharacterSheet)
+    UI.helpButton = W.Button(toolbar, "Help", 1168, -8, 72, UI.HelpDialog)
     local hero = W.Panel(f, 16, -112, 1248, 62, { 0.067, 0.097, 0.123 })
+    UI.hero = hero
     UI.heroIcon = W.Icon(hero, "class_druid", 12, -8, 46)
     UI.heroClass = W.Text(hero, "", 74, -10, 260, 22)
     UI.heroRace = W.Text(hero, "", 75, -39, 310, 11, W.colors.muted)
@@ -177,6 +237,7 @@ function UI.Create()
     UI.CreateTrees(f)
     UI.CreateHistory(f)
     local racial = W.Panel(f, 16, -728, 1248, 54)
+    UI.racialPanel = racial
     UI.racialTitle = W.Text(racial, "", 12, -12, 200, 11, W.colors.muted)
     UI.racialButtons = {}
     for i = 1, 4 do
@@ -208,7 +269,18 @@ function UI.Create()
         11,
         W.colors.muted
     )
-    W.Button(f, "Settings", 1172, -792, 92, UI.SettingsDialog, false, 24)
+    UI.settingsButton = W.Button(f, "Settings", 1172, -792, 92, UI.SettingsDialog, false, 24)
+    UI.fullControls = {
+        UI.saveButton,
+        UI.shareButton,
+        UI.importButton,
+        UI.raceButton,
+        UI.racesButton,
+        UI.characterButton,
+        UI.helpButton,
+        UI.historyPanel,
+        UI.racialPanel,
+    }
     f:SetScript("OnShow", function()
         UI.Fit()
         UI.Refresh()
@@ -273,7 +345,7 @@ function UI.Create()
             f:SetPoint(p.point, UIParent, p.relativePoint, p.x, p.y)
         end
     end
-    UI.Fit()
+    UI.RefreshViewMode()
     f:Hide()
 end
 
@@ -281,6 +353,7 @@ function UI.Refresh()
     if not UI.frame then
         return
     end
+    UI.RefreshViewMode()
     if UI.menu then
         UI.menu:Hide()
     end
@@ -304,8 +377,11 @@ function UI.Refresh()
     local d = S.Draft()
     local p = S.ActiveProfile()
     UI.buildName:SetText(
-        FT.SafeText(p and p.name or build.name, 48)
-            .. (S.Dirty() and "  • draft" or "  • saved")
+        S.SimpleView() and "Classic mode • class, talents and skill levels"
+            or (
+                FT.SafeText(p and p.name or build.name, 48)
+                .. (S.Dirty() and "  • draft" or "  • saved")
+            )
     )
     UI.saveButton:SetText(p and "Checkpoint" or "Save build")
     for id, b in pairs(UI.classButtons) do
@@ -330,7 +406,7 @@ function UI.Refresh()
     UI.heroIcon:SetTexture("Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. c.icon .. ".tga")
     UI.heroClass:SetText(c.name)
     local race = FT.Data.races[build.raceID]
-    UI.heroRace:SetText(race.name .. " • " .. race.faction)
+    UI.heroRace:SetText(S.SimpleView() and "Classic mode" or (race.name .. " • " .. race.faction))
     local _, trees = M.Counts(view)
     local summary = {}
     for _, tree in ipairs(c.trees) do
@@ -338,7 +414,8 @@ function UI.Refresh()
     end
     UI.heroTrees:SetText(table.concat(summary, "  /  "))
     UI.heroHint:SetText(
-        S.preview and "Level preview • Full build returns to your saved draft"
+        S.SimpleView() and "Click a skill for its unlock and upgrade levels"
+            or S.preview and "Level preview • Full build returns to your saved draft"
             or "Plan your path • Every point keeps its place in the leveling order"
     )
     UI.heroLevel:SetText(
@@ -398,14 +475,19 @@ function UI.RefreshMinimap()
                     UI.Create()
                 end
                 UI.frame:Show()
-                UI.HelpDialog()
+                if S.SimpleView() then
+                    UI.SettingsDialog()
+                else
+                    UI.HelpDialog()
+                end
             else
                 UI.Toggle()
             end
         end)
         b:SetScript("OnEnter", function(self)
             W.Tooltip(self, "Forever Talents", {
-                "Click to open • Right click for help",
+                S.SimpleView() and "Click to open • Right click for Settings"
+                    or "Click to open • Right click for help",
                 "Drag to move this button around the minimap.",
             })
         end)

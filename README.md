@@ -12,6 +12,7 @@ collapsed. The **Source code** downloads are for developers.
 ## Features
 
 - All nine classes, original talent layouts, rank descriptions and prerequisite checks.
+- Optional Classic mode in the addon and Simple view on the web: class, talents and skill levels.
 - Search skills and racials, see rank unlock levels, and highlight related talents.
 - Track your leveling order with Auto level, undo/redo and branching checkpoints.
 - Share builds as text or through addon whispers. Transfer character stats or your entire saved
@@ -46,6 +47,18 @@ Desktop web app:
 <summary>Mobile web app</summary>
 
 <p><img src="docs/screenshots/mobile.jpg" width="390" alt="Mobile planner with tree tabs, rank controls and skill highlights"></p>
+
+</details>
+
+<details>
+<summary>Classic mode / Simple view</summary>
+
+Enable **Classic mode** in addon Settings, or check **Simple view** above the web class picker. Both
+keep class, talents and skill levels. Turn it off to restore the full interface and saved data.
+
+![Simple view with all three talent trees and the class skill list](docs/screenshots/simple-view.jpg)
+
+<p><img src="docs/screenshots/simple-view-mobile.jpg" width="390" alt="Simple view on a phone with all nine classes and Trees / Skills navigation"></p>
 
 </details>
 

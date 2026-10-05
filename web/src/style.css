@@ -356,6 +356,77 @@ h1 span {
   gap: 14px;
   align-items: start;
 }
+
+.view-options {
+  display: flex;
+  justify-content: flex-end;
+  margin: -5px 0 8px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.view-toggle:has(input:checked) {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: #1e252b;
+}
+.view-toggle:focus-within {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+.view-toggle input {
+  margin: 0;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+#app[data-simple-view='true'] [data-full-view] {
+  display: none !important;
+}
+#app[data-simple-view='true'] .mobile-nav {
+  grid-template-columns: repeat(2, 1fr);
+}
+.skill-levels {
+  margin: 20px 0;
+}
+.skill-level {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.skill-level span {
+  color: var(--gold);
+  text-align: right;
+}
+@media (min-width: 1331px) {
+  #app[data-simple-view='true'] .workspace {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+@media (max-width: 1050px) {
+  .view-toggle {
+    min-height: 44px;
+  }
+}
 .panel,
 .talents-panel {
   background: var(--panel);

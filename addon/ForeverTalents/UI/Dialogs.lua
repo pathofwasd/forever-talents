@@ -327,7 +327,69 @@ function UI.ProfileMenu(anchor, p)
     }, 234)
 end
 
+function UI.SkillLevelsDialog(skill)
+    local f, first = UI.Dialog("skillLevels", "Skill levels", 560, 484)
+    if first then
+        f.icon = W.Icon(f, "class_druid", 22, -62, 36)
+        f.title = W.Text(f, "", 72, -62, 466, 18, W.colors.gold)
+        f.source = W.Text(f, "", 22, -116, 516, 12, W.colors.muted)
+        f.scroll = W.Scroll(f, 22, -152, 516, 272)
+        f.levelRows = {}
+        f.empty = W.Text(
+            f.scroll.content,
+            "No trainable rank levels recorded.",
+            8,
+            -8,
+            480,
+            13,
+            W.colors.muted
+        )
+        W.Text(
+            f,
+            "Talent skills also require their talent to be learned.\nLevels are the earliest recorded unlock or rank upgrade.",
+            22,
+            -434,
+            516,
+            12,
+            W.colors.muted
+        )
+    end
+    f.title:SetText(skill.name)
+    f.icon:SetTexture("Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. skill.icon .. ".tga")
+    local levels, unlockLevel = FT.Skills.Levels(skill)
+    f.source:SetText(
+        skill.unlock
+                and ("Talent: " .. skill.unlock.name .. " • " .. skill.unlock.treeName .. "\nEarliest unlock: level " .. unlockLevel)
+            or ("First learned at level " .. (levels[1] and levels[1].level or skill.firstLevel))
+    )
+    for _, row in ipairs(f.levelRows) do
+        row:Hide()
+    end
+    for i, rank in ipairs(levels) do
+        local row = f.levelRows[i]
+        if not row then
+            row = W.Text(f.scroll.content, "", 8, -(i - 1) * 34 - 6, 480, 13)
+            f.levelRows[i] = row
+        end
+        row:SetText(
+            rank.label
+                .. "  •  Level "
+                .. rank.level
+                .. (rank.talentRank and "  •  talent rank " .. rank.talentRank or "")
+                .. (rank.toLevel and "–" .. rank.toLevel or "")
+        )
+        row:Show()
+    end
+    f.empty:SetShown(#levels == 0)
+    f.scroll:SetContentHeight(math.max(34, #levels * 34))
+    f.scroll:ScrollTo(0)
+end
+
 function UI.SkillDialog(skill)
+    if S.SimpleView() then
+        UI.SkillLevelsDialog(skill)
+        return
+    end
     UI.HighlightSkill(skill)
     local f, first = UI.Dialog("skill", "Skill details", 900, 646)
     if first then

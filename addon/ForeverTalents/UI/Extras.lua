@@ -2,9 +2,22 @@ local _, FT = ...
 local UI, W, S = FT.UI, FT.UI.W, FT.Store
 
 function UI.SettingsDialog()
-    local f, first = UI.Dialog("settings", "Make it comfortable", 600, 370)
+    local f, first = UI.Dialog("settings", "Make it comfortable", 600, 460)
     if first then
         W.Text(f, "Window size", 22, -72, 556, 16, W.colors.gold)
+        f.classic = W.Checkbox(f, 22, -307, function(checked)
+            W.Result(S.SetSimpleView(checked))
+        end)
+        W.Text(f, "Classic mode", 54, -310, 520, 15, W.colors.gold)
+        W.Text(
+            f,
+            "Class, talents and skill levels only. Extra tools are hidden.\nTurn it off to restore them; your saved builds and character are kept.",
+            22,
+            -345,
+            556,
+            12,
+            W.colors.muted
+        )
         W.Text(
             f,
             "The window fits your screen automatically. Choose a comfortable scale.\nDrag the title bar to move it; the position is kept between sessions.",
@@ -42,7 +55,7 @@ function UI.SettingsDialog()
             f,
             "Open with /ftc or /forevertalents. Assign a key under WoW's Key Bindings\nto open Forever Talents without reaching for the mouse.",
             22,
-            -307,
+            -398,
             556,
             12,
             W.colors.muted
@@ -50,6 +63,7 @@ function UI.SettingsDialog()
     end
     f.scale:SetText(string.format("%.0f%%", S.db.settings.scale * 100))
     f.minimap:SetText(S.db.settings.minimap and "Minimap button: shown" or "Minimap button: hidden")
+    f.classic:SetChecked(S.SimpleView())
 end
 
 function UI.PetDialog()

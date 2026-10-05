@@ -45,7 +45,7 @@ function UI.TalentTooltip(button)
         end
     end
     local related = FT.Skills.TalentSkills(build.classID, t.id)
-    if #related > 0 then
+    if not FT.Store.SimpleView() and #related > 0 then
         local names = {}
         for i = 1, math.min(6, #related) do
             names[#names + 1] = related[i]
@@ -309,6 +309,10 @@ end
 
 function UI.UpdateSkillHighlights()
     UI.highlight = {}
+    if FT.Store.SimpleView() then
+        UI.PaintHighlights()
+        return
+    end
     for _, skill in pairs(UI.selectedSkills or {}) do
         for _, link in ipairs(skill.related or {}) do
             UI.highlight[link.id] = link

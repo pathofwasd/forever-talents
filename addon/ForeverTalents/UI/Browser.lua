@@ -70,6 +70,18 @@ function UI.AddHighlightCheckbox(row, x, y)
 end
 
 function UI.SkillTooltip(owner, skill)
+    if FT.Store.SimpleView() then
+        local levels, unlockLevel = FT.Skills.Levels(skill)
+        W.Tooltip(owner, skill.name, {
+            skill.unlock
+                    and ("Unlocked by " .. skill.unlock.name .. " • earliest level " .. unlockLevel)
+                or (
+                    "First learned at level " .. (levels[1] and levels[1].level or skill.firstLevel)
+                ),
+            "Click for unlock and rank upgrade levels.",
+        })
+        return
+    end
     local view, level = FT.Store.View(), FT.Store.ViewLevel()
     local points = M.Counts(view)
     local rank = FT.Skills.CurrentRank(skill, level, points) or skill.ranks[1]
@@ -169,14 +181,17 @@ function UI.CreateBrowser(parent)
     UI.skillFilter = W.Button(p, filterLabels.all .. "  v", 10, -88, 206, function(self)
         local options = {}
         for _, key in ipairs({ "all", "now", "talent", "racial" }) do
-            options[#options + 1] = {
-                text = filterLabels[key],
-                action = function()
-                    UI.skillFilterKey = key
-                    UI.skillScroll:ScrollTo(0)
-                    UI.RefreshBrowser()
-                end,
-            }
+            if not FT.Store.SimpleView() or key == "all" or key == "now" then
+                options[#options + 1] = {
+                    text = FT.Store.SimpleView() and key == "all" and "All class skills"
+                        or filterLabels[key],
+                    action = function()
+                        UI.skillFilterKey = key
+                        UI.skillScroll:ScrollTo(0)
+                        UI.RefreshBrowser()
+                    end,
+                }
+            end
         end
         W.Menu(self, options, 246)
     end)
@@ -225,8 +240,15 @@ function UI.RefreshBrowser()
     end
     local build, level = FT.Store.View(), FT.Store.ViewLevel()
     local filter = UI.skillFilterKey or "all"
-    UI.skillFilter:SetText(filterLabels[filter] .. "  v")
-    local list = FT.Skills.List(build, level, UI.skillQuery, filter)
+    local simple = FT.Store.SimpleView()
+    if simple and filter ~= "now" then
+        filter = "all"
+    end
+    UI.skillFilter:SetText(
+        (simple and filter == "all" and "All class skills" or filterLabels[filter]) .. "  v"
+    )
+    UI.clearHighlight:SetShown(not simple)
+    local list = FT.Skills.List(build, level, UI.skillQuery, filter, not simple)
     UI.skillCount:SetText(#list .. " skills • showing level " .. level)
     for i, row in ipairs(UI.skillRows) do
         local entry = list[i]
@@ -234,6 +256,9 @@ function UI.RefreshBrowser()
         if entry then
             local s = entry.skill
             row.skill = s
+            row.check:SetShown(not simple)
+            row.title:SetWidth(simple and 145 or 119)
+            row.detail:SetWidth(simple and 145 or 119)
             row.title:SetText(s.name)
             row.icon:SetTexture(
                 "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. s.icon .. ".tga"

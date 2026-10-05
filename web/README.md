@@ -7,6 +7,13 @@ layouts use the same catalog and bundled icons as the addon. It works offline on
 Forever Talents is a free, unofficial community project. The footer identifies game-content
 ownership and links to the bundled `NOTICE.txt`, which remains available offline.
 
+Check **Simple view** above the class picker for class, talent trees and skill levels only. Race,
+racials, character/simulator, sharing and checkpoint tools are hidden. Click a skill for its unlock
+and upgrade levels. Phones keep Trees / Skills tabs and the normal talent Add / Remove controls.
+Uncheck to restore the full view with all saved data intact. The preference is local to this device
+and survives reloads; library imports do not change it. Talent data and rules are shared with the
+full view, so future catalog updates apply to both.
+
 ## Develop and package
 
 Follow the root [development setup](../CONTRIBUTING.md), then run:
@@ -20,7 +27,7 @@ pnpm preview
 ```
 
 `npm` can run the scripts too, but pnpm owns the dependency lockfile. The local preview listens at
-http://localhost:4173. `web/dist/` is the complete static site; `dist/ForeverTalents-PWA-1.2.0.zip`
+http://localhost:4173. `web/dist/` is the complete static site; `dist/ForeverTalents-PWA-1.2.1.zip`
 is its release archive. Neither needs Node, Python, a server database or a CDN on the hosting
 service.
 
@@ -46,7 +53,7 @@ Local storage contains the same logical schema as addon SavedVariables, with sep
 ownership. Export FL1 for portable backups and merges. No telemetry, account, cloud sync or live
 connection to WoW is used. Updates do not remove saved libraries. Clearing site data or changing
 origins can remove access to a library, so export first. Newer/unreadable browser saves disable
-writing; the More view offers the original saved-data download.
+writing; a recovery banner offers the original saved-data download in either view.
 
 ## Sharing
 

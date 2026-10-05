@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1
+
+Added optional Classic mode in addon Settings and a visible Simple view checkbox on desktop/mobile
+web. Both reduce the interface to class, talent trees and skill unlock/upgrade levels. Extra tools
+are hidden; existing data, Auto level and Undo/Redo stay intact. The reduced view uses the same
+catalog and engine, remembers its setting locally and keeps full-library sharing unchanged. See
+[release notes](RELEASE-1.2.1.md).
+
 ## 1.2.0
 
 Rebuilt the per-use Simulator from reviewed client effects and documented corrections. Added a

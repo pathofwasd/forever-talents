@@ -214,7 +214,7 @@ function A.CurrentRank(skill, level, points)
     return current
 end
 
-function A.List(build, level, query, filter)
+function A.List(build, level, query, filter, includeRacials)
     local prepared = A.Prepare(build.classID)
     local list, points = {}, FT.Model.Counts(build)
     query = normalize(query)
@@ -232,7 +232,10 @@ function A.List(build, level, query, filter)
             list[#list + 1] = { skill = skill, current = rank }
         end
     end
-    if not filter or filter == "all" or filter == "racial" or filter == "now" then
+    if
+        includeRacials ~= false
+        and (not filter or filter == "all" or filter == "racial" or filter == "now")
+    then
         for _, r in ipairs(FT.Data.racials[build.classID][build.raceID] or {}) do
             if query == "" or normalize(r.name .. " " .. r.text):find(query, 1, true) then
                 list[#list + 1] = {
@@ -258,6 +261,27 @@ function A.List(build, level, query, filter)
         end
     end
     return list
+end
+
+-- The compact view derives its progression from the same live rank records.
+function A.Levels(skill)
+    local levels = {}
+    local unlockLevel = skill.unlock and (10 + skill.unlock.gate)
+    for _, rank in ipairs(skill.ranks) do
+        if rank.live then
+            local talentLevel = unlockLevel and (unlockLevel + (rank.talentRank or 1) - 1) or 1
+            local level = math.max(rank.level, rank.fromLevel or 1, talentLevel)
+            if not rank.toLevel or rank.toLevel >= level then
+                levels[#levels + 1] = {
+                    label = rank.label ~= "" and rank.label or "Ability",
+                    level = level,
+                    toLevel = rank.toLevel,
+                    talentRank = rank.talentRank,
+                }
+            end
+        end
+    end
+    return levels, unlockLevel
 end
 
 function A.SearchTalent(talent, query)

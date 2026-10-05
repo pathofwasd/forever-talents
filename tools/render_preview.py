@@ -20,6 +20,9 @@ SCREENS = [
     ("advanced", "Advanced"),
     ("races", "Races"),
     ("pets", "Pets"),
+    ("addon-classic", "Classic mode"),
+    ("addon-classic-settings", "Classic settings"),
+    ("addon-classic-levels", "Skill levels"),
 ]
 POINTS = {
     "TOPLEFT": (0, 0),
@@ -172,7 +175,7 @@ def render(snapshot):
         css.append(f"z-index:{z}")
         opacity = o.get("alpha", 1)
         p = objects.get(o.get("parent"))
-        clip = [0, 0, 1280, 824]
+        clip = [0, 0, objects[root]["width"], objects[root]["height"]]
         while p:
             opacity *= p.get("alpha", 1)
             if p["kind"] == "ScrollFrame":
@@ -284,7 +287,7 @@ def render(snapshot):
     page = (
         '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Forever Talents · Lua UI review</title><style>*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 30%,#253342,#0a0f16 65%);color:#dce5ec;font-family:"DejaVu Sans",Arial,sans-serif}header{padding:20px 28px;font-size:13px;color:#8fa3b3;display:flex;justify-content:space-between}a{color:#9db4c5;text-decoration:none;margin-left:18px}.current{color:#ebac65}.window{position:relative;overflow:hidden;width:1280px;height:824px;margin:10px auto 40px;box-shadow:0 22px 100px #000a}.window>div{position:absolute}footer{text-align:center;font-size:12px;color:#7f929f;padding:0 16px 24px}</style><header><span>FOREVER TALENTS · actual Lua widget layout</span><nav>'
         + nav
-        + '</nav></header><main class="window">'
+        + f'</nav></header><main class="window" style="width:{objects[root]["width"]}px;height:{objects[root]["height"]}px">'
         + "".join(fragments)
         + "</main><footer>Development render from the WoW API harness. Native talent artwork is supplied by the game; browser view shows the bundled fallback. In-game visual validation remains pending.</footer></html>"
     )
@@ -294,11 +297,14 @@ def render(snapshot):
 def main():
     all_bounds = {}
     for name, _ in SCREENS:
-        page, bounds = render(ROOT / "preview" / (name + ".json"))
+        snapshot = ROOT / "preview" / (name + ".json")
+        if not snapshot.exists():
+            continue
+        page, bounds = render(snapshot)
         (ROOT / "preview" / (name + ".html")).write_text(page)
         all_bounds[name] = bounds
     (ROOT / "preview/text-bounds.json").write_text(json.dumps(all_bounds, indent=2))
-    print(f"Rendered {len(SCREENS)} screens from the addon Lua UI snapshots.")
+    print(f"Rendered {len(all_bounds)} screens from the addon Lua UI snapshots.")
 
 
 if __name__ == "__main__":

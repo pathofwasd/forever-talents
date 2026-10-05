@@ -63,6 +63,11 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     run('preview', { count: 3 });
     run('export', { kind: 'character' });
     run('preview', {});
+    run('simpleView', { enabled: true });
+    run('state');
+    run('skills', { filter: 'now' });
+    run('skillLevels', { name: skill.name });
+    run('simpleView', { enabled: false });
   }
   run('switch', { classID: 11 });
   run('auto', { enabled: false });
@@ -109,6 +114,66 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
   });
   assert.deepEqual(results, native);
   h.close();
+});
+test('simple view preserves all portable data, persists locally and follows shared rank records', async () => {
+  const h = await harness();
+  const catalog = h.call('catalog');
+  h.call('save', { title: 'Retained profile' });
+  h.call('checkpoint', { title: 'Retained checkpoint' });
+  h.call('characterMode', { mode: 'gear' });
+  h.call('characterSave', {
+    sheet: { mode: 'gear', gear: { head: { name: 'Retained gear', stats: { intellect: 20 } } } },
+  });
+  const build = h.call('export', { kind: 'build' });
+  const character = h.call('export', { kind: 'character' });
+  const library = h.call('export', { kind: 'library' });
+  const undo = h.call('state').undo;
+  h.call('preview', { count: 0 });
+  h.call('simpleView', { enabled: true });
+  assert.equal(h.call('state').preview, undefined);
+  assert.equal(h.call('state').undo, undo);
+  assert.equal(h.call('export', { kind: 'build' }), build);
+  assert.equal(h.call('export', { kind: 'character' }), character);
+  assert.equal(h.call('export', { kind: 'library' }), library);
+  const restored = await harness(JSON.parse(JSON.stringify(h.call('database'))));
+  assert.equal(restored.init.simpleView, true);
+  const imported = await harness();
+  imported.call('import', { code: library, includeDrafts: true });
+  assert.equal(
+    imported.call('state').simpleView,
+    false,
+    'library sync must keep the recipient view preference'
+  );
+  for (const cid of list(catalog.classOrder)) {
+    restored.call('switch', { classID: cid });
+    const entries = list(restored.call('skills', { filter: 'all' }));
+    assert.ok(entries.length);
+    for (const { skill } of entries) {
+      assert.notEqual(skill.kind, 'racial');
+      const progression = restored.call('skillLevels', { name: skill.name });
+      const levels = list(progression.ranks);
+      const live = list(skill.ranks).filter((r) => r.live);
+      assert.ok(levels.length <= live.length);
+      if (skill.unlock) assert.equal(progression.unlockLevel, 10 + skill.unlock.gate);
+      for (const r of levels) {
+        assert.equal(r.text, undefined);
+        assert.ok(r.level >= skill.firstLevel);
+        if (skill.unlock) assert.ok(r.level >= 10 + skill.unlock.gate);
+      }
+    }
+    assert.ok(
+      list(restored.call('skills', { filter: 'now' })).every(
+        (e) => e.current && e.skill.kind !== 'racial'
+      )
+    );
+  }
+  restored.call('simpleView', { enabled: false });
+  assert.ok(
+    list(restored.call('skills', { filter: 'all' })).some((e) => e.skill.kind === 'racial')
+  );
+  h.close();
+  restored.close();
+  imported.close();
 });
 test('all classes enforce budgets, row gates, prerequisites and legal ordered edits in the browser engine', async () => {
   const h = await harness(),

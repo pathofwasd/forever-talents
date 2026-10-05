@@ -6,12 +6,22 @@ BINDING_NAME_FOREVERTALENTS_TOGGLE = "Open / close talent planner"
 local function slash(message)
     local command, rest = (message or ""):match("^%s*(%S*)%s*(.-)%s*$")
     command = command:lower()
-    if command == "help" then
+    if command == "classic" or command == "simple" or command == "full" then
         if not FT.UI.frame then
             FT.UI.Create()
         end
         FT.UI.frame:Show()
-        FT.UI.HelpDialog()
+        FT.Store.SetSimpleView(command ~= "full" and not FT.Store.SimpleView())
+    elseif command == "help" then
+        if not FT.UI.frame then
+            FT.UI.Create()
+        end
+        FT.UI.frame:Show()
+        if FT.Store.SimpleView() then
+            FT.UI.SettingsDialog()
+        else
+            FT.UI.HelpDialog()
+        end
     elseif command == "import" then
         FT.UI.ImportDialog(rest)
     elseif command == "share" then

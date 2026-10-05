@@ -8,6 +8,7 @@
 | Full FL1 library encoding, validation, merge and duplicate handling       | `core/lua/Library.lua`                                                               |
 | Drafts, Auto level, undo/redo, immutable checkpoints and subtree deletion | `core/lua/Store.lua`                                                                 |
 | Skill ranks, search, unlocks and related talent evidence                  | `core/lua/Skills.lua`                                                                |
+| Classic / Simple view preference and compact skill progression            | `core/lua/Store.lua`, `Skills.lua`; native visibility/layout and browser visibility  |
 | Per-use numerical estimate, applicable inputs, evidence and assumptions   | `core/lua/Simulation.lua`                                                            |
 | Central character, custom gear, stat passives and scoped skill overrides  | `core/lua/Character.lua`, `Simulation.lua`                                           |
 | Native talent API, school stats and equipped-item capture                 | addon `Player.lua`; export portable data for the PWA                                 |
@@ -26,6 +27,21 @@ order; class/race choice; skill/racial search and persistent checkbox highlights
 Undo/Redo; saved builds/checkpoint branches; delete-parent-and-descendants; leveling preview and
 branching; text sharing; character and stats-only import/export; full-library merge; simple and
 Advanced one-use estimates; race atlas, pet atlas and perk reference.
+
+The addon calls the reduced view **Classic mode** (Settings; `/ftc classic` / `/ftc full`). The PWA
+calls it **Simple view**, with a visible checkbox above the class picker. Both hide race/racials,
+character/simulator, highlights, sharing, checkpoint/order/library and atlas tools. Class selection,
+authentic talent grids/descriptions/search, levels, Auto and Undo/Redo reuse the full-view controls.
+Skill clicks show only live rank unlock/upgrade levels, including talent requirements, derived by
+`Skills.Levels`. The class-skill list and availability filter reuse `Skills.List` with racials
+disabled. There is no separate talent catalog, allocation engine or simulator for the reduced view.
+Entering it exits a leveling preview so the hidden preview controls cannot leave editing paused.
+Returning restores all tools; mode changes do not edit builds, character data or undo history.
+
+`settings.simpleView` is a local display preference. It persists in SavedVariables/browser storage,
+is excluded from FL1 library sharing, and remains the recipient's choice during a library merge.
+Unreadable browser data still exposes recovery outside hidden panels. Mobile reduced navigation
+contains Trees / Skills, with the same explicit talent Add/Remove sheet and true grid positions.
 
 Desktop shows three trees with hover inspection and click/right-click edits. Mobile uses a readable
 real 7×4 tree per tab, a tap-to-inspect sheet with explicit Add/Remove controls, and

@@ -65,6 +65,7 @@ local function state()
         scenario = S.db.settings.scenario,
         statsProfile = S.db.settings.statsProfile,
         auto = S.AutoLevel(),
+        simpleView = S.SimpleView(),
         preview = S.preview,
         undo = #S.Draft().undo,
         redo = #S.Draft().redo,
@@ -122,6 +123,9 @@ local commands = {
     end,
     auto = function(p)
         return S.SetAutoLevel(p.enabled)
+    end,
+    simpleView = function(p)
+        return S.SetSimpleView(p.enabled)
     end,
     add = function(p)
         return S.Apply(M.Add, p.id, p.fill)
@@ -273,7 +277,15 @@ local commands = {
         return out
     end,
     skills = function(p)
-        return A.List(S.View(), S.ViewLevel(), p.query, p.filter)
+        return A.List(S.View(), S.ViewLevel(), p.query, p.filter, not S.SimpleView())
+    end,
+    skillLevels = function(p)
+        local skill = A.Prepare(S.Build().classID).byName[p.name]
+        if not skill then
+            return nil, "Class skill not found."
+        end
+        local ranks, unlockLevel = A.Levels(skill)
+        return { ranks = ranks, unlockLevel = unlockLevel }
     end,
     skill = function(p)
         for _, entry in ipairs(A.List(S.View(), 60, "", "all")) do

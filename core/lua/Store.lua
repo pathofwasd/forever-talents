@@ -89,6 +89,7 @@ function S.Init(classID, raceID, level)
     if db.settings.minimap == nil then
         db.settings.minimap = true
     end
+    db.settings.simpleView = db.settings.simpleView == true
     db.settings.scenario = FT.Simulation.State(db.settings.scenario)
     if db.settings.statsProfile and FT.Snapshot then
         local ok, code = pcall(FT.Snapshot.EncodeStats, db.settings.statsProfile)
@@ -253,6 +254,21 @@ function S.ExportView()
 end
 function S.AutoLevel()
     return S.Draft().autoLevel == true
+end
+
+function S.SimpleView()
+    return S.db.settings.simpleView == true
+end
+
+function S.SetSimpleView(enabled)
+    S.db.settings.simpleView = not not enabled
+    -- Leave a read-only leveling preview when its navigation is being hidden.
+    S.preview = nil
+    FT.Changed(
+        enabled and "Simple view enabled. Your builds and character settings are kept."
+            or "Full view restored."
+    )
+    return true
 end
 
 function S.PlanningView()

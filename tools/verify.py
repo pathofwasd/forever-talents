@@ -15,7 +15,16 @@ def run(*args):
 (ROOT / "preview").mkdir(exist_ok=True)
 run("python3", "tools/build_data.py")
 run("python3", "tools/sync_core.py")
-for suite in ["core", "regressions", "auto_level", "nodes", "portability", "simulation", "ui"]:
+for suite in [
+    "core",
+    "regressions",
+    "auto_level",
+    "nodes",
+    "portability",
+    "simulation",
+    "ui",
+    "simple_view",
+]:
     run("lua5.1", f"tests/test_{suite}.lua")
 run("python3", "tools/check_package.py", "--source-only")
 run("node", "--test", "tests/web/engine.test.mjs")
