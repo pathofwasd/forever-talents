@@ -1,0 +1,28 @@
+## Interface: 16001
+## Title: Forever Talents
+## Notes: Talent planner, complete skill atlas, leveling order and branching build checkpoints for WoW Forever.
+## Author: Forever Talents contributors
+## Version: 1.1.2
+## SavedVariables: ForeverTalentsDB
+## IconTexture: Interface\AddOns\ForeverTalents\Media\Icons\class_druid.tga
+Namespace.lua
+Data.lua
+Model.lua
+Codec.lua
+Skills.lua
+Simulation.lua
+Store.lua
+Snapshot.lua
+Library.lua
+Player.lua
+Comms.lua
+UI\Widgets.lua
+UI\Trees.lua
+UI\Browser.lua
+UI\History.lua
+UI\Dialogs.lua
+UI\Simulation.lua
+UI\Character.lua
+UI\Extras.lua
+UI\Shell.lua
+Bootstrap.lua

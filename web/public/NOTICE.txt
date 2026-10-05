@@ -1,0 +1,15 @@
+FOREVER TALENTS: RIGHTS AND DATA NOTES
+
+Forever Talents is an independent community project and is not affiliated
+with or endorsed by Blizzard Entertainment or the providers of its reference
+data. World of Warcraft is a trademark of Blizzard Entertainment.
+
+Original game artwork, icons, text and other game content are owned or
+licensed by Blizzard Entertainment. Other third-party contributions remain
+the property of their respective rights holders. These assets and collected
+content are not covered by the project's MIT code license. Attribution and
+distribution of this package do not grant additional rights to that content.
+
+Bundled snapshot: 2026-10-04, World of Warcraft Forever 1.60.1 build 69876.
+Rules and content may differ from a later patch. Numerical estimates use
+dated observations and editable assumptions, not a complete combat model.

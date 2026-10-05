@@ -1,0 +1,25 @@
+{
+  "name": "forever-talents",
+  "version": "1.1.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "python3 tools/build_data.py && python3 tools/sync_core.py",
+    "dev": "python3 tools/build_data.py && python3 tools/sync_core.py && vite --host 127.0.0.1",
+    "build": "python3 tools/build_data.py && python3 tools/sync_core.py && vite build && node tools/build_pwa.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "python3 tools/sync_core.py --check && node --test tests/web/*.test.mjs",
+    "verify": "python3 tools/verify.py",
+    "format": "prettier --write . && stylua --verify core/lua addon/ForeverTalents web/lua tests && python3 tools/sync_core.py",
+    "format:check": "prettier --check . && stylua --check core/lua addon/ForeverTalents web/lua tests"
+  },
+  "dependencies": {
+    "wasmoon": "1.16.0"
+  },
+  "devDependencies": {
+    "@johnnymorganz/stylua-bin": "2.5.2",
+    "prettier": "3.9.9",
+    "vite": "8.3.2"
+  },
+  "packageManager": "pnpm@11.19.0"
+}

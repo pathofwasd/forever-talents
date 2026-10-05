@@ -1,0 +1,10 @@
+node_modules/
+web/dist/
+web/public/generated/
+web/public/runtime/
+dist/
+preview/
+data/icons/
+addon/ForeverTalents/Media/
+docs/data-build.json
+pnpm-lock.yaml

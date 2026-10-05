@@ -1,0 +1,66 @@
+# Forever Talents PWA
+
+The real addon engine runs here through Wasmoon (Lua 5.4/WebAssembly). It is not a mock screenshot
+or a separate JavaScript implementation of the rules. Desktop and touch layouts use the same
+generated dataset and bundled icons. The browser app works offline after its first successful cache
+installation.
+
+## Develop and package
+
+Install Node.js 22.12+ or 24+, Python 3 and pnpm 11.19.0, then from the root:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev
+pnpm test
+pnpm build
+pnpm preview
+```
+
+`npm` can run the scripts too, but pnpm owns the dependency lockfile. The local preview listens at
+http://localhost:4173. `web/dist/` is the complete static site; `dist/ForeverTalents-PWA-1.1.2.zip`
+is its release archive. Neither needs Node, Python, a server database or a CDN on the hosting
+service.
+
+Serve the directory through HTTP for local use, or deploy it on an HTTPS static host for
+sharing/installation on other devices. Opening index.html as a local file does not provide fetch,
+service-worker or clipboard support. Use a stable URL so browser saves stay with the same origin.
+The relative manifest, engine, WASM, icon and cache paths support a subdirectory deployment. Do not
+expose the development server publicly. No external deployment has been configured or performed.
+
+On Windows/Linux/Android, use an install-capable browser's Install menu. On iPhone/iPad, open in
+Safari, Share → Add to Home Screen. Browser and OS support determine the available install prompt. A
+hosted URL is required for a phone; another device's localhost refers to that device.
+
+## Updates and saves
+
+An entire release is precached before its service worker becomes ready. The engine is
+content-addressed, like the JS/CSS shell, to prevent mixed versions. New releases show Update now;
+local saves are written before reloading. Keep previous immutable build assets available during a
+real hosting rollout. The generated worker retains recent release caches while old clients finish.
+
+Local storage contains the same logical schema as addon SavedVariables, with separate device
+ownership. Export FL1 for portable backups and merges. No telemetry, account, cloud sync or live
+connection to WoW is used. Updates do not remove saved libraries. Clearing site data or changing
+origins can remove access to a library, so export first. Newer/unreadable browser saves disable
+writing; the More view offers the original saved-data download.
+
+## Sharing
+
+- FT1: talent allocation, exact ordered spending, race and target level.
+- FC1: those talents and level plus simulation stats / captured character data.
+- FS1: simulation stats only; importing keeps current talents and target level.
+- FL1: all saved profiles, checkpoint branches, class drafts, undo/redo and stats.
+
+Share → choose format → Copy string or Save to file. Import previews strings before loading. Library
+imports merge profiles, skipping exact duplicates. Replacing class drafts is a separate explicit
+checkbox. Existing saves can be backed up with a whole-library export before importing. Native
+window settings and received whisper receipts stay on their own platform.
+
+In-game Character can capture live talents/stats, or copy a planned setup. Paste the same string
+here. Live talent order is reconstructed because the client does not expose the original spending
+history. A browser cannot read WoW APIs or send addon whispers; clickable in-game receipts remain
+addon-only.
+
+See `docs/FEATURE-PARITY.md` and root `AGENTS.md` before editing either platform. Release packages
+include content ownership notices and bundled software licenses.
