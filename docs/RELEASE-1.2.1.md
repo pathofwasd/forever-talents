@@ -1,6 +1,15 @@
 # Forever Talents 1.2.1
 
-An optional simpler view for the addon and web/mobile app.
+A new Character workspace, rebuilt Simulator and optional simpler view for the addon and web/mobile
+app. This release includes all changes since 1.1.2.
+
+- Create custom equipment or enter overall stats in one central character sheet.
+- Capture reported stats and available equipped-item details inside WoW, then share them with the
+  web app as text.
+- Experiment with skill inputs without overwriting the character. Applicable controls, calculation
+  steps, talent evidence and accuracy notes explain the results.
+- See direct, periodic, shield and health-cost results with expected critical totals, plus a live
+  result summary on phones.
 
 - **Addon:** Settings → check **Classic mode**. A smaller window keeps class, talents and skills.
 - **Website:** check **Simple view** above the class picker. Phones keep Trees / Skills navigation.
@@ -12,6 +21,11 @@ An optional simpler view for the addon and web/mobile app.
 Both views use the same current Forever talent data and rules. The preference stays on each device;
 library sharing does not overwrite it. Addon shortcuts: `/ftc classic` toggles, `/ftc full` restores
 the full view. Existing sharing strings and saves remain compatible.
+
+The simulator estimates individual skill uses. Missing mechanics and uncertain coefficients are
+marked, and reference base stats are approximate. Live captures retain reported character totals.
+See the [simulator guide](https://github.com/pathofwasd/forever-talents/blob/main/docs/SIMULATOR.md)
+for calculation details.
 
 ## Download and install
 
