@@ -80,6 +80,10 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     run('skills', { filter: 'now' });
     run('skillLevels', { name: skill.name });
     run('simpleView', { enabled: false });
+    run('simulationEnabled', { enabled: false });
+    run('state');
+    run('export', { kind: 'library' });
+    run('simulationEnabled', { enabled: true });
   }
   run('switch', { classID: 11 });
   run('auto', { enabled: false });
@@ -935,4 +939,46 @@ test('talents-only transfer retains checkpoint context and character settings fo
   assert.deepEqual(restored.call('state').profiles, h.call('state').profiles);
   h.close();
   restored.close();
+});
+
+test('experimental tool visibility persists locally without altering portable saves or calculations', async () => {
+  const h = await harness();
+  assert.equal(h.call('state').simulationEnabled, true);
+  h.call('save', { title: 'Retained profile' });
+  h.call('checkpoint', { title: 'Retained child' });
+  h.call('characterSave', {
+    sheet: {
+      mode: 'gear',
+      stats: { power: 150 },
+      gear: { head: { name: 'Retained gear', stats: { intellect: 20 } } },
+    },
+  });
+  const kinds = ['build', 'character', 'stats', 'library', 'profile'];
+  const before = kinds.map((kind) => h.call('export', { kind }));
+  const undo = h.call('state').undo;
+  const result = h.call('simulate', { name: 'Wrath', rank: 1 });
+  h.call('simulationEnabled', { enabled: false });
+  assert.equal(h.call('state').simulationEnabled, false);
+  assert.deepEqual(
+    kinds.map((kind) => h.call('export', { kind })),
+    before
+  );
+  assert.equal(h.call('state').undo, undo);
+  assert.deepEqual(h.call('simulate', { name: 'Wrath', rank: 1 }), result);
+  const restored = await harness(JSON.parse(JSON.stringify(h.call('database'))));
+  assert.equal(restored.init.simulationEnabled, false);
+  h.call('simpleView', { enabled: true });
+  h.call('simpleView', { enabled: false });
+  assert.equal(h.call('state').simulationEnabled, false);
+  const recipient = await harness();
+  recipient.call('import', { code: before[3], includeDrafts: true });
+  assert.equal(recipient.call('state').simulationEnabled, true);
+  restored.call('import', { code: before[3], includeDrafts: true });
+  assert.equal(restored.call('state').simulationEnabled, false);
+  h.call('simulationEnabled', { enabled: true });
+  assert.deepEqual(
+    kinds.map((kind) => h.call('export', { kind })),
+    before
+  );
+  for (const testHarness of [h, restored, recipient]) testHarness.close();
 });

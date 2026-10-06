@@ -1,4 +1,4 @@
-FOREVER TALENTS 1.2.1
+FOREVER TALENTS 1.2.14
 An offline talent planner for World of Warcraft Forever (Interface 16001).
 Free, unofficial community project. Not affiliated with or endorsed by
 Blizzard Entertainment. Game artwork and text belong to their rights holders.
@@ -14,11 +14,25 @@ INSTALL
 
 No other addon or internet connection is required.
 
+COMPACT VIEW
+Check Compact view at the top left, or in Settings, for a small movable planner.
+Trees shows one real talent tree at a time; tabs select its specialization.
+Skills keeps search, ranks and colored highlights; Builds keeps order/library.
+More opens sharing, checkpoints, race and other tools. Drag the title bar to
+move it. Compact and full windows remember their positions independently.
+Compact works alongside Simple view without changing your build or point order.
+
+EXPERIMENTAL TOOLS
+Settings > Show experimental simulator controls Character and simulator buttons.
+Turn it off to hide them while keeping stats, gear, captures and saved builds.
+Turn it on to restore them. This preference stays on your device and is not
+included in library sharing. Estimates have not been validated in live gameplay.
+
 CLASSIC MODE
-Settings > Classic mode reduces the planner to class, talents and skill levels.
+Simple view at the top left (also Settings > Classic mode) reduces the planner to class, talents and skill levels.
 The window becomes smaller. Race, racials, character/simulator, sharing and
 checkpoint controls are hidden. Click a skill for its unlock and upgrade levels.
-Talent descriptions, search, Auto level and Undo/Redo keep working normally.
+Talent descriptions, search, colored skill boxes, Auto and Undo/Redo keep working.
 Class drafts still save between sessions. Uncheck Classic mode to restore all
 tools with your builds, checkpoints, race and character settings intact.
 The preference stays on this device and is not included in library sharing.
@@ -32,8 +46,8 @@ level needed for the points you have already spent.
 
 Left click a talent to add a point; right click to remove a point. Shift fills
 or clears a talent. Rows, prerequisites, maximum ranks and the 51-point limit
-are enforced at every step in the leveling order. A removal that would break
-a later step is refused: remove dependent points first, or reset that tree.
+are enforced at every step in the leveling order. If surviving points need a new legal order, removal adjusts the necessary steps.
+Real prerequisites and tier gates still prevent invalid allocations.
 Reset and all talent edits can be undone.
 
 Hover for the current and next descriptions. Hold Shift while hovering for
@@ -47,7 +61,7 @@ your current talents). The mode is remembered per class draft and can itself
 be undone. Manual target levels still enforce their normal point budget.
 
 SKILLS AND RACIALS
-Hover a skill to highlight its related talents in blue. Click for every rank,
+Hover a skill to highlight its related talents. Six colors identify selections. Click for every rank,
 the first learn level and subsequent rank levels, talent unlocks and full
 descriptions. Named, school and general effects are labeled separately.
 Check the box beside any skill or racial trait to keep its highlight. Multiple

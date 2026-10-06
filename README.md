@@ -13,13 +13,14 @@ collapsed. The **Source code** downloads are for developers.
 
 - All nine classes, original talent layouts, rank descriptions and prerequisite checks.
 - Simple view in the addon and on the web: class, talents, skill levels and colored highlights.
+- Compact addon window with tree tabs, so the planner can stay open while playing.
 - Search skills and racials, see rank unlock levels, and highlight related talents.
 - Track your leveling order with Auto level, undo/redo and branching checkpoints you can update in
   place. Copy and paste just talents to move an allocation between checkpoints.
 - Share builds as browser links, text or addon whispers. Transfer character stats or your entire
   saved library between the addon and web app.
-- Build a central character with custom gear or live stats. Simulate individual skills with
-  applicable inputs, calculation steps and clear accuracy notes.
+- Experimental character and skill simulator with gear, applicable inputs and calculation steps.
+  Hide these tools in Settings while keeping saved stats and equipment.
 
 ## Install
 

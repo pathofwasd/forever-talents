@@ -10,6 +10,8 @@
 | Drafts, Auto level, undo/redo, editable checkpoints and subtree deletion | `core/lua/Store.lua`                                                                 |
 | Skill ranks, search, unlocks and related talent evidence                 | `core/lua/Skills.lua`                                                                |
 | Classic / Simple view preference and compact skill progression           | `core/lua/Store.lua`, `Skills.lua`; native visibility/layout and browser visibility  |
+| Experimental tool visibility preference                                  | `core/lua/Store.lua`; native Settings and browser Settings                           |
+| Addon Compact window, tree/section tabs and independent positions        | addon `UI/Compact.lua`; PWA uses its existing responsive tree/section navigation     |
 | Per-use numerical estimate, applicable inputs, evidence and assumptions  | `core/lua/Simulation.lua`                                                            |
 | Central character, custom gear, stat passives and scoped skill overrides | `core/lua/Character.lua`, `Simulation.lua`                                           |
 | Native talent API, school stats and equipped-item capture                | addon `Player.lua`; export portable data for the PWA                                 |
@@ -166,6 +168,18 @@ and client layout pixels. **Trained on captured character** uses exact recorded 
 independently of the planned level; it also works after FC1/FS2/FL1 import into the PWA. Older
 snapshots without trained ranks remain supported. All skills remains the planning catalog; training
 is a dated-by-level snapshot, not a live browser connection.
+
+Compact view is a native window preference, independent of Simple view and portable builds. The
+addon uses a 420×680 movable window, tree tabs and Trees / Skills / Builds / More sections. Its true
+244×410 talent grid scrolls without shrinking icons. Full and compact positions restore
+independently; larger dialogs fit the screen. The PWA already uses tree/section tabs on mobile; it
+does not expose a native window-size control.
+
+Both Settings panels expose **Show experimental simulator**. The shared store defaults it on for
+existing installations; turning it off hides Character and simulator entry points, including rank
+details and compact/mobile menus. Stats, equipment, training captures, builds and calculations are
+kept. Visibility is local and excluded from portable library settings. Estimates are labeled
+experimental because live-game validation is pending.
 
 ## Platform limits
 

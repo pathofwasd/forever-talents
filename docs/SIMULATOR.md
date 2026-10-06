@@ -1,5 +1,10 @@
 # Simulator and character workspace
 
+These tools are **experimental** and have not been validated in live gameplay. In either version,
+open **Settings** and uncheck **Show experimental simulator** to hide Character and simulator
+buttons. Saved stats, gear and builds remain intact. Turn it back on to restore the tools; library
+imports keep your own visibility setting.
+
 Open **Character** to keep one stat and equipment workspace per class. A skill's **Simulator** uses
 that workspace and the displayed race, level and talents. Edits and pasted inputs inside Simulator
 are temporary. **Reset skill overrides** restores the inherited values.

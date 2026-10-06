@@ -42,6 +42,14 @@ On Windows/Linux/Android, use an install-capable browser's Install menu. On iPho
 Safari, Share → Add to Home Screen. Browser and OS support determine the available install prompt. A
 hosted URL is required for a phone; another device's localhost refers to that device.
 
+## Experimental tools
+
+Open **Settings** above the class picker, or in the phone's More section. Uncheck **Show
+experimental simulator** to hide Character and simulator buttons, including those in rank details.
+Saved stats, equipment and builds stay intact. This preference persists on the device; library sync
+keeps the recipient's setting. Estimates are experimental and have not been validated in live
+gameplay.
+
 ## Updates and saves
 
 An entire release is precached before its service worker becomes ready. The engine is

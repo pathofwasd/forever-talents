@@ -210,6 +210,7 @@ end
 
 function UI.CreateBrowser(parent)
     local p = W.Panel(parent, 16, -188, 226, 528)
+    UI.skillsPanel = p
     W.Text(p, "Skills & ranks", 12, -13, 202, 15)
     UI.skillCount = W.Text(p, "", 12, -36, 202, 11, W.colors.muted)
     UI.skillSearch = W.Edit(p, "Search skills…", 10, -54, 206, function(text)
@@ -340,6 +341,7 @@ function UI.RefreshBrowser()
     local build, level = FT.Store.View(), FT.Store.ViewLevel()
     local filter = UI.skillFilterKey or "all"
     local simple = FT.Store.SimpleView()
+    local compact = UI.CompactView()
     local comparing = FT.Store.CheckTraining()
     if
         (filter == "needsTraining" and not comparing)
@@ -378,9 +380,12 @@ function UI.RefreshBrowser()
             row.source:SetShown(entry.shownTrained)
             row.comparison = entry.comparison
             row.check:Show()
-            row.title:SetWidth(119 - (entry.comparison and entry.comparison.progress and 34 or 0))
+            row.title:SetWidth(
+                (compact and 289 or 119)
+                    - (entry.comparison and entry.comparison.progress and 34 or 0)
+            )
             local comparison = entry.comparison
-            row.detail:SetWidth(107)
+            row.detail:SetWidth(compact and 277 or 107)
             row.detail:ClearAllPoints()
             row.detail:SetPoint("TOPLEFT", entry.progression and 54 or 42, -23)
             row.unlock:SetShown(entry.progression ~= nil)

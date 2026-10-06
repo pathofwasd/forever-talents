@@ -236,6 +236,15 @@ function W.Scroll(parent, x, y, width, height)
             slider:SetValue(self.offset)
         end
     end
+    function s:Resize(w, h)
+        height, self.viewport = h, h
+        self:SetSize(w - 12, h)
+        content:SetWidth(w - 12)
+        slider:SetHeight(h)
+        slider:ClearAllPoints()
+        slider:SetPoint("TOPLEFT", self, "TOPRIGHT", 4, 0)
+        self:SetContentHeight(content:GetHeight())
+    end
     function s:SetContentHeight(h)
         content:SetHeight(math.max(height, h))
         self.maximum = math.max(0, h - height)

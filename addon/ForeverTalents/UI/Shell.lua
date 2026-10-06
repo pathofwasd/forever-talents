@@ -22,11 +22,13 @@ function UI.Fit()
 end
 
 function UI.RefreshViewMode()
-    local simple = S.SimpleView()
-    if UI.lastSimpleView == simple then
+    local simple, compact = S.SimpleView(), UI.CompactView()
+    if UI.lastSimpleView == simple and UI.lastCompactView == compact then
         return
     end
-    UI.lastSimpleView = simple
+    UI.RestoreCompactLayout()
+    UI.RememberWindowPosition(UI.lastCompactView)
+    UI.lastSimpleView, UI.lastCompactView = simple, compact
     local width, height = simple and 1028 or WIDTH, simple and 758 or HEIGHT
     UI.frame:SetSize(width, height)
     UI.drag:SetWidth(width - (simple and 80 or 430))
@@ -72,6 +74,8 @@ function UI.RefreshViewMode()
         GameTooltip:Hide()
     end
     UI.hoverSkill = nil
+    UI.ApplyCompactLayout()
+    UI.RestoreWindowPosition(compact)
     UI.Fit()
 end
 
@@ -111,9 +115,10 @@ function UI.Create()
     drag:SetScript("OnDragStop", function()
         f:StopMovingOrSizing()
         local point, _, relativePoint, x, y = f:GetPoint()
-        S.db.settings.position = { point = point, relativePoint = relativePoint, x = x, y = y }
+        local key = UI.CompactView() and "compactPosition" or "position"
+        S.db.settings[key] = { point = point, relativePoint = relativePoint, x = x, y = y }
     end)
-    W.Text(f, "Forever Talents", 22, -10, 270, 20, W.colors.gold)
+    UI.brandTitle = W.Text(f, "Forever Talents", 22, -10, 270, 20, W.colors.gold)
     UI.simpleToggle = W.Checkbox(f, 22, -34, function(checked)
         S.SetSimpleView(checked)
     end)
@@ -122,7 +127,7 @@ function UI.Create()
     end, false, 20)
     UI.simpleToggle.tip =
         "Keep class, talents, skill levels and colored highlights. Turn off to restore the full view."
-    UI.buildName = W.Text(f, "", 302, -20, 508, 14)
+    UI.buildName = W.Text(f, "", 324, -20, 486, 14)
     UI.buildName:SetWordWrap(true)
     UI.buildName:SetHeight(34)
     UI.saveButton = W.Button(f, "Save build", 830, -13, 182, function()
@@ -240,7 +245,8 @@ function UI.Create()
     UI.heroBudget:SetJustifyH("RIGHT")
     UI.CreateBrowser(f)
     local talentbar = W.Panel(f, 252, -188, 750, 38)
-    W.Text(talentbar, "Talents", 12, -12, 82, 14)
+    UI.talentBar = talentbar
+    UI.talentBarTitle = W.Text(talentbar, "Talents", 12, -12, 82, 14)
     UI.talentSearch = W.Edit(talentbar, "Search talents or effects…", 96, -5, 280, function(text)
         UI.talentQuery = text
         UI.RefreshTrees()
@@ -300,6 +306,7 @@ function UI.Create()
         UI.historyPanel,
         UI.racialPanel,
     }
+    UI.CreateCompactControls(f)
     f:SetScript("OnShow", function()
         UI.Fit()
         UI.Refresh()
@@ -338,30 +345,7 @@ function UI.Create()
             end
         end)
     end
-    local p = S.db.settings.position
-    if
-        type(p) == "table"
-        and type(p.point) == "string"
-        and type(p.relativePoint) == "string"
-        and type(p.x) == "number"
-        and type(p.y) == "number"
-    then
-        local anchors = {
-            TOP = true,
-            TOPLEFT = true,
-            TOPRIGHT = true,
-            BOTTOM = true,
-            BOTTOMLEFT = true,
-            BOTTOMRIGHT = true,
-            LEFT = true,
-            RIGHT = true,
-            CENTER = true,
-        }
-        if anchors[p.point] and anchors[p.relativePoint] then
-            f:ClearAllPoints()
-            f:SetPoint(p.point, UIParent, p.relativePoint, p.x, p.y)
-        end
-    end
+    UI.RestoreWindowPosition(UI.CompactView())
     UI.RefreshViewMode()
     f:Hide()
 end
@@ -380,6 +364,7 @@ function UI.Refresh()
         if UI.lastClass then
             UI.CloseDialog(true)
         end
+        UI.compactTreeScroll:ScrollTo(0)
         UI.selectedSkills = {}
         UI.highlightColors = {}
         UI.hoverSkill = nil
@@ -405,7 +390,10 @@ function UI.Refresh()
             or p and ("Active: " .. FT.SafeText(node.title, 48) .. (S.Dirty() and " • unsaved changes" or " • saved"))
             or "No saved checkpoint • " .. FT.SafeText(build.name, 48)
     )
-    UI.saveButton:SetText(p and "Update checkpoint" or "Save build")
+    UI.saveButton:SetText(
+        UI.CompactView() and (p and "Update" or "Save")
+            or (p and "Update checkpoint" or "Save build")
+    )
     UI.saveButton:SetEnabled(not S.readOnly and not S.preview and (not p or S.Dirty()))
     UI.pasteTalents:SetEnabled(not S.preview)
     UI.simpleToggle:SetChecked(S.SimpleView())
@@ -462,6 +450,8 @@ function UI.Refresh()
     UI.RefreshBrowser()
     UI.RefreshHistory()
     UI.RefreshRacials()
+    UI.RefreshCompactControls()
+    UI.RefreshSimulationControls()
     local character = UI.dialogs and UI.dialogs.characterSheet
     if
         character

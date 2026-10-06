@@ -4,7 +4,10 @@ local function fmt(value)
     return string.format("%.1f", value or 0):gsub("%.0$", "")
 end
 function UI.CharacterSheet()
-    local f, first = UI.Dialog("characterSheet", "Character • simulator workspace", 920, 686)
+    if not UI.ExperimentalAvailable() then
+        return
+    end
+    local f, first = UI.Dialog("characterSheet", "Character • experimental simulator", 920, 686)
     if first then
         f.identity = W.Text(f, "", 22, -63, 600, 18, W.colors.gold)
         f.name = W.Edit(f, "Character name", 668, -60, 230, function(text, user)

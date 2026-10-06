@@ -374,3 +374,25 @@ A production cache update from 1.2.12 retained a byte-identical 60,778-character
 the preview server stopped, offline reload retained the updated 65,882-character library exactly;
 failed update checks correctly report a connection failure. Browser error logs were empty before the
 intentional offline test. Player SavedVariables and the game install were not changed.
+
+## Version 1.2.14 validation
+
+Passed nineteen native suites and twenty-two browser tests, including exact native Lua 5.1/WASM
+operations and portable sharing parity for all nine classes. The Compact view suite checks the true
+talent grid, independent window positions, saved-data reload, corrupted-position fallback,
+resolution fitting, stable scroll during point edits, skill colors, Simple view compatibility,
+full-layout restoration and experimental-tool navigation. Visibility changes retain exact build,
+character and library strings and do not change calculations or undo history.
+
+Production browser checks covered desktop, 320/390 px phones, 768 px tablet, 844×390 landscape and
+the 1050 px transition. All nine class buttons and Settings remain visible without horizontal page
+overflow. Phone Settings has a 44 px touch target; keyboard Space toggles the preference. Character,
+rank simulator buttons and the mobile More entry hide together. Skill ranks remain readable and
+Simple view keeps Settings accessible. Re-enabling restores experimental headings and tools.
+
+Accepting the 1.2.14 service-worker update preserved a byte-identical 65,882-character test library,
+including branches and unsaved edits. Visibility changes also preserved the identical export and
+persisted after reload. With the preview server stopped, offline startup kept the identical library
+and hidden tools; browser error logs were empty. Native callbacks and fitting were checked in the
+API harness; live WoW visual behavior and simulator accuracy remain unverified. No game install or
+SavedVariables were changed.

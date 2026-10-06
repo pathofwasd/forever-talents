@@ -1,5 +1,12 @@
 local _, FT = ...
 local UI, W, M, S = FT.UI, FT.UI.W, FT.Model, FT.Store
+UI.experimentalDialogs = {
+    characterSheet = true,
+    gear = true,
+    simulation = true,
+    simulationHelp = true,
+    simulationInputs = true,
+}
 
 function UI.CloseDialog(dismiss)
     dismiss = dismiss == true
@@ -9,6 +16,11 @@ function UI.CloseDialog(dismiss)
         UI.dialogs[key]:Hide()
     end
     local parent = not dismiss and stack[#stack]
+    while parent and not S.SimulationEnabled() and UI.experimentalDialogs[parent] do
+        UI.dialogs[parent]:Hide()
+        table.remove(stack)
+        parent = stack[#stack]
+    end
     if parent then
         local f = UI.dialogs[parent]
         f:Show()
@@ -85,12 +97,20 @@ function UI.Dialog(key, title, width, height)
         f:ClearAllPoints()
         f:SetPoint("CENTER")
         f:SetFrameLevel(85)
+        f:SetClampedToScreen(true)
         f.heading = W.Text(f, title, 22, -20, width - 80, 21)
         f.close = W.Button(f, "x", width - 46, -14, 30, function()
             UI.CloseDialog()
         end, false, 28)
         UI.dialogs[key] = f
     end
+    f:SetScale(
+        math.min(
+            1,
+            (UIParent:GetWidth() - 24) / (width * UI.frame:GetEffectiveScale()),
+            (UIParent:GetHeight() - 24) / (height * UI.frame:GetEffectiveScale())
+        )
+    )
     f.heading:SetText(title)
     f.close.tip = #UI.dialogStack > 1
             and (key == "gear" and "Back to Character. Unsaved gear edits are discarded." or "Back to the previous screen.")
@@ -673,7 +693,7 @@ function UI.SkillDialog(skill)
         f.icon = W.Icon(f, "class_druid", 22, -60, 40)
         f.title = W.Text(f, "", 76, -61, 554, 19, W.colors.gold)
         f.source = W.Text(f, "", 76, -89, 570, 12, W.colors.muted)
-        f.sim = W.Button(f, "Simulator", 690, -64, 188, nil, true, 32)
+        f.sim = W.Button(f, "Simulator (experimental)", 690, -64, 188, nil, true, 32)
         local desc = W.Panel(f, 22, -122, 512, 124, { 0.05, 0.065, 0.082 })
         f.descScroll = W.Scroll(desc, 12, -12, 488, 100)
         f.description = W.Text(f.descScroll.content, "", 0, 0, 466, 13)
@@ -703,6 +723,7 @@ function UI.SkillDialog(skill)
             W.colors.muted
         )
     end
+    f.sim:SetShown(S.SimulationEnabled())
     f.title:SetText(skill.name)
     f.icon:SetTexture("Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. skill.icon .. ".tga")
     local view, level = S.View(), S.ViewLevel()
@@ -1143,7 +1164,7 @@ function UI.HelpDialog()
         W.Text(f, "Find the skill, understand the talents", 22, -172, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nColored skill checkboxes work in Simple view too; Clear highlights unchecks all. Click a skill for ranks.\nAlt click opens full talent details; Ctrl click inspects a skill. Simulator explains its assumptions.",
+            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nColored skill checkboxes work in Simple view too; Clear highlights unchecks all. Click a skill for ranks.\nAlt click opens full talent details; Ctrl click inspects a skill. Simulator is experimental.",
             22,
             -204,
             806,
@@ -1161,7 +1182,7 @@ function UI.HelpDialog()
         W.Text(f, "Share and open quickly", 22, -402, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Share copies a build string or Web link with Ctrl+C. Import previews pasted links and strings.\nAddon whisper gives your friend a clickable receipt and stores it in Library → Received.\nCtrl click a Library profile to share; right click it to rename or delete. Text whisper opens a build.\nOpen with /ftc, /forevertalents, the minimap button, or a key set in WoW's Key Bindings.",
+            "Share copies a build string or Web link with Ctrl+C. Import previews pasted links and strings.\nAddon whisper gives your friend a clickable receipt and stores it in Library → Received.\nCtrl click a Library profile to share; right click it to rename or delete. Text whisper opens a build.\nCompact view makes a small movable window with Trees / Skills / Builds tabs.\nSettings can hide experimental Character / Simulator tools without losing saved data.\nOpen with /ftc, /forevertalents, the minimap button, or a key set in WoW's Key Bindings.",
             22,
             -434,
             806,

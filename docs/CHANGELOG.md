@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.14
+
+- Added a separate addon Compact view: a 420×680 movable window with one authentic talent tree at a
+  time, tree tabs, Skills / Builds navigation and a More menu. Full and compact positions are kept
+  independently. It works with Simple view and retains colored skill highlights, talent edits, Auto,
+  Undo/Redo and checkpoints.
+- Added Settings → Show experimental simulator in the addon and PWA. Turning it off hides Character
+  and simulator buttons, including skill details, while preserving stats, gear and saved builds. The
+  device preference persists locally and does not travel with library exports.
+- Marked simulator entry points and headings experimental. Allocation rules, estimates, catalog data
+  and portable formats are unchanged.
+
 ## 1.2.13
 
 - Added a top-left Simple view checkbox in the addon. Colored skill selections and Clear highlights

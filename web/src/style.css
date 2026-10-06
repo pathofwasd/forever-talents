@@ -3121,3 +3121,19 @@ h1 span,
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+body[data-simulation-enabled='false'] [data-simulation-feature] {
+  display: none !important;
+}
+.view-options {
+  gap: 8px;
+}
+.view-settings {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+@media (max-width: 1050px) {
+  .view-settings {
+    min-height: 44px;
+  }
+}

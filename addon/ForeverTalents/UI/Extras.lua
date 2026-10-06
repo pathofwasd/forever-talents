@@ -2,9 +2,35 @@ local _, FT = ...
 local UI, W, S = FT.UI, FT.UI.W, FT.Store
 
 function UI.SettingsDialog()
-    local f, first = UI.Dialog("settings", "Make it comfortable", 600, 460)
+    local f, first = UI.Dialog("settings", "Make it comfortable", 600, 590)
     if first then
+        f.simulation = W.Checkbox(f, 22, -465, function(checked)
+            W.Result(S.SetSimulationEnabled(checked))
+        end)
+        W.Text(f, "Show experimental simulator", 54, -468, 520, 15, W.colors.gold)
+        W.Text(
+            f,
+            "One-use estimates are experimental and not validated in live gameplay.\nTurning this off hides Character and simulator buttons; saved stats and gear stay.",
+            22,
+            -497,
+            556,
+            12,
+            W.colors.muted
+        )
         W.Text(f, "Window size", 22, -72, 556, 16, W.colors.gold)
+        f.compact = W.Checkbox(f, 22, -397, function(checked)
+            UI.SetCompactView(checked)
+        end)
+        W.Text(f, "Compact view", 54, -400, 520, 15, W.colors.gold)
+        W.Text(
+            f,
+            "One tree at a time, with Skills / Builds tabs. Works with Classic mode too.",
+            22,
+            -429,
+            556,
+            12,
+            W.colors.muted
+        )
         f.classic = W.Checkbox(f, 22, -307, function(checked)
             W.Result(S.SetSimpleView(checked))
         end)
@@ -46,7 +72,7 @@ function UI.SettingsDialog()
             )
         end)
         W.Button(f, "Reset window position", 22, -257, 556, function()
-            S.db.settings.position = nil
+            S.db.settings[UI.CompactView() and "compactPosition" or "position"] = nil
             UI.frame:ClearAllPoints()
             UI.frame:SetPoint("CENTER")
             UI.Fit()
@@ -55,7 +81,7 @@ function UI.SettingsDialog()
             f,
             "Open with /ftc or /forevertalents. Assign a key under WoW's Key Bindings\nto open Forever Talents without reaching for the mouse.",
             22,
-            -398,
+            -552,
             556,
             12,
             W.colors.muted
@@ -64,6 +90,8 @@ function UI.SettingsDialog()
     f.scale:SetText(string.format("%.0f%%", S.db.settings.scale * 100))
     f.minimap:SetText(S.db.settings.minimap and "Minimap button: shown" or "Minimap button: hidden")
     f.classic:SetChecked(S.SimpleView())
+    f.compact:SetChecked(UI.CompactView())
+    f.simulation:SetChecked(S.SimulationEnabled())
 end
 
 function UI.PetDialog()
@@ -297,5 +325,26 @@ function UI.PerkDialog()
             12,
             W.colors.muted
         )
+    end
+end
+
+function UI.ExperimentalAvailable()
+    if S.SimulationEnabled() then
+        return true
+    end
+    UI.Status("Enable Show experimental simulator in Settings to open this tool.")
+    return false
+end
+
+function UI.RefreshSimulationControls()
+    local enabled = S.SimulationEnabled()
+    UI.characterButton:SetShown(enabled and not S.SimpleView() and not UI.CompactView())
+    local skill = UI.dialogs and UI.dialogs.skill
+    if skill then
+        skill.sim:SetShown(enabled)
+    end
+    local key = (UI.dialogStack or {})[#(UI.dialogStack or {})]
+    if not enabled and UI.experimentalDialogs[key] then
+        UI.CloseDialog(true)
     end
 end

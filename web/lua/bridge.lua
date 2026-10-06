@@ -66,6 +66,7 @@ local function state()
         statsProfile = S.db.settings.statsProfile,
         auto = S.AutoLevel(),
         simpleView = S.SimpleView(),
+        simulationEnabled = S.SimulationEnabled(),
         checkTraining = S.CheckTraining(),
         preview = S.preview,
         undo = #S.Draft().undo,
@@ -148,6 +149,9 @@ local commands = {
     end,
     simpleView = function(p)
         return S.SetSimpleView(p.enabled)
+    end,
+    simulationEnabled = function(p)
+        return S.SetSimulationEnabled(p.enabled)
     end,
     checkTraining = function(p)
         return S.SetCheckTraining(p.enabled)

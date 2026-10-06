@@ -60,6 +60,10 @@ for _, cid in ipairs(FT.classOrder) do
     output("skills", { filter = "now" })
     output("skillLevels", { name = skill.name })
     output("simpleView", { enabled = false })
+    output("simulationEnabled", { enabled = false })
+    output("state")
+    output("export", { kind = "library" })
+    output("simulationEnabled", { enabled = true })
 end
 output("switch", { classID = 11 })
 output("auto", { enabled = false })

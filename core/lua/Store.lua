@@ -89,6 +89,7 @@ function S.Init(classID, raceID, level)
     if db.settings.minimap == nil then
         db.settings.minimap = true
     end
+    db.settings.showSimulation = db.settings.showSimulation ~= false
     db.settings.simpleView = db.settings.simpleView == true
     db.settings.checkTraining = db.settings.checkTraining == true
     db.settings.scenario = FT.Simulation.State(db.settings.scenario)
@@ -273,6 +274,19 @@ function S.SetSimpleView(enabled)
     FT.Changed(
         enabled and "Simple view enabled. Your builds and character settings are kept."
             or "Full view restored."
+    )
+    return true
+end
+
+function S.SimulationEnabled()
+    return S.db.settings.showSimulation ~= false
+end
+
+function S.SetSimulationEnabled(enabled)
+    S.db.settings.showSimulation = not not enabled
+    FT.Changed(
+        enabled and "Experimental simulator enabled."
+            or "Character and simulator tools hidden. Saved stats and gear are kept."
     )
     return true
 end

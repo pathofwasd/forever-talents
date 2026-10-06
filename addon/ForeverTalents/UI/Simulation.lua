@@ -32,7 +32,10 @@ local function choices(key, options)
     }
 end
 function UI.SimulationDialog(skill, rank, overrides)
-    local f, first = UI.Dialog("simulation", "Simulator", 920, 668)
+    if not UI.ExperimentalAvailable() then
+        return
+    end
+    local f, first = UI.Dialog("simulation", "Experimental simulator", 920, 668)
     if first then
         local character = W.Panel(f, 22, -62, 876, 96)
         f.portrait = W.Icon(character, "class_druid", 14, -16, 58)

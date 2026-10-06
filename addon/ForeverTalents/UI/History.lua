@@ -70,15 +70,20 @@ local function rowAt(i, height)
     row.up:Hide()
     row.down:Hide()
     row.delete:Hide()
-    row:SetSize(214, height or 44)
+    local width = UI.CompactView() and 364 or 214
+    row:SetSize(width, height or 44)
+    row.up:ClearAllPoints()
+    row.up:SetPoint("TOPLEFT", width - 42, -4)
+    row.down:ClearAllPoints()
+    row.down:SetPoint("TOPLEFT", width - 21, -4)
     row:ClearAllPoints()
     row:SetPoint("TOPLEFT", 0, -(i - 1) * (height or 44) - i * 3 + 3)
     row.title:ClearAllPoints()
     row.title:SetPoint("TOPLEFT", 8, -6)
-    row.title:SetWidth(196)
+    row.title:SetWidth(width - 18)
     row.detail:ClearAllPoints()
     row.detail:SetPoint("TOPLEFT", 8, -24)
-    row.detail:SetWidth(196)
+    row.detail:SetWidth(width - 18)
     row:SetActive(false)
     row.tip = nil
     return row
@@ -145,7 +150,7 @@ function UI.RefreshHistory()
             local r = rowAt(i)
             count = i
             r.step = i
-            r.title:SetWidth(158)
+            r.title:SetWidth(UI.CompactView() and 308 or 158)
             r.title:SetText("Lv. " .. (9 + i) .. "  " .. t.name)
             local rank = 0
             for j = 1, i do
@@ -188,9 +193,10 @@ function UI.RefreshHistory()
                 local indent = math.min(4, item.depth) * 12
                 r:ClearAllPoints()
                 r:SetPoint("TOPLEFT", indent, -(i - 1) * 58)
-                r:SetWidth(214 - indent)
-                r.title:SetWidth(196 - indent)
-                r.detail:SetWidth(170 - indent)
+                local width = UI.CompactView() and 364 or 214
+                r:SetWidth(width - indent)
+                r.title:SetWidth(width - 18 - indent)
+                r.detail:SetWidth(width - 44 - indent)
                 r.title:SetText(FT.SafeText(n.title, 48))
                 r.detail:SetText(
                     "Lv. "
