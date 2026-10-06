@@ -274,7 +274,9 @@ def compile_spells(directory, build, catalog):
                 "This result includes the main-hand effect only. Off-hand damage is not modeled."
             )
         if name == "Holy Nova":
-            notes.append("This result covers damage; the linked party healing effect is not modeled.")
+            notes.append(
+                "This result covers damage; the linked party healing effect is not modeled."
+            )
         if name == "Summon Hawk":
             notes.append(
                 "Initial captured hit only. Summoned hawk attacks and scripted Attack Power/talent scaling are not modeled."
