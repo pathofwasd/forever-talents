@@ -99,7 +99,14 @@ function highlightStyle(skill) {
     : '';
 }
 function skillKey(s) {
-  return `${s.kind}:${s.name}`;
+  return s?.name ? `${s.kind}:${s.name}` : null;
+}
+function highlightControl(control) {
+  if (!control || state.simpleView) return;
+  hovered = control.dataset.skill
+    ? engine.call('skill', { name: control.dataset.skill })
+    : { related: [{ id: Number(control.dataset.highlightTalent) }] };
+  paintHighlights();
 }
 function currentSkillFilter() {
   return state.simpleView && !['now', 'trained'].includes(skillFilter) ? 'all' : skillFilter;
@@ -283,7 +290,7 @@ function renderOrder() {
     list(state.build.order)
       .map(
         (id, i) =>
-          `<div class="order-step ${state.preview === i + 1 ? 'active' : ''}">${btn(`<span class="step-level">${i + 10}</span>${img(index[id].icon)}<span>${esc(index[id].name)}</span>`, 'preview', `data-count="${i + 1}"`, 'step-main')}${btn('↑', 'reorder', `data-from="${i + 1}" data-to="${i}" aria-label="Move point ${i + 1} earlier"`, 'step-move', i === 0 || state.preview !== undefined)}${btn('↓', 'reorder', `data-from="${i + 1}" data-to="${i + 2}" aria-label="Move point ${i + 1} later"`, 'step-move', i === list(state.build.order).length - 1 || state.preview !== undefined)}</div>`
+          `<div class="order-step ${state.preview === i + 1 ? 'active' : ''}">${btn(`<span class="step-level">${i + 10}</span>${img(index[id].icon)}<span>${esc(index[id].name)}</span>`, 'preview', `data-count="${i + 1}" data-highlight-talent="${id}"`, 'step-main')}${btn('↑', 'reorder', `data-from="${i + 1}" data-to="${i}" aria-label="Move point ${i + 1} earlier"`, 'step-move', i === 0 || state.preview !== undefined)}${btn('↓', 'reorder', `data-from="${i + 1}" data-to="${i + 2}" aria-label="Move point ${i + 1} later"`, 'step-move', i === list(state.build.order).length - 1 || state.preview !== undefined)}</div>`
       )
       .join('') ||
     '<p class="empty">Your first point starts at level 10. Each point is saved in order.</p>'
@@ -560,7 +567,7 @@ function showHelp() {
   }
   openDialog(
     'A quick guide',
-    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Tap a talent-order step to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
+    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
     true
   );
 }
@@ -1002,11 +1009,7 @@ document.addEventListener('change', async (event) => {
 });
 document.addEventListener('mouseover', (event) => {
   if (matchMedia('(max-width: 1050px), (pointer: coarse)').matches) return;
-  const s = event.target.closest('[data-skill]');
-  if (s && !state.simpleView) {
-    hovered = engine.call('skill', { name: s.dataset.skill });
-    paintHighlights();
-  }
+  highlightControl(event.target.closest('[data-skill], [data-highlight-talent]'));
   const t = event.target.closest('[data-talent]');
   if (t && !modal.open) {
     const tip = $('#tooltip');
@@ -1018,12 +1021,27 @@ document.addEventListener('mouseover', (event) => {
   }
 });
 document.addEventListener('mouseout', (event) => {
-  if (event.target.closest('[data-skill]') && !event.relatedTarget?.closest('[data-skill]')) {
+  if (
+    event.target.closest('[data-skill], [data-highlight-talent]') &&
+    !event.relatedTarget?.closest('[data-skill], [data-highlight-talent]')
+  ) {
     hovered = null;
     paintHighlights();
   }
   if (event.target.closest('[data-talent]') && !event.relatedTarget?.closest('[data-talent]'))
     $('#tooltip').hidden = true;
+});
+document.addEventListener('focusin', (event) => {
+  highlightControl(event.target.closest('[data-skill], [data-highlight-talent]'));
+});
+document.addEventListener('focusout', (event) => {
+  if (
+    event.target.closest('[data-skill], [data-highlight-talent]') &&
+    !event.relatedTarget?.closest('[data-skill], [data-highlight-talent]')
+  ) {
+    hovered = null;
+    paintHighlights();
+  }
 });
 modal.addEventListener('cancel', (event) => {
   event.preventDefault();

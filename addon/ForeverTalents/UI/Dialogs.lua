@@ -586,7 +586,9 @@ function UI.SkillDialog(skill)
                 talent.name
                     .. " is highlighted in the selection's color. Hover it for the current and next rank."
             )
-            UI.HighlightSkill({ related = { link } })
+            local focus = FT.Copy(skill)
+            focus.related = { link }
+            UI.HighlightSkill(focus)
         end)
         row:SetScript("OnEnter", function(self)
             self:Paint(true)

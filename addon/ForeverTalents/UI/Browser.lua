@@ -9,6 +9,10 @@ local filterLabels = {
 }
 
 function UI.SkillHighlightKey(skill)
+    -- Talent-order previews only carry related IDs; they have no pinnable skill identity.
+    if type(skill) ~= "table" or type(skill.name) ~= "string" or skill.name == "" then
+        return nil
+    end
     if skill.kind == "racial" then
         return "racial:" .. FT.Store.Build().raceID .. ":" .. skill.ranks[1].spellID
     end
@@ -43,9 +47,12 @@ function UI.RefreshHighlightChecks()
 end
 
 function UI.SetSkillHighlight(skill, checked)
+    local key = UI.SkillHighlightKey(skill)
+    if not key then
+        return
+    end
     UI.selectedSkills = UI.selectedSkills or {}
     UI.highlightColors = UI.highlightColors or {}
-    local key = UI.SkillHighlightKey(skill)
     if checked and not UI.highlightColors[key] then
         UI.highlightColors[key] = FT.Skills.NextHighlightColor(UI.highlightColors)
     elseif not checked then

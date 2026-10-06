@@ -339,7 +339,7 @@ function UI.UpdateSkillHighlights()
     if UI.hoverSkill then
         local key = UI.SkillHighlightKey(UI.hoverSkill)
         selections[#selections + 1] =
-            { skill = UI.hoverSkill, color = (UI.highlightColors or {})[key] or 1 }
+            { skill = UI.hoverSkill, color = key and (UI.highlightColors or {})[key] or 1 }
     end
     UI.highlight = FT.Skills.HighlightMap(selections)
     UI.PaintHighlights()

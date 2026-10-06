@@ -202,4 +202,53 @@ check(UI.highlightColors["skill:Selection 3"] == 3)
 check(not UI.highlight[id][2] and UI.highlight[id][3])
 UI.ClearSkillHighlights()
 check(not next(UI.highlightColors) and not next(UI.highlight))
+
+-- Actual order-row and related-talent callbacks retain pinned selections.
+local starfire = A.Prepare(11).byName.Starfire
+UI.SetSkillHighlight(wrath, true)
+UI.SetSkillHighlight(starfire, true)
+local pinned = FT.Copy(UI.highlight)
+local function checkPinnedOnly()
+    for talentID, colors in pairs(UI.highlight) do
+        for color in pairs(colors) do
+            check(pinned[talentID] and pinned[talentID][color], "Temporary highlight remained")
+        end
+    end
+    for talentID, colors in pairs(pinned) do
+        for color in pairs(colors) do
+            check(UI.highlight[talentID] and UI.highlight[talentID][color], "Pinned highlight lost")
+        end
+    end
+end
+local buildCode = assert(FT.Codec.Encode(S.Build()))
+UI.historyTab = "order"
+UI.RefreshHistory()
+local row = UI.historyRows[1]
+check(row and row:IsShown())
+row:Trigger("OnEnter")
+check(GameTooltip:IsShown() and UI.highlight[S.Build().order[1]][1])
+for talentID, colors in pairs(pinned) do
+    for color in pairs(colors) do
+        check(UI.highlight[talentID][color], "Order hover lost a pinned highlight")
+    end
+end
+check(UI.SkillHighlightKey(UI.hoverSkill) == nil)
+UI.SetSkillHighlight(UI.hoverSkill, true)
+check(UI.IsSkillHighlighted(wrath) and UI.IsSkillHighlighted(starfire))
+row:Trigger("OnLeave")
+check(not UI.hoverSkill and not GameTooltip:IsShown())
+checkPinnedOnly()
+check(FT.Codec.Encode(S.Build()) == buildCode, "Hover changed the build")
+UI.SkillDialog(starfire)
+UI.dialogs.skill.relatedRows[1]:Click()
+check(not UI.dialogOverlay:IsShown())
+check(UI.highlight[starfire.related[1].id][2], "Related-talent focus lost the skill's color")
+UI.HighlightSkill(nil)
+checkPinnedOnly()
+S.SetSimpleView(true)
+UI.HighlightSkill({ related = { { id = id } } })
+check(not next(UI.highlight), "Classic mode displayed temporary highlights")
+S.SetSimpleView(false)
+UI.ClearSkillHighlights()
+check(not next(UI.selectedSkills) and not next(UI.highlightColors) and not next(UI.highlight))
 print("Character import and UI navigation: " .. checks .. " assertions passed")

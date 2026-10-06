@@ -142,3 +142,23 @@ scrollable long help text, character preview and damaged-string rejection, train
 and an exact native FC1 round trip. Updating from 1.2.3 preserved the entire test library byte for
 byte, including profiles, checkpoints, class drafts and Character. With the preview server stopped,
 1.2.4 reloaded offline and retained talents, trained ranks, saved builds and library export.
+
+## Version 1.2.5 validation
+
+Passed 52,073 native assertions, seven browser-engine tests, generated-file checks, the production
+build, formatting/lint checks and addon archive validation. Native regressions invoke actual
+talent-order OnEnter/OnLeave and skill-to-talent OnClick callbacks. They verify unnamed temporary
+highlights, retained checkbox selections and colors, restoring pinned highlights, unchanged build
+strings, clear-all behavior and suppression in Classic mode.
+
+Production browser checks covered desktop, 320/375 px phones, 844×390 landscape and 1024 px tablet.
+Keyboard focus highlighted the order entry’s talent without editing the build, retained both pinned
+colors and restored the exact pinned highlight map on leaving. Skill-to-talent links, level
+previews, clear-all and Simple view worked; phone tap descriptions and order previews stayed
+accessible without horizontal overflow. The console reported no errors.
+
+Updating from 1.2.4 preserved the test library byte for byte. After stopping the preview server,
+1.2.5 reloaded offline, highlighted order entries and exported the identical full library. Installed
+files matched the verified archive, and the recoverable backup matched the previous addon. Player
+SavedVariables were preserved. Native callbacks were verified in the Lua harness; live WoW loading
+and visual behavior still need in-game verification.

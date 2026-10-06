@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.5
+
+Fixed the Lua error when hovering talent-order entries and following skill-to-talent links.
+Temporary talent highlights preserve checked skills and their colors. Web order entries now
+highlight their talent on hover or keyboard focus through the shared engine. Existing builds,
+character captures and sharing formats remain unchanged. See [release notes](RELEASE-1.2.5.md).
+
 ## 1.2.4
 
 Fixed live talent import for Forever’s C_Traits combat configurations. The importer reads the active

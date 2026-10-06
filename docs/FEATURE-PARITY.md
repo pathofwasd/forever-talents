@@ -57,6 +57,11 @@ discards them. Ctrl/Cmd+Z/Y shortcuts do not intercept text editing. Browser sav
 SavedVariables are independent until explicitly synced with text; no automatic connection is
 implied.
 
+Talent-order entries temporarily highlight their talent on hover (and keyboard focus in the PWA).
+They need no skill name or checkbox identity. Leaving restores the pinned skill/racial colors;
+related-talent links keep the originating skill's assigned color in the addon. Highlighting does not
+change allocations, saved profiles or sharing strings.
+
 Library's **New build** creates an independent profile; the checkpoint action creates a child in its
 existing profile. Both reuse shared Store operations.
 
