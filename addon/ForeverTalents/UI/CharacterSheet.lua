@@ -209,15 +209,18 @@ function UI.CharacterSheet()
             f.save()
             f.populate()
         end, true, 30)
-        W.Button(f, "Copy / paste character", 614, -634, 284, UI.CharacterDialog, false, 30)
-        W.Button(f, "Back to skill simulator", 22, -634, 280, function()
-            local sim = UI.dialogs.simulation
-            if sim and sim.classID == S.View().classID then
-                UI.SimulationDialog(sim.skill, sim.selectedRank)
-            else
-                UI.CloseDialog()
-            end
-        end)
+        W.Button(f, "Copy / paste character", 614, -634, 284, function()
+            UI.CharacterDialog()
+        end, false, 30)
+        W.Button(f, "Import my talents & skills", 22, -634, 280, function()
+            W.Result(FT.ImportPlayerCharacter())
+            f.sheet = FT.Copy(C.Get(S.View()))
+            f.populate()
+        end, true, 30)
+        f.onReturn = function()
+            f.sheet = FT.Copy(C.Get(S.View()))
+            f.populate()
+        end
     end
     f.sheet, f.classID = C.Get(S.View()), S.View().classID
     f.populate()

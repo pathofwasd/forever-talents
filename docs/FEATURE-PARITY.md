@@ -23,10 +23,11 @@
 ## Features required in both interfaces
 
 Authentic three trees with prerequisites; current/next/all rank descriptions; legal exact point
-order; class/race choice; skill/racial search and persistent checkbox highlights; Auto/manual level;
-Undo/Redo; saved builds/checkpoint branches; delete-parent-and-descendants; leveling preview and
-branching; text sharing; character and stats-only import/export; full-library merge; simple and
-Advanced one-use estimates; race atlas, pet atlas and perk reference.
+order; class/race choice; skill/racial search and persistent checkbox highlights with six matching
+colors and overlap markers; Auto/manual level; Undo/Redo; saved builds/checkpoint branches;
+delete-parent-and-descendants; leveling preview and branching; text sharing; character and
+stats-only import/export; full-library merge; simple and Advanced one-use estimates; race atlas, pet
+atlas and perk reference.
 
 The addon calls the reduced view **Classic mode** (Settings; `/ftc classic` / `/ftc full`). The PWA
 calls it **Simple view**, with a visible checkbox above the class picker. Both hide race/racials,
@@ -49,20 +50,34 @@ contains Trees / Skills, with the same explicit talent Add/Remove sheet and true
 Desktop shows three trees with hover inspection and click/right-click edits. Mobile uses a readable
 real 7×4 tree per tab, a tap-to-inspect sheet with explicit Add/Remove controls, and
 Trees/Skills/Builds/More navigation. Rank and prerequisite positions must not be rearranged for
-smaller screens. All key information is available without hover. Escape closes browser dialogs;
-focus returns to the originating control. Ctrl/Cmd+Z/Y shortcuts do not intercept text editing.
-Browser saves and native SavedVariables are independent until explicitly synced with text; no
-automatic connection is implied.
+smaller screens. All key information is available without hover. X and Escape return to the previous
+screen when a dialog has a parent, keeping temporary simulator inputs. Closing the outermost dialog
+returns focus to the originating control. Gear changes apply only through Equip; closing the editor
+discards them. Ctrl/Cmd+Z/Y shortcuts do not intercept text editing. Browser saves and native
+SavedVariables are independent until explicitly synced with text; no automatic connection is
+implied.
+
+Library's **New build** creates an independent profile; the checkpoint action creates a child in its
+existing profile. Both reuse shared Store operations.
+
+The addon offers **Import my talents & trained skills** in Import and Character. It reads active
+player talent ranks, learned player spellbook IDs, level, stats and available equipment in one
+capture. Future, flyout, pet and inactive specialization entries are excluded. Talent order is
+reconstructed because the original live spending order is unavailable. Incomplete talent/spellbook
+reads preserve the existing draft and capture. **Trained on captured character** uses exact recorded
+spell IDs independently of the planned level; it also works after FC1/FS2/FL1 import into the PWA.
+Older snapshots without trained ranks remain supported. All skills remains the planning catalog;
+training is a dated-by-level snapshot, not a live browser connection.
 
 ## Platform limits
 
-Live stats/talents capture, client descriptions/cast times and clickable whisper receipts need WoW
-and stay native. The PWA imports their portable snapshots. Captured school power/crit and source
-talents support recognized crit normalization across skill selections. Reported stats can include
-buffs; hit, reduction, procs and rotations are assumptions/omissions. Unknown scaling is explicitly
-unverified in both interfaces; a coefficient override can supply a measured value. Character
-reference conversions are marked approximate. Native item capture retains reported totals and
-available item details, without reconstructing procs or set bonuses. The PWA accepts portable
+Live spellbook/stats/talents capture, client descriptions/cast times and clickable whisper receipts
+need WoW and stay native. The PWA imports their portable snapshots. Captured school power/crit and
+source talents support recognized crit normalization across skill selections. Reported stats can
+include buffs; hit, reduction, procs and rotations are assumptions/omissions. Unknown scaling is
+explicitly unverified in both interfaces; a coefficient override can supply a measured value.
+Character reference conversions are marked approximate. Native item capture retains reported totals
+and available item details, without reconstructing procs or set bonuses. The PWA accepts portable
 character/gear snapshots; simulator pastes remain temporary. Pet/perk data is reference-only in both
 interfaces; it is not silently added to class builds.
 

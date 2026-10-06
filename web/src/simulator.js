@@ -103,10 +103,15 @@ export function createSimulatorUI({
     const skill = engine().call('skill', { name });
     simulation = { name, rank, skill, overrides, values: {}, inputSignature: '' };
     const ranks = list(skill.ranks);
+    const savedSimulation = simulation;
     openDialog(
       `Simulator · ${name}`,
       `<section class="sim-character-banner" aria-label="Central character"><div class="sim-character-portrait">${image(state().view.classID ? engine().call('character').classIcon : 'class_druid')}</div><div><span class="eyebrow">YOUR CHARACTER</span><h3 id="sim-character-name"></h3><p id="sim-character-summary" class="muted"></p><small id="sim-character-source"></small></div>${button('Edit character', 'character-sheet')}</section><div class="sim-skill-heading"><div><span class="eyebrow">ONE USE · ONE TARGET</span><h3>${image(skill.icon)}${esc(skill.name)}</h3></div><label>Rank<select id="sim-rank">${ranks.map((r, i) => `<option value="${i + 1}" ${i + 1 === rank ? 'selected' : ''}>${esc(r.label || 'Ability')} · level ${r.level}${r.talentGranted ? ' · talent unlock' : ''}</option>`).join('')}</select></label></div><div id="sim-live-summary" class="sim-live-summary" aria-live="polite"></div><div class="sim-workbench"><section class="sim-input-pane"><p class="sim-local-note">Inputs come from your character. Changes here are temporary for this skill; the character sheet stays unchanged.</p><div id="sim-character-inputs" class="sim-fields"></div><section id="sim-target-section"><h3>Target & conditions</h3><div id="sim-target-inputs" class="sim-fields"></div></section><details class="sim-advanced"><summary>Advanced · scaling and manual amounts</summary><p class="muted">Blank coefficients use captured data. Supplied values are explicit assumptions. Only applicable inputs appear.</p><label class="pin"><input type="checkbox" data-sim-stat="manual">Replace captured amounts with a manual model</label><div id="sim-advanced-inputs" class="sim-fields"></div></details></section><section id="sim-results" class="sim-output-pane" aria-live="polite" aria-atomic="true"></section></div><div class="dialog-actions">${button('Reset skill overrides', 'reset-sim')}${button('Copy these inputs', 'share-stats')}${button('Paste skill inputs', 'paste-sim-inputs')}${button('Back to skill', 'related-skill', `data-name="${esc(name)}"`)}</div>`,
-      true
+      true,
+      () => {
+        simulation = savedSimulation;
+        render();
+      }
     );
     render();
   }
@@ -226,8 +231,9 @@ export function createSimulatorUI({
               )
               .join('')}</select></label>`
           : ''
-      }<div id="character-notes"></div></section></div><aside class="callout">Live character import is available in the WoW addon. Capture stats and equipment there, copy the character or stats string, then paste it here. Captured equipment is shown for reference; its bonuses are already in reported totals.</aside><div class="dialog-actions">${button('Copy character & gear', 'share-character', '', 'primary')}${button('Copy stats only', 'share-character-stats')}${button('Paste character / stats', 'import')}${simulation ? button('Back to skill simulator', 'back-simulator') : ''}</div>`,
-      true
+      }<div id="character-notes"></div></section></div><aside class="callout">Live character import is available in the WoW addon. Use Import my talents & skills there, then copy the character string and paste it here. It includes trained skill ranks; the Trained filter shows that capture independently of your planned level. Captured equipment is shown for reference; its bonuses are already in reported totals.</aside><div class="dialog-actions">${button('Copy character & gear', 'share-character', '', 'primary')}${button('Copy stats only', 'share-character-stats')}${button('Paste character / stats', 'import')}${simulation ? button('Back to skill simulator', 'back-simulator') : ''}</div>`,
+      true,
+      showCharacter
     );
     refreshCharacter();
   }
@@ -312,7 +318,7 @@ export function createSimulatorUI({
         showCharacter();
         return true;
       case 'back-simulator':
-        if (simulation) show(simulation.name, simulation.rank);
+        if (simulation) show(simulation.name, simulation.rank, simulation.overrides);
         return true;
       case 'reset-sim':
         simulation.overrides = {};

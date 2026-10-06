@@ -52,8 +52,12 @@ delivery work on every client patch.
 `tests/test_simulation.lua` covers hand-calculated direct/tick/shield/AP/weapon examples, scope
 exclusions, reported-crit normalization, gear/attribute effects, capture deltas, isolated temporary
 inputs, portable FS1/FS2/FC1/FL1 data, corruption rejection and every captured effect model. Native
-UI checks exercise custom item editing and character/skill separation. The browser-engine parity
-suite compares central workspaces, resolved inputs, results and exact export strings to Lua 5.1.
+UI checks exercise real button callbacks, nested X/Escape navigation, discarded gear edits,
+temporary simulator input retention, legacy/modern spellbook capture, incomplete-import rejection,
+independent profile creation and stable recycled highlight colors. Captured training records are
+validated and transferred through FC1/FS2/FL1, including exact Lua 5.1/WASM string comparison. The
+browser-engine parity suite compares central workspaces, resolved inputs, results and exact export
+strings to Lua 5.1.
 
 For release QA, use an isolated browser origin. Check desktop, 320/375 px phones, tablet and
 landscape; enter gear/stats, calculate multiple effects, paste invalid and valid inputs, and confirm
@@ -95,3 +99,23 @@ Accepting the final service-worker update preserved saved branches, character ge
 preference. With the preview server paused, reload and skill rank inspection still worked. Native
 mock geometry was reviewed for the compact window, Settings and skill-level dialog; live WoW visual
 behavior remains unverified.
+
+## Version 1.2.3 validation
+
+Passed 50,353 native assertions, seven browser-engine tests, exact Lua 5.1/WASM sharing parity,
+generated-file drift checks, production build, formatting and archive validation. Regression tests
+exercise the actual button callback that previously failed SetText, X/Escape parent navigation,
+simulator override retention, discarded gear edits, native spellbook API variants, incomplete
+capture rejection, malformed training recovery and independent profile creation.
+
+Production browser checks covered desktop, 320/375 px phones, tablet and landscape. Nested
+character/gear/sharing/input screens returned to their parent; temporary simulator values remained.
+Library refreshed after New build and retained the previous profile's checkpoint count. Six checked
+skills used distinct colors, the seventh reused the first, and shared talents showed multiple
+markers. Damaged imports were rejected; a native FC1 fixture round-tripped as the exact same string.
+Trained ranks survived stats import, update acceptance and an offline reload. The service-worker
+update preserved saved profiles, checkpoints and gear. With the preview server stopped, reload,
+trained filtering, Library and full-library export still worked.
+
+Native behavior was exercised through API fixtures and the addon callback harness. Live client
+loading, live captures and native visual behavior still require in-game verification.

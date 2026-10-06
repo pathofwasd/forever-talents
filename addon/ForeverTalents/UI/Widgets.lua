@@ -137,11 +137,17 @@ function W.Checkbox(parent, x, y, changed)
     mark:SetAllPoints()
     mark:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
     mark:SetVertexColor(0.35, 0.85, 1, 1)
+    b.mark = mark
+    function b:SetHighlightColor(value)
+        self.highlightColor = value
+        mark:SetVertexColor(unpack(value or { 0.35, 0.85, 1, 1 }))
+        self:Paint(false)
+    end
     b:SetCheckedTexture(mark)
     b:SetChecked(false)
     function b:Paint(hover)
         if self:GetChecked() then
-            self:SetBackdropBorderColor(0.35, 0.85, 1, 1)
+            self:SetBackdropBorderColor(unpack(self.highlightColor or { 0.35, 0.85, 1, 1 }))
         elseif hover then
             self:SetBackdropBorderColor(0.60, 0.70, 0.78, 1)
         else

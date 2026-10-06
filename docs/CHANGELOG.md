@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.3
+
+Nested screens now return to their parent with X or Escape, preserving temporary simulator inputs.
+Fixed Character's copy/paste button error, added one-click native talents/trained-skills capture and
+portable trained-rank snapshots, clarified Library's New build action, and added six matching
+checkbox/talent highlight colors with overlap markers. Both interfaces retain existing saves and
+sharing compatibility. See [release notes](RELEASE-1.2.3.md).
+
 ## 1.2.2
 
 Corrected October 1 Druid/Warrior descriptions and Berserker Rage's level-30 unlock. Removed Tiger's

@@ -61,6 +61,13 @@ output("characterSave", {
         schema = 1,
         mode = "gear",
         name = "Shared character",
+        trainedSkills = {
+            schema = 1,
+            classID = 11,
+            raceID = 4,
+            level = 25,
+            spellIDs = { 5185, 5177 },
+        },
         form = "cat",
         weaponType = "none",
         stats = { power = 123.25, hit = 93 },

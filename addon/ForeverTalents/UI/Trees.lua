@@ -286,9 +286,27 @@ end
 
 function UI.PaintHighlights()
     for id, b in pairs(UI.talentButtons or {}) do
+        b.highlightMarks = b.highlightMarks or {}
+        local colors = UI.highlight and UI.highlight[id]
+        for n, c in ipairs(FT.Skills.highlightPalette) do
+            local mark = b.highlightMarks[n]
+            if not mark then
+                mark = b:CreateTexture(nil, "OVERLAY")
+                mark:SetSize(6, 4)
+                mark:SetPoint("TOPLEFT", 2 + (n - 1) * 6, -2)
+                mark:SetColorTexture(unpack(c))
+                b.highlightMarks[n] = mark
+            end
+            mark:SetShown(colors and colors[n] or false)
+        end
         if UI.highlight and UI.highlight[id] then
             b:SetAlpha(1)
-            b:SetBackdropBorderColor(0.35, 0.85, 1, 1)
+            for n, c in ipairs(FT.Skills.highlightPalette) do
+                if colors[n] then
+                    b:SetBackdropBorderColor(unpack(c))
+                    break
+                end
+            end
             b.icon:SetVertexColor(1, 1, 1)
         else
             b:SetAlpha(b.match and 1 or 0.22)
@@ -313,14 +331,17 @@ function UI.UpdateSkillHighlights()
         UI.PaintHighlights()
         return
     end
-    for _, skill in pairs(UI.selectedSkills or {}) do
-        for _, link in ipairs(skill.related or {}) do
-            UI.highlight[link.id] = link
-        end
+    local selections = {}
+    for key, skill in pairs(UI.selectedSkills or {}) do
+        selections[#selections + 1] =
+            { skill = skill, color = (UI.highlightColors or {})[key] or 1 }
     end
-    for _, link in ipairs(UI.hoverSkill and UI.hoverSkill.related or {}) do
-        UI.highlight[link.id] = link
+    if UI.hoverSkill then
+        local key = UI.SkillHighlightKey(UI.hoverSkill)
+        selections[#selections + 1] =
+            { skill = UI.hoverSkill, color = (UI.highlightColors or {})[key] or 1 }
     end
+    UI.highlight = FT.Skills.HighlightMap(selections)
     UI.PaintHighlights()
 end
 

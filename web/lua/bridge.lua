@@ -98,9 +98,16 @@ local function catalog()
         pets = FT.Data.pets,
         classOrder = FT.classOrder,
         version = FT.version,
+        highlightPalette = A.highlightPalette,
     }
 end
 local commands = {
+    highlightColor = function(p)
+        return A.NextHighlightColor(plain(p.assignments))
+    end,
+    highlights = function(p)
+        return A.HighlightMap(plain(p.selections))
+    end,
     state = function()
         return state()
     end,
@@ -286,6 +293,11 @@ local commands = {
         end
         local ranks, unlockLevel = A.Levels(skill)
         return { ranks = ranks, unlockLevel = unlockLevel }
+    end,
+    training = function(p)
+        local capture = FT.Character.Get(S.View()).trainedSkills
+        local skill = A.Prepare(S.View().classID).byName[p.name]
+        return { capture = capture, rank = skill and A.TrainedRank(skill, capture) }
     end,
     skill = function(p)
         for _, entry in ipairs(A.List(S.View(), 60, "", "all")) do

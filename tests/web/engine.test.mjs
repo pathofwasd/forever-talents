@@ -78,6 +78,7 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
       schema: 1,
       mode: 'gear',
       name: 'Shared character',
+      trainedSkills: { schema: 1, classID: 11, raceID: 4, level: 25, spellIDs: [5185, 5177] },
       form: 'cat',
       weaponType: 'none',
       stats: { power: 123.25, hit: 93 },
@@ -285,4 +286,58 @@ test('stats-only import keeps talent draft, rejects corruption, preserves newer 
   assert.equal(newer.raw('save', { title: 'No' }).ok, false);
   h.close();
   newer.close();
+});
+
+test('captured trained ranks persist, reject invalid records, and share between character, stats and library formats', async () => {
+  const h = await harness();
+  const training = { schema: 1, classID: 11, raceID: 4, level: 25, spellIDs: [5185, 5177] };
+  h.call('characterSave', {
+    sheet: { mode: 'manual', stats: { power: 123 }, trainedSkills: training },
+  });
+  const rank = h.call('training', { name: 'Wrath' }).rank;
+  assert.equal(rank.label, 'Rank 2');
+  assert.equal(rank.spellID, 5177);
+  h.call('level', { level: 60 });
+  const trained = list(h.call('skills', { filter: 'trained' }));
+  assert.equal(trained.length, 2);
+  assert.equal(trained.find((e) => e.skill.name === 'Wrath').trained.spellID, 5177);
+  assert.notEqual(trained.find((e) => e.skill.name === 'Wrath').current.spellID, 5177);
+  const unchanged = h.call('export', { kind: 'character' });
+  for (const spellIDs of [[5177, 5177], [0], [-1], [1.5], ['5177']]) {
+    assert.equal(
+      h.raw('characterSave', { sheet: { trainedSkills: { ...training, spellIDs } } }).ok,
+      false
+    );
+    assert.equal(h.call('export', { kind: 'character' }), unchanged);
+  }
+  assert.equal(
+    h.raw('characterSave', { sheet: { trainedSkills: { ...training, classID: 1, raceID: 1 } } }).ok,
+    false
+  );
+  h.call('save', { title: 'Captured character' });
+  for (const kind of ['stats', 'character', 'library']) {
+    const code = h.call('export', { kind });
+    const imported = await harness();
+    imported.call('import', { code, includeDrafts: true });
+    assert.equal(imported.call('training', { name: 'Wrath' }).rank.spellID, 5177);
+    const restored = await harness(imported.call('database'));
+    assert.equal(restored.call('training').capture.level, 25);
+    imported.close();
+    restored.close();
+  }
+  const assignments = {};
+  for (let i = 1; i <= 7; i++)
+    assignments['Skill ' + i] = h.call('highlightColor', { assignments });
+  assert.deepEqual(Object.values(assignments), [1, 2, 3, 4, 5, 6, 1]);
+  const related = [{ id: 123 }];
+  assert.deepEqual(
+    h.call('highlights', {
+      selections: [
+        { skill: { related }, color: 2 },
+        { skill: { related }, color: 5 },
+      ],
+    }),
+    { 123: { 2: true, 5: true } }
+  );
+  h.close();
 });

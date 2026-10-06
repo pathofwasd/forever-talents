@@ -636,9 +636,9 @@ h1 span {
   opacity: 0.22;
 }
 .talent.highlighted {
-  box-shadow:
-    0 0 0 2px #65d9d0,
-    0 0 17px 3px #65d9d07a;
+  --highlight-color: #59d9ff;
+  border-color: var(--highlight-color);
+  box-shadow: 0 0 0 2px var(--highlight-color);
   opacity: 1;
 }
 .talent.highlighted .icon {
@@ -2677,4 +2677,23 @@ h1 span,
     height: 68px;
     min-height: 68px;
   }
+}
+
+.highlight-colors {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  display: flex;
+  gap: 1px;
+  pointer-events: none;
+}
+.highlight-colors i {
+  flex: 1;
+  height: 4px;
+  min-width: 3px;
+}
+.skill-row input:checked {
+  outline: 1px solid var(--highlight-color);
+  outline-offset: 2px;
 }

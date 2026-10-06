@@ -245,12 +245,122 @@ function A.CurrentRank(skill, level, points)
     return current
 end
 
+-- Spellbook snapshots stay separate from a planned build's level and talents.
+function A.NormalizeTraining(raw)
+    if
+        type(raw) ~= "table"
+        or raw.schema ~= 1
+        or not FT.Model.Class(raw.classID)
+        or not FT.Model.RaceAllowed(raw.classID, raw.raceID)
+        or type(raw.level) ~= "number"
+        or raw.level % 1 ~= 0
+        or raw.level < 1
+        or raw.level > 60
+        or type(raw.spellIDs) ~= "table"
+    then
+        return nil, "Invalid trained-skill snapshot."
+    end
+    local ids, seen, count = {}, {}, 0
+    for key, id in pairs(raw.spellIDs) do
+        count = count + 1
+        if
+            count > 2048
+            or type(key) ~= "number"
+            or key % 1 ~= 0
+            or key < 1
+            or key > 2048
+            or type(id) ~= "number"
+            or id % 1 ~= 0
+            or id < 1
+            or id > 10000000
+            or seen[id]
+        then
+            return nil, "Invalid trained spell IDs."
+        end
+        seen[id], ids[key] = true, id
+    end
+    for i = 1, count do
+        if not ids[i] then
+            return nil, "Incomplete trained spell list."
+        end
+    end
+    if count == 0 then
+        return nil, "The spellbook is empty or not ready. Open Spellbook and retry."
+    end
+    table.sort(ids)
+    return {
+        schema = 1,
+        classID = raw.classID,
+        raceID = raw.raceID,
+        level = raw.level,
+        spellIDs = ids,
+    }
+end
+
+function A.TrainedRank(skill, snapshot)
+    if not snapshot then
+        return nil
+    end
+    local known, current = {}, nil
+    for _, id in ipairs(snapshot.spellIDs) do
+        known[id] = true
+    end
+    for _, rank in ipairs(skill.ranks) do
+        if known[rank.spellID] and (not current or rank.level >= current.level) then
+            current = rank
+        end
+    end
+    return current
+end
+
+A.highlightPalette = {
+    { name = "Sky", hex = "59d9ff", 0.35, 0.85, 1 },
+    { name = "Gold", hex = "f4c363", 0.96, 0.76, 0.39 },
+    { name = "Violet", hex = "bf9cff", 0.75, 0.61, 1 },
+    { name = "Mint", hex = "66e2ad", 0.40, 0.89, 0.68 },
+    { name = "Coral", hex = "ff8f96", 1, 0.56, 0.59 },
+    { name = "Orange", hex = "ffaa66", 1, 0.67, 0.40 },
+}
+function A.NextHighlightColor(assignments)
+    local counts = { 0, 0, 0, 0, 0, 0 }
+    for _, n in pairs(assignments or {}) do
+        if counts[n] then
+            counts[n] = counts[n] + 1
+        end
+    end
+    local best = 1
+    for i = 2, #counts do
+        if counts[i] < counts[best] then
+            best = i
+        end
+    end
+    return best
+end
+function A.HighlightMap(selections)
+    local result = {}
+    for _, selection in ipairs(selections) do
+        local n = selection.color
+        if A.highlightPalette[n] then
+            for _, link in ipairs(selection.skill.related or {}) do
+                result[link.id] = result[link.id] or {}
+                result[link.id][n] = true
+            end
+        end
+    end
+    return result
+end
+
 function A.List(build, level, query, filter, includeRacials)
     local prepared = A.Prepare(build.classID)
     local list, points = {}, FT.Model.Counts(build)
+    local training = FT.Character and FT.Store.db and FT.Character.Get(build).trainedSkills
+    if training and training.classID ~= build.classID then
+        training = nil
+    end
     query = normalize(query)
     for _, skill in ipairs(prepared.list) do
         local rank = A.CurrentRank(skill, level, points)
+        local trained = A.TrainedRank(skill, training)
         if
             (query == "" or skill.search:find(query, 1, true))
             and (
@@ -258,9 +368,10 @@ function A.List(build, level, query, filter, includeRacials)
                 or filter == "all"
                 or (filter == "now" and rank)
                 or (filter == "talent" and skill.unlock)
+                or (filter == "trained" and trained)
             )
         then
-            list[#list + 1] = { skill = skill, current = rank }
+            list[#list + 1] = { skill = skill, current = rank, trained = trained }
         end
     end
     if

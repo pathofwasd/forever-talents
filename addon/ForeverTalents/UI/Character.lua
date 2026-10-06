@@ -1,6 +1,7 @@
 local _, FT = ...
 local UI, W, S, P, L = FT.UI, FT.UI.W, FT.Store, FT.Snapshot, FT.Library
 function UI.CharacterDialog(code)
+    code = type(code) == "string" and code or nil
     if not UI.frame then
         UI.Create()
     end
@@ -56,14 +57,12 @@ function UI.CharacterDialog(code)
             export(L.Encode())
         end)
         W.Button(f, "Read logged-in character", 22, -472, 400, function()
-            local b, why = FT.ReadPlayerBuild()
-            if not b then
+            local snapshot, why = FT.ReadPlayerSnapshot()
+            if not snapshot then
                 f.summary:SetText(why)
                 return
             end
-            local p = FT.ReadPlayerStats()
-            p.classID, p.raceID, p.level = b.classID, b.raceID, b.level
-            export(P.EncodeCharacter(b, p))
+            export(P.EncodeCharacter(snapshot.build, snapshot.stats))
         end, true)
         W.Button(f, "Read only live stats", 438, -472, 400, function()
             export(P.EncodeStats(FT.ReadPlayerStats()))

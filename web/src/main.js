@@ -17,6 +17,7 @@ let engine,
   state,
   status = 'Preparing offline files…',
   selected = new Map(),
+  selectionColors = new Map(),
   hovered = null;
 let storageBlocked = false,
   unreadableSave = '';
@@ -48,9 +49,13 @@ function persist() {
 function update() {
   const previous = state;
   state = engine.call('state');
-  if (previous.view.classID !== state.view.classID) changeContext();
+  if (previous.view.classID !== state.view.classID) changeContext(true);
   else if (previous.view.raceID !== state.view.raceID) {
-    for (const [key, skill] of selected) if (skill.kind === 'racial') selected.delete(key);
+    for (const [key, skill] of selected)
+      if (skill.kind === 'racial') {
+        selected.delete(key);
+        selectionColors.delete(key);
+      }
     if (hovered?.kind === 'racial') hovered = null;
   }
   persist();
@@ -79,17 +84,25 @@ function order() {
   return list(state.view.order);
 }
 function highlight() {
-  const ids = new Set();
-  if (state.simpleView) return ids;
-  for (const skill of [...selected.values(), ...(hovered ? [hovered] : [])])
-    for (const relation of list(skill.related)) ids.add(relation.id);
-  return ids;
+  if (state.simpleView) return {};
+  const choices = [...selected.values(), ...(hovered ? [hovered] : [])].map((skill) => ({
+    skill,
+    color: selectionColors.get(skillKey(skill)) || 1,
+  }));
+  return engine.call('highlights', { selections: choices });
+}
+function highlightStyle(skill) {
+  const index = selectionColors.get(skillKey(skill));
+  const color = index && catalog.highlightPalette[index];
+  return color
+    ? `style="accent-color:#${color.hex};--highlight-color:#${color.hex}" title="${esc(color.name)} highlight"`
+    : '';
 }
 function skillKey(s) {
   return `${s.kind}:${s.name}`;
 }
 function currentSkillFilter() {
-  return state.simpleView && skillFilter !== 'now' ? 'all' : skillFilter;
+  return state.simpleView && !['now', 'trained'].includes(skillFilter) ? 'all' : skillFilter;
 }
 function render() {
   const focus = document.activeElement;
@@ -128,10 +141,12 @@ function render() {
     ? [
         ['all', 'All class skills'],
         ['now', 'Available at this level'],
+        ['trained', 'Trained on captured character'],
       ]
     : [
         ['all', 'All skills & racials'],
         ['now', 'Available at this level'],
+        ['trained', 'Trained on captured character'],
         ['talent', 'Unlocked by talents'],
         ['racial', 'Racial traits'],
       ]
@@ -212,27 +227,55 @@ function renderTree(tree, i) {
     )}</div><div class="tree-bottom">${btn('Reset tree', 'reset-tree', `data-id="${tree.id}"`, 'wide')}</div></article>`;
 }
 function renderSkills() {
+  const training = engine.call('training').capture;
+  const caption = $('.skills-panel .muted');
+  caption.textContent =
+    currentSkillFilter() === 'trained' && training
+      ? `Captured at level ${training.level}. Planned level does not change trained ranks.`
+      : state.simpleView
+        ? 'Click a skill for unlock and upgrade levels.'
+        : 'Check to keep talent highlights. Six colors repeat; shared talents show each color.';
   const entries = list(engine.call('skills', { query: skillQuery, filter: currentSkillFilter() }));
   $('#skill-list').innerHTML = entries.length
     ? entries
         .map(
-          ({ skill: s, current }) =>
-            `<div class="skill-row"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}">${img(s.icon)}<span><strong>${esc(s.name)}</strong><small>${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${current ? esc(current.label || 'available') : 'not yet available'}</small></span></button></div>`
+          ({ skill: s, current, trained }) =>
+            `<div class="skill-row"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}">${img(s.icon)}<span><strong>${esc(s.name)}</strong><small>${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${trained ? `Trained · ${esc(trained.label || 'ability')}` : current ? esc(current.label || 'available') : 'not yet available'}</small></span></button></div>`
         )
         .join('')
-    : '<p class="empty">No matches. Try another effect or category.</p>';
+    : skillFilter === 'trained'
+      ? '<p class="empty">No captured trained skills. Import a character string captured by the addon.</p>'
+      : '<p class="empty">No matches. Try another effect or category.</p>';
   const racials = list(engine.call('skills', { filter: 'racial' }));
   $('#racial-list').innerHTML = racials
     .map(
       ({ skill: s }) =>
-        `<label class="racial"><input type="checkbox" data-skill-check="${esc(s.name)}" ${selected.has(skillKey(s)) ? 'checked' : ''} aria-label="Keep ${esc(s.name)} highlights">${btn(`${img(s.icon)}${esc(s.name)}`, 'racial', `data-name="${esc(s.name)}"`, 'quiet')}</label>`
+        `<label class="racial"><input type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} ${selected.has(skillKey(s)) ? 'checked' : ''} aria-label="Keep ${esc(s.name)} highlights">${btn(`${img(s.icon)}${esc(s.name)}`, 'racial', `data-name="${esc(s.name)}"`, 'quiet')}</label>`
     )
     .join('');
 }
 function paintHighlights() {
   const ids = highlight();
-  for (const node of document.querySelectorAll('[data-talent]'))
-    node.classList.toggle('highlighted', ids.has(Number(node.dataset.talent)));
+  for (const node of document.querySelectorAll('[data-talent]')) {
+    const colors = Object.keys(ids[Number(node.dataset.talent)] || {})
+      .map(Number)
+      .sort((a, b) => a - b);
+    node.classList.toggle('highlighted', colors.length > 0);
+    node.style.setProperty(
+      '--highlight-color',
+      colors.length ? '#' + catalog.highlightPalette[colors[0]].hex : ''
+    );
+    let marks = node.querySelector('.highlight-colors');
+    if (!marks) {
+      marks = document.createElement('span');
+      marks.className = 'highlight-colors';
+      marks.setAttribute('aria-hidden', 'true');
+      node.append(marks);
+    }
+    marks.innerHTML = colors
+      .map((n) => `<i style="background:#${catalog.highlightPalette[n].hex}"></i>`)
+      .join('');
+  }
 }
 function renderOrder() {
   const index = Object.fromEntries(talents().map((t) => [t.id, t]));
@@ -269,7 +312,27 @@ function renderHistory() {
   $('#history-graph').innerHTML =
     `<div class="graph-heading"><h3>${esc(p.name)}</h3><small>${state.dirty ? 'Draft changes' : 'At checkpoint'}</small></div><div class="graph-scroll"><div class="graph" style="height:${nodes.length * 64}px;min-width:${Math.max(...nodes.map((n) => n.x)) + 204}px"><svg aria-hidden="true" width="100%" height="100%">${links}</svg>${nodes.map((n) => `<div class="graph-node ${state.activeNode === n.id ? 'active' : ''}" style="left:${n.x}px;top:${n.y}px">${btn(`<strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} ${list(n.build.order).length === 1 ? 'point' : 'points'}</small>`, 'load', `data-profile="${p.id}" data-node="${n.id}" title="${esc(n.title)}"`, 'node-main')}${btn('×', 'delete-node', `data-profile="${p.id}" data-node="${n.id}" aria-label="Delete ${esc(n.title)} and descendants"`, 'node-delete')}</div>`).join('')}</div></div>`;
 }
-function openDialog(title, html, wide = false) {
+const dialogStack = [];
+function openDialog(title, html, wide = false, onReturn = null) {
+  if (modal.open && modal.dataset.dialogTitle !== title) {
+    const previous = dialogStack.findIndex((entry) => entry.title === title);
+    if (previous >= 0) dialogStack.splice(previous);
+    else {
+      const fragment = document.createDocumentFragment();
+      const scrollTop = modal.scrollTop;
+      while (modal.firstChild) fragment.append(modal.firstChild);
+      dialogStack.push({
+        title: modal.dataset.dialogTitle,
+        fragment,
+        className: modal.className,
+        scrollTop,
+        onReturn: modal.onReturn,
+      });
+      if (dialogStack.length > 16) dialogStack.shift();
+    }
+  }
+  modal.dataset.dialogTitle = title;
+  modal.onReturn = onReturn;
   if (!modal.open) {
     const active = document.activeElement;
     modal.returnSelector = active?.id
@@ -283,14 +346,26 @@ function openDialog(title, html, wide = false) {
             : null;
   }
   $('#tooltip').hidden = true;
-  modal.innerHTML = `<div class="modal-head"><h2 id="dialog-title">${esc(title)}</h2>${btn('×', 'close', `aria-label="Close dialog"`, 'close')}</div><div class="modal-body">${html}</div>`;
+  modal.innerHTML = `<div class="modal-head"><h2 id="dialog-title">${esc(title)}</h2>${btn('×', 'close', `aria-label="Close dialog" title="${dialogStack.length ? 'Back to previous screen' : 'Close'}"`, 'close')}</div><div class="modal-body">${html}</div>`;
   modal.className = wide ? 'wide-modal' : '';
   modal.setAttribute('aria-labelledby', 'dialog-title');
   if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
   modal.querySelector('[data-action="close"]').focus({ preventScroll: true });
 }
-function closeDialog() {
+function closeDialog(dismiss = false) {
+  const previous = !dismiss && dialogStack.pop();
+  if (previous) {
+    modal.replaceChildren(previous.fragment);
+    modal.className = previous.className;
+    modal.dataset.dialogTitle = previous.title;
+    modal.onReturn = previous.onReturn;
+    previous.onReturn?.();
+    modal.scrollTop = previous.scrollTop;
+    modal.querySelector('[data-action="close"]').focus({ preventScroll: true });
+    return;
+  }
+  dialogStack.length = 0;
   modal.close();
   hovered = null;
   paintHighlights();
@@ -334,10 +409,11 @@ function showSkill(name) {
     hovered = s;
     paintHighlights();
     const ranks = list(s.ranks);
+    const trained = engine.call('training', { name }).rank;
     const rel = list(s.related);
     openDialog(
       s.name,
-      `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3><span class="badge">${esc(s.kind)}</span></div>${s.unlock ? `<p class="callout">Unlocked by <b>${esc(s.unlock.name)}</b> in ${esc(s.unlock.treeName)}, row ${s.unlock.row + 1} (${s.unlock.gate} points in tree first).</p>` : `<p class="muted">First learned at level ${s.firstLevel}. All captured ranks appear below.</p>`}<label class="pin"><input type="checkbox" data-skill-check="${esc(s.name)}" ${selected.has(skillKey(s)) ? 'checked' : ''}>Keep talent highlights</label><div class="skill-ranks">${ranks.map((r, i) => `<article class="rank-card ${r.live ? '' : 'archived'}"><div><b>${esc(r.label || 'Ability')}</b><span>Lv. ${r.level}${r.talentGranted ? ' · talent unlock' : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}${r.fromLevel ? ` · Lv. ${r.fromLevel}–${r.toLevel || 60}` : ''}${r.live ? '' : ' · archived'}</span></div><p>${esc(r.text || 'No description recorded in the captured snapshot.')}</p>${btn('Open simulator', 'simulate', `data-name="${esc(s.name)}" data-rank="${i + 1}"`, 'quiet')}</article>`).join('')}</div><h3>Talent interactions <span class="muted">${rel.length}</span></h3>${rel.length ? rel.map((r) => `<div class="relation">${btn(esc(talent(r.id)?.name || r.id), 'locate', `data-id="${r.id}"`)}<p>${esc(r.reason)}</p></div>`).join('') : '<p class="muted">No specific talent interaction is described in the captured data.</p>'}`
+      `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3><span class="badge">${esc(s.kind)}</span></div>${s.unlock ? `<p class="callout">Unlocked by <b>${esc(s.unlock.name)}</b> in ${esc(s.unlock.treeName)}, row ${s.unlock.row + 1} (${s.unlock.gate} points in tree first).</p>` : `<p class="muted">First learned at level ${s.firstLevel}. All captured ranks appear below.</p>`}<label class="pin"><input type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} ${selected.has(skillKey(s)) ? 'checked' : ''}>Keep talent highlights</label><div class="skill-ranks">${ranks.map((r, i) => `<article class="rank-card ${r.live ? '' : 'archived'}"><div><b>${esc(r.label || 'Ability')}</b><span>Lv. ${r.level}${r.talentGranted ? ' · talent unlock' : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}${r.fromLevel ? ` · Lv. ${r.fromLevel}–${r.toLevel || 60}` : ''}${r.live ? '' : ' · archived'}${trained?.spellID === r.spellID ? ' · captured trained rank' : ''}</span></div><p>${esc(r.text || 'No description recorded in the captured snapshot.')}</p>${btn('Open simulator', 'simulate', `data-name="${esc(s.name)}" data-rank="${i + 1}"`, 'quiet')}</article>`).join('')}</div><h3>Talent interactions <span class="muted">${rel.length}</span></h3>${rel.length ? rel.map((r) => `<div class="relation">${btn(esc(talent(r.id)?.name || r.id), 'locate', `data-id="${r.id}"`)}<p>${esc(r.reason)}</p></div>`).join('') : '<p class="muted">No specific talent interaction is described in the captured data.</p>'}`
     );
   } catch (e) {
     toast(e.message, true);
@@ -433,8 +509,9 @@ function showLibrary() {
   const profiles = list(state.profileOrder).map((id) => state.profiles[id]);
   openDialog(
     'Library & sync',
-    `<p class="muted">Saved builds, immutable checkpoints and alternate branches. Your class drafts autosave separately.</p><div class="dialog-actions">${btn('Export whole library', 'export-library', '', 'primary')}${btn('Import / merge library', 'import')}${btn('Open sharing file', 'open-file')}</div><input id="sharing-file" type="file" accept=".txt,.ftc,text/plain" hidden><div class="library-list">${profiles.length ? profiles.map((p) => `<article class="library-card"><div><h3>${esc(p.name)}</h3><p class="muted">${esc(catalog.classes[p.nodes[list(p.order)[0]].build.classID].name)} · ${list(p.order).length} checkpoints</p></div><div>${btn('Open', 'load', `data-profile="${p.id}" data-node="${list(p.order).at(-1)}"`, 'primary')}${btn('Rename', 'rename', `data-profile="${p.id}"`)}${btn('Delete', 'delete-profile', `data-profile="${p.id}"`, 'danger')}</div></article>`).join('') : '<p class="empty">No saved profiles yet. Choose Save build to start one.</p>'}</div><p class="callout">To sync everything: Export whole library → copy the string or save a file → open Character in the addon or Import in this app → merge. Profiles with identical contents are skipped. Export before replacing class drafts.</p>`,
-    true
+    `<p class="muted">Saved builds, immutable checkpoints and alternate branches. Your class drafts autosave separately.</p><div class="dialog-actions">${btn('New build', 'save', '', 'primary')}${btn('Export whole library', 'export-library')}${btn('Import / merge library', 'import')}${btn('Open sharing file', 'open-file')}</div><input id="sharing-file" type="file" accept=".txt,.ftc,text/plain" hidden><div class="library-list">${profiles.length ? profiles.map((p) => `<article class="library-card"><div><h3>${esc(p.name)}</h3><p class="muted">${esc(catalog.classes[p.nodes[list(p.order)[0]].build.classID].name)} · ${list(p.order).length} checkpoints</p></div><div>${btn('Open', 'load', `data-profile="${p.id}" data-node="${list(p.order).at(-1)}"`, 'primary')}${btn('Rename', 'rename', `data-profile="${p.id}"`)}${btn('Delete', 'delete-profile', `data-profile="${p.id}"`, 'danger')}</div></article>`).join('') : '<p class="empty">No saved profiles yet. Choose Save build to start one.</p>'}</div><p class="callout">To sync everything: Export whole library → copy the string or save a file → open Character in the addon or Import in this app → merge. Profiles with identical contents are skipped. Export before replacing class drafts.</p>`,
+    true,
+    showLibrary
   );
 }
 function showSave(checkpoint = false) {
@@ -483,7 +560,7 @@ function showHelp() {
   }
   openDialog(
     'A quick guide',
-    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Tap a talent-order step to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. Open Character in the addon to capture the logged-in character.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
+    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Tap a talent-order step to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
     true
   );
 }
@@ -569,8 +646,10 @@ function showPerks() {
     true
   );
 }
-function changeContext() {
+function changeContext(dismissDialogs = false) {
+  if (dismissDialogs && modal.open) closeDialog(true);
   selected.clear();
+  selectionColors.clear();
   hovered = null;
   treeTab = 0;
 }
@@ -647,6 +726,7 @@ document.addEventListener('click', async (event) => {
         break;
       case 'clear-highlights':
         selected.clear();
+        selectionColors.clear();
         hovered = null;
         renderSkills();
         paintHighlights();
@@ -659,7 +739,7 @@ document.addEventListener('click', async (event) => {
         const t = talent(id);
         treeTab = list(cls().trees).findIndex((tr) => list(tr.talents).some((n) => n.id === id));
         panel = 'trees';
-        closeDialog();
+        closeDialog(true);
         render();
         $(`[data-talent="${id}"]`).focus();
         showTalent(id);
@@ -690,7 +770,7 @@ document.addEventListener('click', async (event) => {
       case 'load':
         if (act('load', { profileID, nodeID }) !== null) {
           changeContext();
-          closeDialog();
+          closeDialog(true);
           panel = 'builds';
           render();
         }
@@ -784,7 +864,7 @@ document.addEventListener('click', async (event) => {
         changeContext();
         act('switch', { classID: Number(node.dataset.class) });
         act('race', { raceID: Number(node.dataset.race) });
-        closeDialog();
+        closeDialog(true);
         break;
       case 'help':
         showHelp();
@@ -863,13 +943,17 @@ document.addEventListener('change', async (event) => {
     return;
   }
   if (t.id === 'race') {
-    for (const [key, s] of selected) if (s.kind === 'racial') selected.delete(key);
+    for (const [key, s] of selected)
+      if (s.kind === 'racial') {
+        selected.delete(key);
+        selectionColors.delete(key);
+      }
     act('race', { raceID: Number(t.value) });
   }
   if (t.id === 'simple-view') {
     if (t.checked && !['trees', 'skills'].includes(panel)) panel = 'trees';
     hovered = null;
-    closeDialog();
+    closeDialog(true);
     act('simpleView', { enabled: t.checked });
   }
   if (t.id === 'level') act('level', { level: Number(t.value) });
@@ -879,11 +963,26 @@ document.addEventListener('change', async (event) => {
   }
   if (t.dataset.skillCheck) {
     const s = engine.call('skill', { name: t.dataset.skillCheck });
-    if (t.checked) selected.set(skillKey(s), s);
-    else selected.delete(skillKey(s));
+    const key = skillKey(s);
+    if (t.checked) {
+      if (!selectionColors.has(key))
+        selectionColors.set(
+          key,
+          engine.call('highlightColor', { assignments: Object.fromEntries(selectionColors) })
+        );
+      selected.set(key, s);
+    } else {
+      selected.delete(key);
+      selectionColors.delete(key);
+    }
     renderSkills();
-    for (const n of modal.querySelectorAll('[data-skill-check]'))
-      n.checked = selected.has(skillKey(s));
+    for (const n of modal.querySelectorAll('[data-skill-check]')) {
+      const item = engine.call('skill', { name: n.dataset.skillCheck });
+      n.checked = selected.has(skillKey(item));
+      n.style.accentColor = selectionColors.has(skillKey(item))
+        ? '#' + catalog.highlightPalette[selectionColors.get(skillKey(item))].hex
+        : '';
+    }
     paintHighlights();
   }
   if (t.id === 'share-kind') refreshShare();
@@ -926,7 +1025,12 @@ document.addEventListener('mouseout', (event) => {
   if (event.target.closest('[data-talent]') && !event.relatedTarget?.closest('[data-talent]'))
     $('#tooltip').hidden = true;
 });
+modal.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeDialog();
+});
 modal.addEventListener('close', () => {
+  dialogStack.length = 0;
   hovered = null;
   paintHighlights();
   if (modal.returnSelector) {

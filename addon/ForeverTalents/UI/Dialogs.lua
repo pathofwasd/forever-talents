@@ -1,9 +1,28 @@
 local _, FT = ...
 local UI, W, M, S = FT.UI, FT.UI.W, FT.Model, FT.Store
 
-function UI.CloseDialog()
-    if UI.dialogOverlay then
-        UI.dialogOverlay:Hide()
+function UI.CloseDialog(dismiss)
+    dismiss = dismiss == true
+    local stack = UI.dialogStack or {}
+    local key = table.remove(stack)
+    if key and UI.dialogs[key] then
+        UI.dialogs[key]:Hide()
+    end
+    local parent = not dismiss and stack[#stack]
+    if parent then
+        local f = UI.dialogs[parent]
+        f:Show()
+        UI.dialogOverlay:Show()
+        if f.onReturn then
+            f.onReturn()
+        end
+    else
+        UI.dialogStack = {}
+        UI.dismissingDialog = true
+        if UI.dialogOverlay then
+            UI.dialogOverlay:Hide()
+        end
+        UI.dismissingDialog = nil
     end
     if GameTooltip then
         GameTooltip:Hide()
@@ -25,6 +44,11 @@ function UI.Dialog(key, title, width, height)
         shade:SetAllPoints()
         shade:SetColorTexture(0.01, 0.02, 0.03, 0.76)
         overlay:SetScript("OnHide", function()
+            if not UI.dismissingDialog and #(UI.dialogStack or {}) > 1 then
+                UI.CloseDialog()
+                return
+            end
+            UI.dialogStack = {}
             if GameTooltip then
                 GameTooltip:Hide()
             end
@@ -33,6 +57,23 @@ function UI.Dialog(key, title, width, height)
         UI.dialogOverlay = overlay
         table.insert(UISpecialFrames, "ForeverTalentsModal")
         UI.dialogs = {}
+    end
+    UI.dialogStack = UI.dialogStack or {}
+    local found
+    for i, previous in ipairs(UI.dialogStack) do
+        if previous == key then
+            found = i
+        end
+    end
+    if found then
+        for i = #UI.dialogStack, found + 1, -1 do
+            table.remove(UI.dialogStack)
+        end
+    else
+        if #UI.dialogStack >= 16 then
+            UI.dialogStack = {}
+        end
+        UI.dialogStack[#UI.dialogStack + 1] = key
     end
     for _, f in pairs(UI.dialogs) do
         f:Hide()
@@ -45,17 +86,22 @@ function UI.Dialog(key, title, width, height)
         f:SetPoint("CENTER")
         f:SetFrameLevel(85)
         f.heading = W.Text(f, title, 22, -20, width - 80, 21)
-        W.Button(f, "x", width - 46, -14, 30, UI.CloseDialog, false, 28)
+        f.close = W.Button(f, "x", width - 46, -14, 30, function()
+            UI.CloseDialog()
+        end, false, 28)
         UI.dialogs[key] = f
     end
     f.heading:SetText(title)
+    f.close.tip = #UI.dialogStack > 1
+            and (key == "gear" and "Back to Character. Unsaved gear edits are discarded." or "Back to the previous screen.")
+        or "Close this window."
     f:Show()
     UI.dialogOverlay:Show()
     return f, first
 end
 
 function UI.SaveDialog(checkpoint)
-    local profile = S.ActiveProfile()
+    local profile = checkpoint and S.ActiveProfile() or nil
     local f, first =
         UI.Dialog("save", profile and "Save a checkpoint" or "Save your build", 520, 248)
     if first then
@@ -187,7 +233,7 @@ function UI.ImportDialog(code)
         UI.Create()
     end
     UI.frame:Show()
-    local f, first = UI.Dialog("import", "Preview a shared build", 680, 374)
+    local f, first = UI.Dialog("import", "Import a build or your character", 680, 416)
     if first then
         W.Text(
             f,
@@ -198,15 +244,23 @@ function UI.ImportDialog(code)
             13,
             W.colors.muted
         )
-        f.input = W.Edit(f, "FT1 / FC1 / FS2 / FL1:…", 22, -118, 636, nil, 3 * 1024 * 1024)
+        f.live = W.Button(f, "Import my talents & trained skills", 22, -110, 636, function()
+            local ok, why = FT.ImportPlayerCharacter()
+            if ok then
+                UI.CloseDialog(true)
+            else
+                f.error:SetText(why)
+            end
+        end, true, 30)
+        f.input = W.Edit(f, "FT1 / FC1 / FS2 / FL1:…", 22, -160, 636, nil, 3 * 1024 * 1024)
         f.input:SetHeight(48)
         f.input:SetMultiLine(true)
         f.input:SetTextInsets(10, 25, 8, 8)
-        f.summary = W.Text(f, "", 22, -190, 636, 15, W.colors.gold)
-        f.detail = W.Text(f, "", 22, -222, 636, 13, W.colors.muted)
-        f.error = W.Text(f, "", 22, -270, 636, 12, { 1, 0.48, 0.40 })
-        f.load = W.Button(f, "Load into draft", 22, -321, 300, nil, true, 30)
-        f.save = W.Button(f, "Load & save a copy", 336, -321, 322, nil, false, 30)
+        f.summary = W.Text(f, "", 22, -232, 636, 15, W.colors.gold)
+        f.detail = W.Text(f, "", 22, -264, 636, 13, W.colors.muted)
+        f.error = W.Text(f, "", 22, -312, 636, 12, { 1, 0.48, 0.40 })
+        f.load = W.Button(f, "Load into draft", 22, -363, 300, nil, true, 30)
+        f.save = W.Button(f, "Load & save a copy", 336, -363, 322, nil, false, 30)
         local function update()
             if f.input:GetText():match("^%s*F[CSL]1:") then
                 UI.CharacterDialog(f.input:GetText())
@@ -408,7 +462,7 @@ function UI.SkillDialog(skill)
         W.Text(related, "Talent interactions", 12, -14, 300, 15)
         W.Text(
             related,
-            "Blue = named, school, or general effects.\nClick a talent to locate it in the tree.",
+            "Colored highlights = named, school, or general effects.\nClick a talent to locate it in the tree.",
             12,
             -41,
             300,
@@ -431,7 +485,10 @@ function UI.SkillDialog(skill)
     f.icon:SetTexture("Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. skill.icon .. ".tga")
     local view, level = S.View(), S.ViewLevel()
     local points = M.Counts(view)
-    local rank = FT.Skills.CurrentRank(skill, level, points) or skill.ranks[1]
+    local trained = FT.Skills.TrainedRank(skill, FT.Character.Get(view).trainedSkills)
+    local rank = (UI.skillFilterKey == "trained" and trained)
+        or FT.Skills.CurrentRank(skill, level, points)
+        or skill.ranks[1]
     f.selectedRank = rank
     local function describe(r)
         f.selectedRank = r
@@ -470,6 +527,7 @@ function UI.SkillDialog(skill)
                 .. "  •  "
                 .. (r.label ~= "" and r.label or "Unranked")
                 .. (r.talentGranted and "  •  talent unlock" or "")
+                .. (r == trained and "  •  captured trained rank" or "")
                 .. (not r.live and "  |cff8f9aa6Alternate source record|r" or "")
         )
         row:SetScript("OnClick", function()
@@ -523,9 +581,10 @@ function UI.SkillDialog(skill)
                 )
         )
         row:SetScript("OnClick", function()
-            UI.CloseDialog()
+            UI.CloseDialog(true)
             UI.Status(
-                talent.name .. " is highlighted in blue. Hover it for the current and next rank."
+                talent.name
+                    .. " is highlighted in the selection's color. Hover it for the current and next rank."
             )
             UI.HighlightSkill({ related = { link } })
         end)
@@ -776,7 +835,7 @@ function UI.RaceDialog()
                         local build = FT.Copy(S.Build())
                         build.raceID = rid
                         W.Result(S.Edit(build))
-                        UI.CloseDialog()
+                        UI.CloseDialog(true)
                     end,
                     false,
                     30
@@ -861,6 +920,6 @@ function UI.HelpDialog()
             .. FT.Data.meta.generatedAt:sub(1, 10)
             .. " • client "
             .. FT.Data.meta.build
-            .. " • 27 trees / 466 talents.\nPlanning is independent of your learned talents. My talents imports a legal order derived from the client."
+            .. " • 27 trees / 466 talents.\nPlanning is independent of your learned talents. Import my talents & skills reads your character; its talent order is reconstructed."
     )
 end

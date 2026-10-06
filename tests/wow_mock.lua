@@ -298,6 +298,10 @@ end
 function methods:SetNormalFontObject() end
 function methods:SetDisabledFontObject() end
 function methods:SetText(text)
+    assert(
+        text == nil or type(text) == "string" or type(text) == "number",
+        "SetText expects text, not a UI object"
+    )
     self.mockText = tostring(text or "")
     if self.fontString then
         self.fontString:SetText(self.mockText)

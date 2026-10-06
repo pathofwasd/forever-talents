@@ -108,7 +108,12 @@ function S.Init(classID, raceID, level)
         if type(db.settings.characters) == "table" then
             for id, raw in pairs(db.settings.characters) do
                 local character = FT.Character.Normalize(raw, true)
-                if FT.Model.Class(id) and character then
+                if
+                    FT.Model.Class(id)
+                    and character
+                    and (not character.capture or character.capture.classID == id)
+                    and (not character.trainedSkills or character.trainedSkills.classID == id)
+                then
                     cleaned[id] = character
                 else
                     db.recovered = db.recovered or {}

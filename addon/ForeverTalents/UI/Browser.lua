@@ -5,6 +5,7 @@ local filterLabels = {
     now = "Available at this level",
     talent = "Talent skills & effects",
     racial = "Racial traits",
+    trained = "Trained on captured character",
 }
 
 function UI.SkillHighlightKey(skill)
@@ -28,6 +29,8 @@ function UI.RefreshHighlightChecks()
         for _, row in ipairs(rows) do
             if row.check then
                 row.check:SetChecked(UI.IsSkillHighlighted(row.skill))
+                local n = row.skill and (UI.highlightColors or {})[UI.SkillHighlightKey(row.skill)]
+                row.check:SetHighlightColor(n and FT.Skills.highlightPalette[n] or nil)
                 row.check:Paint(false)
             end
         end
@@ -41,13 +44,21 @@ end
 
 function UI.SetSkillHighlight(skill, checked)
     UI.selectedSkills = UI.selectedSkills or {}
-    UI.selectedSkills[UI.SkillHighlightKey(skill)] = checked and skill or nil
+    UI.highlightColors = UI.highlightColors or {}
+    local key = UI.SkillHighlightKey(skill)
+    if checked and not UI.highlightColors[key] then
+        UI.highlightColors[key] = FT.Skills.NextHighlightColor(UI.highlightColors)
+    elseif not checked then
+        UI.highlightColors[key] = nil
+    end
+    UI.selectedSkills[key] = checked and skill or nil
     UI.HighlightSkill(nil)
     UI.RefreshHighlightChecks()
 end
 
 function UI.ClearSkillHighlights()
     UI.selectedSkills = {}
+    UI.highlightColors = {}
     UI.HighlightSkill(nil)
     UI.RefreshHighlightChecks()
 end
@@ -60,7 +71,7 @@ function UI.AddHighlightCheckbox(row, x, y)
         self:Paint(true)
         UI.HighlightSkill(nil)
         W.Tooltip(self, "Keep " .. row.skill.name .. " highlighted", {
-            "Check any number of skills to combine their related talents in blue. Uncheck to remove this selection.",
+            "Selected boxes and their talent highlights share a color. Six colors repeat; overlapping talents show every selected color.",
             "Clear highlights unchecks every skill and racial trait, including hidden search results.",
             #row.skill.related == 0 and "No talent interactions are recorded for this skill."
                 or "Click the skill name or icon for its ranks and details.",
@@ -84,7 +95,10 @@ function UI.SkillTooltip(owner, skill)
     end
     local view, level = FT.Store.View(), FT.Store.ViewLevel()
     local points = M.Counts(view)
-    local rank = FT.Skills.CurrentRank(skill, level, points) or skill.ranks[1]
+    local trained = FT.Skills.TrainedRank(skill, FT.Character.Get(view).trainedSkills)
+    local rank = (UI.skillFilterKey == "trained" and trained)
+        or FT.Skills.CurrentRank(skill, level, points)
+        or skill.ranks[1]
     if not GameTooltip then
         return
     end
@@ -135,7 +149,13 @@ function UI.SkillTooltip(owner, skill)
         )
     end
     if #skill.related > 0 then
-        GameTooltip:AddLine("\nRelated talents are highlighted in blue:", 0.35, 0.85, 1, true)
+        GameTooltip:AddLine(
+            "\nRelated talents use the selected highlight color:",
+            0.35,
+            0.85,
+            1,
+            true
+        )
         local index = M.Index(view.classID)
         for i = 1, math.min(7, #skill.related) do
             local r = skill.related[i]
@@ -180,8 +200,8 @@ function UI.CreateBrowser(parent)
     end)
     UI.skillFilter = W.Button(p, filterLabels.all .. "  v", 10, -88, 206, function(self)
         local options = {}
-        for _, key in ipairs({ "all", "now", "talent", "racial" }) do
-            if not FT.Store.SimpleView() or key == "all" or key == "now" then
+        for _, key in ipairs({ "all", "now", "trained", "talent", "racial" }) do
+            if not FT.Store.SimpleView() or key == "all" or key == "now" or key == "trained" then
                 options[#options + 1] = {
                     text = FT.Store.SimpleView() and key == "all" and "All class skills"
                         or filterLabels[key],
@@ -241,7 +261,7 @@ function UI.RefreshBrowser()
     local build, level = FT.Store.View(), FT.Store.ViewLevel()
     local filter = UI.skillFilterKey or "all"
     local simple = FT.Store.SimpleView()
-    if simple and filter ~= "now" then
+    if simple and filter ~= "now" and filter ~= "trained" then
         filter = "all"
     end
     UI.skillFilter:SetText(
@@ -249,7 +269,15 @@ function UI.RefreshBrowser()
     )
     UI.clearHighlight:SetShown(not simple)
     local list = FT.Skills.List(build, level, UI.skillQuery, filter, not simple)
-    UI.skillCount:SetText(#list .. " skills • showing level " .. level)
+    local training = FT.Character.Get(build).trainedSkills
+    UI.skillCount:SetText(
+        #list
+            .. " skills • "
+            .. (
+                filter == "trained" and training and "captured level " .. training.level
+                or "showing level " .. level
+            )
+    )
     for i, row in ipairs(UI.skillRows) do
         local entry = list[i]
         row:SetShown(entry ~= nil)
@@ -263,7 +291,7 @@ function UI.RefreshBrowser()
             row.icon:SetTexture(
                 "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. s.icon .. ".tga"
             )
-            row.icon:SetDesaturated(not entry.current)
+            row.icon:SetDesaturated(not (entry.current or entry.trained))
             local detail = s.kind == "racial" and "Racial • level 1"
                 or (
                     s.unlock
@@ -277,13 +305,24 @@ function UI.RefreshBrowser()
                             or "not yet"
                         )
                 )
-            row.detail:SetText(detail)
-            row.detail:SetTextColor(unpack(entry.current and W.colors.teal or W.colors.muted))
+            row.detail:SetText(
+                entry.trained
+                        and "Trained • " .. (entry.trained.label ~= "" and entry.trained.label or "ability")
+                    or detail
+            )
+            row.detail:SetTextColor(
+                unpack((entry.current or entry.trained) and W.colors.teal or W.colors.muted)
+            )
         else
             row.skill = nil
         end
     end
     UI.skillEmpty:SetShown(#list == 0)
+    UI.skillEmpty:SetText(
+        filter == "trained"
+                and "No captured trained skills.\nCharacter → Import my talents & skills."
+            or "No matching skills.\nTry a name, school, or effect."
+    )
     UI.skillScroll:SetContentHeight(#list * 49)
     UI.RefreshHighlightChecks()
 end

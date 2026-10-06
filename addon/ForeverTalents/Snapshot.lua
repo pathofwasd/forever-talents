@@ -266,7 +266,13 @@ function P.EncodeStats(profile)
         if not extra.character then
             return nil, why
         end
-        if extra.character.capture and extra.character.capture.classID ~= profile.classID then
+        if
+            (extra.character.capture and extra.character.capture.classID ~= profile.classID)
+            or (
+                extra.character.trainedSkills
+                and extra.character.trainedSkills.classID ~= profile.classID
+            )
+        then
             return nil, "Captured character class differs from the profile."
         end
     end
@@ -318,7 +324,13 @@ function P.DecodeStats(code)
         if not profile.character then
             return nil, why
         end
-        if profile.character.capture and profile.character.capture.classID ~= profile.classID then
+        if
+            (profile.character.capture and profile.character.capture.classID ~= profile.classID)
+            or (
+                profile.character.trainedSkills
+                and profile.character.trainedSkills.classID ~= profile.classID
+            )
+        then
             return nil, "Captured character class differs from the profile."
         end
     end

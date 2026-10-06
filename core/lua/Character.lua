@@ -104,6 +104,13 @@ function C.Normalize(raw, strict)
     end
     c.form = raw.form == "cat" and "cat" or raw.form == "bear" and "bear" or "caster"
     c.weaponType = C.WeaponType(raw.weaponType)
+    if raw.trainedSkills then
+        local why
+        c.trainedSkills, why = FT.Skills.NormalizeTraining(raw.trainedSkills)
+        if not c.trainedSkills then
+            return nil, why
+        end
+    end
     if
         strict
         and (
@@ -193,6 +200,7 @@ function C.Normalize(raw, strict)
         end
         local capture = FT.Copy(raw.capture)
         capture.character = nil
+        capture.trainedSkills = nil
         if
             not M.Class(capture.classID)
             or not M.RaceAllowed(capture.classID, capture.raceID)
@@ -263,6 +271,9 @@ function C.Normalize(raw, strict)
                 return nil, "Invalid captured talents."
             end
         end
+        if c.trainedSkills and c.trainedSkills.classID ~= capture.classID then
+            return nil, "Trained skills and captured stats belong to different classes."
+        end
         c.capture = capture
     end
     if c.mode == "captured" and not c.capture then
@@ -312,6 +323,9 @@ function C.Save(build, sheet)
     if c.capture and c.capture.classID ~= build.classID then
         return false, "Captured stats belong to another class."
     end
+    if c.trainedSkills and c.trainedSkills.classID ~= build.classID then
+        return false, "Trained skills belong to another class."
+    end
     if c.mode ~= "captured" then
         c.plans[c.mode] = FT.Copy(c.stats)
     end
@@ -325,7 +339,9 @@ function C.FromSnapshot(profile, gear)
     end
     local c = C.New()
     c.mode, c.capture = "captured", FT.Copy(profile)
+    c.trainedSkills = FT.Copy(profile.trainedSkills)
     c.capture.character = nil
+    c.capture.trainedSkills = nil
     c.gear = gear or {}
     local s, raw = profile.state, profile.raw or {}
     c.stats = {

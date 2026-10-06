@@ -25,7 +25,7 @@ function FT.ReadPlayerBuild()
         and not safe(C_SpecializationInfo.IsInitialized)
     then
         return false,
-            "Talent data is not ready. Open the game's Talents window, then try My character again."
+            "Talent data is not ready. Open the game's Talents window, then retry Import my talents & skills."
     end
     local _, _, cid = UnitClass("player")
     local _, _, rid = UnitRace("player")
@@ -167,6 +167,122 @@ function FT.ReadPlayerBuild()
     end
     return M.FromRanks(cid, rid, math.min(60, level), ranks, "My " .. class.name .. " talents")
 end
+function FT.ReadPlayerSkills()
+    local _, _, cid = UnitClass("player")
+    local _, _, rid = UnitRace("player")
+    local ids, seen = {}, {}
+    local modern = C_SpellBook
+        and C_SpellBook.GetNumSpellBookSkillLines
+        and C_SpellBook.GetSpellBookSkillLineInfo
+        and C_SpellBook.GetSpellBookItemInfo
+        and Enum
+        and Enum.SpellBookItemType
+        and Enum.SpellBookSpellBank
+    local legacy = GetNumSpellTabs and GetSpellTabInfo and GetSpellBookItemInfo
+    local tabs =
+        safe(legacy and GetNumSpellTabs or (modern and C_SpellBook.GetNumSpellBookSkillLines))
+    if type(tabs) ~= "number" or tabs < 1 or tabs > 32 then
+        return nil,
+            "Spellbook data is not ready. Open Spellbook and retry; your current capture is kept."
+    end
+    local visited = 0
+    for tab = 1, tabs do
+        local offset, count, offspec
+        if legacy then
+            local _, _, first, total, _, other = safe(GetSpellTabInfo, tab)
+            offset, count, offspec = first, total, other
+        else
+            local info = safe(C_SpellBook.GetSpellBookSkillLineInfo, tab)
+            if info then
+                offset, count, offspec =
+                    info.itemIndexOffset, info.numSpellBookItems, info.offSpecID
+            end
+        end
+        if
+            type(offset) ~= "number"
+            or type(count) ~= "number"
+            or offset < 0
+            or count < 0
+            or offset % 1 ~= 0
+            or count % 1 ~= 0
+            or offset + count > 4096
+        then
+            return nil, "Some spellbook tabs could not be read. Open Spellbook and retry."
+        end
+        if not offspec or offspec == 0 then
+            for slot = offset + 1, offset + count do
+                visited = visited + 1
+                if visited > 4096 then
+                    return nil, "Spellbook is unexpectedly large; capture stopped."
+                end
+                local kind, id, other
+                if legacy then
+                    kind, id = safe(GetSpellBookItemInfo, slot, BOOKTYPE_SPELL or "spell")
+                    if not kind then
+                        return nil, "A spellbook entry is not ready. Open Spellbook and retry."
+                    end
+                    kind = kind == "SPELL"
+                else
+                    local info =
+                        safe(C_SpellBook.GetSpellBookItemInfo, slot, Enum.SpellBookSpellBank.Player)
+                    if not info then
+                        return nil, "A spellbook entry is not ready. Open Spellbook and retry."
+                    end
+                    kind, id, other =
+                        info.itemType == Enum.SpellBookItemType.Spell, info.spellID, info.isOffSpec
+                end
+                if kind and not other then
+                    if type(id) ~= "number" or id % 1 ~= 0 or id < 1 or id > 10000000 then
+                        return nil,
+                            "A learned spell ID could not be read. Open Spellbook and retry."
+                    end
+                    if not seen[id] then
+                        ids[#ids + 1], seen[id] = id, true
+                    end
+                end
+            end
+        end
+    end
+    return FT.Skills.NormalizeTraining({
+        schema = 1,
+        classID = cid,
+        raceID = rid,
+        level = math.min(60, safe(UnitLevel, "player") or 0),
+        spellIDs = ids,
+    })
+end
+
+function FT.ReadPlayerSnapshot()
+    local build, why = FT.ReadPlayerBuild()
+    if not build then
+        return nil, why
+    end
+    local trained
+    trained, why = FT.ReadPlayerSkills()
+    if not trained then
+        return nil, why
+    end
+    local stats = FT.ReadPlayerStats()
+    stats.character.trainedSkills = trained
+    return { kind = "character", build = build, stats = stats }
+end
+
+function FT.ImportPlayerCharacter()
+    local snapshot, why = FT.ReadPlayerSnapshot()
+    if not snapshot then
+        return false, why
+    end
+    local ok, message = P.Apply(snapshot)
+    if ok then
+        FT.UI.skillFilterKey = "trained"
+        FT.UI.RefreshBrowser()
+        message =
+            "Imported talents, trained skills, level, stats and gear. Talent order is reconstructed."
+        FT.UI.Status(message)
+    end
+    return ok, message
+end
+
 function FT.ReadPlayerStats(skill, rank)
     local _, _, cid = UnitClass("player")
     local _, _, rid = UnitRace("player")
@@ -239,6 +355,7 @@ function FT.ReadPlayerStats(skill, rank)
     if skill and rank then
         profile.state, profile.note = P.ForSkill(profile, skill, rank, build)
     end
+    profile.trainedSkills = FT.ReadPlayerSkills()
     profile.character = FT.Character.FromSnapshot(profile, gear)
     return profile
 end

@@ -386,6 +386,10 @@ function UI.SimulationDialog(skill, rank, overrides)
     )
     f.update()
     f.populate()
+    f.onReturn = function()
+        f.update()
+        f.populate()
+    end
     f.scroll:ScrollTo(0)
 end
 function UI.SimulationHelp(result)

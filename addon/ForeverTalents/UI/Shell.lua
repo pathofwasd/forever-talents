@@ -66,7 +66,7 @@ function UI.RefreshViewMode()
     UI.settingsButton:ClearAllPoints()
     UI.settingsButton:SetPoint("BOTTOMRIGHT", -16, 8)
     if UI.dialogs and not (UI.dialogs.settings and UI.dialogs.settings:IsVisible()) then
-        UI.CloseDialog()
+        UI.CloseDialog(true)
     end
     if GameTooltip then
         GameTooltip:Hide()
@@ -117,7 +117,7 @@ function UI.Create()
     UI.buildName = W.Text(f, "", 302, -20, 550, 14)
     UI.buildName:SetWordWrap(false)
     UI.saveButton = W.Button(f, "Save build", 902, -13, 110, function()
-        UI.SaveDialog(false)
+        UI.SaveDialog(S.ActiveProfile() ~= nil)
     end, true, 31)
     UI.shareButton = W.Button(f, "Share", 1024, -13, 90, function()
         UI.ShareDialog()
@@ -286,9 +286,7 @@ function UI.Create()
         UI.Refresh()
     end)
     f:SetScript("OnHide", function()
-        if UI.dialogOverlay then
-            UI.dialogOverlay:Hide()
-        end
+        UI.CloseDialog(true)
         if UI.menu then
             UI.menu:Hide()
         end
@@ -360,7 +358,11 @@ function UI.Refresh()
     local build, view = S.Build(), S.View()
     local c = M.Class(build.classID)
     if UI.lastClass ~= build.classID then
+        if UI.lastClass then
+            UI.CloseDialog(true)
+        end
         UI.selectedSkills = {}
+        UI.highlightColors = {}
         UI.hoverSkill = nil
         UI.lastClass = build.classID
         UI.skillScroll:ScrollTo(0)
@@ -369,6 +371,9 @@ function UI.Refresh()
         for key, skill in pairs(UI.selectedSkills or {}) do
             if skill.kind == "racial" then
                 UI.selectedSkills[key] = nil
+                if UI.highlightColors then
+                    UI.highlightColors[key] = nil
+                end
             end
         end
         UI.hoverSkill = nil
