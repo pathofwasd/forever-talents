@@ -27,6 +27,7 @@ for suite in [
     "skill_updates",
     "workflow_ux",
     "client_talents",
+    "training",
 ]:
     run("lua5.1", f"tests/test_{suite}.lua")
 run("python3", "tools/check_package.py", "--source-only")

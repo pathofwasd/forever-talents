@@ -313,6 +313,161 @@ function A.TrainedRank(skill, snapshot)
     return current
 end
 
+local function rankNumber(rank)
+    return rank and tonumber((rank.label or ""):match("^Rank (%d+)$"))
+end
+
+local function coversRank(trained, rank)
+    if not trained then
+        return false
+    end
+    if trained.spellID == rank.spellID then
+        return true
+    end
+    local known, wanted = rankNumber(trained), rankNumber(rank)
+    if known and wanted then
+        return known >= wanted
+    end
+    return trained.level > rank.level
+end
+
+local function unlockLevel(skill, rank)
+    return math.max(
+        rank.level,
+        rank.fromLevel or 1,
+        skill.unlock and (10 + skill.unlock.gate + (rank.talentRank or 1) - 1) or 1
+    )
+end
+
+local function grantedRank(skill, rank)
+    return rank.talentGranted or rank.talentRank or (skill.unlock and rank == firstLiveRank(skill))
+end
+
+local function compareTraining(skill, level, points, snapshot)
+    local current = A.CurrentRank(skill, level, points)
+    local trained = A.TrainedRank(skill, snapshot)
+    local result = { trained = trained, current = current }
+    local nextRank, nextLevel
+    if skill.unlock and (points[skill.unlock.id] or 0) == 0 then
+        result.status, result.label = "talent", "Requires talent"
+        nextRank = firstLiveRank(skill)
+        nextLevel = nextRank and unlockLevel(skill, nextRank)
+        result.requiresTalent = skill.unlock.name
+    elseif current and not grantedRank(skill, current) and not coversRank(trained, current) then
+        result.needsTraining = true
+        result.status = trained and "upgrade" or "new"
+        result.label = (trained and "Train " or "New ")
+            .. (current.label ~= "" and current.label or "skill")
+        nextRank, nextLevel = current, unlockLevel(skill, current)
+    else
+        result.status = trained and "trained" or current and "granted" or "future"
+        result.label = trained
+                and ((trained.label ~= "" and trained.label or "Skill") .. " trained")
+            or current and "Talent granted"
+            or "Not yet available"
+        for _, rank in ipairs(skill.ranks) do
+            local at = unlockLevel(skill, rank)
+            if
+                rank.live
+                and (not rank.toLevel or rank.toLevel >= at)
+                and at > level
+                and not coversRank(trained, rank)
+                and not grantedRank(skill, rank)
+                and (not nextLevel or at < nextLevel)
+            then
+                nextRank, nextLevel = rank, at
+            end
+        end
+    end
+    if nextRank then
+        result.next = nextRank
+        result.nextLevel = nextLevel
+        result.levelsAway = math.max(0, nextLevel - level)
+        result.progress = "↑" .. result.levelsAway
+        result.hint = (nextRank.label ~= "" and nextRank.label or "Skill")
+            .. " • level "
+            .. nextLevel
+            .. " • "
+            .. result.levelsAway
+            .. (result.levelsAway == 1 and " more level" or " more levels")
+        if result.requiresTalent then
+            result.hint = result.hint
+                .. ". Requires "
+                .. result.requiresTalent
+                .. "; level alone does not unlock it."
+        elseif result.needsTraining then
+            result.hint = result.hint .. ". Available to train now."
+        end
+    else
+        result.hint = "No later rank is recorded in the current catalog."
+    end
+    result.hint = result.hint
+        .. (
+            trained
+                and (" Imported: " .. (trained.label ~= "" and trained.label or "ability") .. ".")
+            or " Not in the imported spellbook."
+        )
+    return result
+end
+
+-- Compare the displayed plan with a dated spellbook; never infer an empty capture.
+function A.TrainingReport(build, level)
+    local report = {
+        enabled = FT.Store and FT.Store.db and FT.Store.CheckTraining() or false,
+        skills = {},
+        total = 0,
+        new = 0,
+        upgrades = 0,
+        level = level,
+    }
+    if not report.enabled then
+        return report
+    end
+    local snapshot = FT.Character.Get(build).trainedSkills
+    if not snapshot or snapshot.classID ~= build.classID then
+        report.caption = "Import character skills first"
+        report.note =
+            "No matching imported spellbook. Use Character → Import my talents & skills in the addon, or import its character string."
+        return report
+    end
+    report.capturedLevel = snapshot.level
+    local prepared, points = A.Prepare(build.classID), FT.Model.Counts(build)
+    local recognized = false
+    for _, skill in ipairs(prepared.list) do
+        if A.TrainedRank(skill, snapshot) then
+            recognized = true
+            break
+        end
+    end
+    if not recognized then
+        report.caption = "Imported skills do not match"
+        report.note =
+            "No imported class skill matches this catalog. Update both versions and capture your character again."
+        return report
+    end
+    report.ready = true
+    for _, skill in ipairs(prepared.list) do
+        local comparison = compareTraining(skill, level, points, snapshot)
+        report.skills[skill.name] = comparison
+        if comparison.needsTraining then
+            report.total = report.total + 1
+            if comparison.status == "new" then
+                report.new = report.new + 1
+            else
+                report.upgrades = report.upgrades + 1
+            end
+        end
+    end
+    report.caption = report.total .. " need training • level " .. level
+    report.note = report.new
+        .. " new skills, "
+        .. report.upgrades
+        .. " rank upgrades. Imported at level "
+        .. snapshot.level
+        .. ". Uses the displayed level and talents. Racials and talent-granted ranks do not need training. Some skills require quests or items. Re-import after learning skills."
+    return report
+end
+
 A.highlightPalette = {
     { name = "Sky", hex = "59d9ff", 0.35, 0.85, 1 },
     { name = "Gold", hex = "f4c363", 0.96, 0.76, 0.39 },
@@ -358,9 +513,11 @@ function A.List(build, level, query, filter, includeRacials)
         training = nil
     end
     query = normalize(query)
+    local report = A.TrainingReport(build, level)
     for _, skill in ipairs(prepared.list) do
         local rank = A.CurrentRank(skill, level, points)
         local trained = A.TrainedRank(skill, training)
+        local comparison = report.skills[skill.name]
         if
             (query == "" or skill.search:find(query, 1, true))
             and (
@@ -369,9 +526,11 @@ function A.List(build, level, query, filter, includeRacials)
                 or (filter == "now" and rank)
                 or (filter == "talent" and skill.unlock)
                 or (filter == "trained" and trained)
+                or (filter == "needsTraining" and comparison and comparison.needsTraining)
             )
         then
-            list[#list + 1] = { skill = skill, current = rank, trained = trained }
+            list[#list + 1] =
+                { skill = skill, current = rank, trained = trained, comparison = comparison }
         end
     end
     if

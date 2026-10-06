@@ -6,6 +6,7 @@ local filterLabels = {
     talent = "Talent skills & effects",
     racial = "Racial traits",
     trained = "Trained on captured character",
+    needsTraining = "Needs training",
 }
 
 function UI.SkillHighlightKey(skill)
@@ -90,6 +91,8 @@ end
 function UI.SkillTooltip(owner, skill)
     if FT.Store.SimpleView() then
         local levels, unlockLevel = FT.Skills.Levels(skill)
+        local comparison =
+            FT.Skills.TrainingReport(FT.Store.View(), FT.Store.ViewLevel()).skills[skill.name]
         W.Tooltip(owner, skill.name, {
             skill.unlock
                     and ("Unlocked by " .. skill.unlock.name .. " • earliest level " .. unlockLevel)
@@ -97,6 +100,7 @@ function UI.SkillTooltip(owner, skill)
                     "First learned at level " .. (levels[1] and levels[1].level or skill.firstLevel)
                 ),
             "Click for unlock and rank upgrade levels.",
+            comparison and comparison.hint or nil,
         })
         return
     end
@@ -131,6 +135,16 @@ function UI.SkillTooltip(owner, skill)
     )
     local description, source = FT.Description(rank)
     GameTooltip:AddLine("\n" .. description, 0.86, 0.90, 0.92, true)
+    local comparison = FT.Skills.TrainingReport(view, level).skills[skill.name]
+    if comparison then
+        GameTooltip:AddLine(
+            "\n" .. comparison.label .. " • " .. comparison.hint,
+            0.94,
+            0.76,
+            0.39,
+            true
+        )
+    end
     if source == "client" then
         GameTooltip:AddLine(
             "Description supplied by your client; missing from the snapshot.",
@@ -207,8 +221,17 @@ function UI.CreateBrowser(parent)
     end)
     UI.skillFilter = W.Button(p, filterLabels.all .. "  v", 10, -88, 206, function(self)
         local options = {}
-        for _, key in ipairs({ "all", "now", "trained", "talent", "racial" }) do
-            if not FT.Store.SimpleView() or key == "all" or key == "now" or key == "trained" then
+        for _, key in ipairs({ "all", "now", "trained", "needsTraining", "talent", "racial" }) do
+            if
+                (key ~= "needsTraining" or FT.Store.CheckTraining())
+                and (
+                    not FT.Store.SimpleView()
+                    or key == "all"
+                    or key == "now"
+                    or key == "trained"
+                    or key == "needsTraining"
+                )
+            then
                 options[#options + 1] = {
                     text = FT.Store.SimpleView() and key == "all" and "All class skills"
                         or filterLabels[key],
@@ -222,7 +245,30 @@ function UI.CreateBrowser(parent)
         end
         W.Menu(self, options, 246)
     end)
-    UI.skillScroll = W.Scroll(p, 8, -126, 210, 356)
+    UI.trainingCheck = W.Checkbox(p, 10, -124, function(checked)
+        if not checked and UI.skillFilterKey == "needsTraining" then
+            UI.skillFilterKey = "all"
+        end
+        UI.skillScroll:ScrollTo(0)
+        FT.Store.SetCheckTraining(checked)
+    end)
+    UI.trainingCheck.label = W.Text(p, "Compare imported character", 38, -129, 178, 11)
+    UI.trainingCheck:SetScript("OnEnter", function(self)
+        self:Paint(true)
+        W.Tooltip(self, "Compare imported character", {
+            "Compare the displayed level and talents with your last imported spellbook.",
+            "Gold rows need a new skill or a higher rank. Needs training filters those rows.",
+            "The arrow counts levels until the next rank or first unlock. Zero means the level is reached; talent requirements still apply.",
+            "Re-import after learning skills. This is a snapshot, not a live trainer list.",
+        })
+    end)
+    UI.trainingInfo = W.Button(p, "", 10, -31, 206, function()
+        UI.skillFilterKey = "needsTraining"
+        UI.skillScroll:ScrollTo(0)
+        UI.RefreshBrowser()
+    end, false, 20)
+    UI.trainingInfo.fontString:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    UI.skillScroll = W.Scroll(p, 8, -158, 210, 324)
     UI.skillRows = {}
     for i = 1, 110 do
         local row = W.Button(UI.skillScroll.content, "", 0, -(i - 1) * 49, 194, function(self)
@@ -233,6 +279,8 @@ function UI.CreateBrowser(parent)
         row.title:SetWordWrap(false)
         row.detail = W.Text(row, "", 42, -26, 119, 10, W.colors.muted)
         row.detail:SetWordWrap(false)
+        row.progress = W.Text(row, "", 127, -26, 34, 10, W.colors.gold)
+        row.progress:SetJustifyH("RIGHT")
         UI.AddHighlightCheckbox(row, 167, -13)
         row:SetScript("OnEnter", function(self)
             self:Paint(true)
@@ -268,13 +316,25 @@ function UI.RefreshBrowser()
     local build, level = FT.Store.View(), FT.Store.ViewLevel()
     local filter = UI.skillFilterKey or "all"
     local simple = FT.Store.SimpleView()
-    if simple and filter ~= "now" and filter ~= "trained" then
+    local comparing = FT.Store.CheckTraining()
+    if
+        (filter == "needsTraining" and not comparing)
+        or (simple and filter ~= "now" and filter ~= "trained" and filter ~= "needsTraining")
+    then
         filter = "all"
     end
     UI.skillFilter:SetText(
         (simple and filter == "all" and "All class skills" or filterLabels[filter]) .. "  v"
     )
     UI.clearHighlight:SetShown(not simple)
+    UI.trainingCheck:SetChecked(comparing)
+    UI.trainingCheck:Paint(false)
+    local report = FT.Skills.TrainingReport(build, level)
+    UI.trainingInfo:SetShown(comparing)
+    UI.skillCount:SetShown(not comparing)
+    UI.trainingInfo:SetText(report.caption or "")
+    UI.trainingInfo:SetEnabled(report.ready == true)
+    UI.trainingInfo.tip = report.note
     local list = FT.Skills.List(build, level, UI.skillQuery, filter, not simple)
     local training = FT.Character.Get(build).trainedSkills
     UI.skillCount:SetText(
@@ -291,9 +351,17 @@ function UI.RefreshBrowser()
         if entry then
             local s = entry.skill
             row.skill = s
+            row.comparison = entry.comparison
             row.check:SetShown(not simple)
             row.title:SetWidth(simple and 145 or 119)
-            row.detail:SetWidth(simple and 145 or 119)
+            local comparison = entry.comparison
+            row.detail:SetWidth(
+                (simple and 145 or 119) - (comparison and comparison.progress and 40 or 0)
+            )
+            row.progress:ClearAllPoints()
+            row.progress:SetPoint("TOPRIGHT", simple and -7 or -34, -26)
+            row.progress:SetText(comparison and comparison.progress or "")
+            row.progress:SetShown(comparison and comparison.progress ~= nil or false)
             row.title:SetText(s.name)
             row.icon:SetTexture(
                 "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. s.icon .. ".tga"
@@ -313,21 +381,27 @@ function UI.RefreshBrowser()
                         )
                 )
             row.detail:SetText(
-                entry.trained
-                        and "Trained • " .. (entry.trained.label ~= "" and entry.trained.label or "ability")
+                comparison and comparison.label
+                    or entry.trained and "Trained • " .. (entry.trained.label ~= "" and entry.trained.label or "ability")
                     or detail
             )
             row.detail:SetTextColor(
-                unpack((entry.current or entry.trained) and W.colors.teal or W.colors.muted)
+                unpack(
+                    comparison and comparison.needsTraining and W.colors.gold
+                        or (entry.current or entry.trained) and W.colors.teal
+                        or W.colors.muted
+                )
             )
         else
             row.skill = nil
+            row.comparison = nil
         end
     end
     UI.skillEmpty:SetShown(#list == 0)
     UI.skillEmpty:SetText(
-        filter == "trained"
-                and "No captured trained skills.\nCharacter → Import my talents & skills."
+        filter == "needsTraining"
+                and (report.ready and "No matching skills need training at this level.\nTry another search or level." or (report.caption .. ".\nCharacter → Import my talents & skills."))
+            or filter == "trained" and "No captured trained skills.\nCharacter → Import my talents & skills."
             or "No matching skills.\nTry a name, school, or effect."
     )
     UI.skillScroll:SetContentHeight(#list * 49)

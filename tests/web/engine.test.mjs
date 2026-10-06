@@ -95,6 +95,13 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     },
   });
   run('character');
+  run('checkTraining', { enabled: true });
+  run('trainingReport');
+  run('skills', { filter: 'needsTraining' });
+  run('level', { level: 29 });
+  run('trainingReport');
+  run('level', { level: 25 });
+  run('checkTraining', { enabled: false });
   run('export', { kind: 'stats' });
   run('export', { kind: 'character' });
   run('statsForSkill', { name: 'Wrath', rank: 4, overrides: { coefficient: 75 } });
@@ -121,6 +128,53 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
   run('skillLevels', { name: 'Riptide' });
   run('simulate', { name: 'Riptide', rank: 1, state: { power: 100, crit: 0 } });
   assert.deepEqual(results, native);
+  h.close();
+});
+test('training comparison is opt-in, respects rank boundaries and keeps portable data and local preferences', async () => {
+  const h = await harness();
+  h.call('switch', { classID: 11 });
+  h.call('level', { level: 25 });
+  assert.equal(h.call('state').checkTraining, false);
+  assert.equal(h.call('trainingReport').enabled, false);
+  assert.equal(list(h.call('skills', { filter: 'needsTraining' })).length, 0);
+  h.call('checkTraining', { enabled: true });
+  assert.equal(h.call('trainingReport').ready, undefined);
+  const sheet = h.call('character').sheet;
+  sheet.trainedSkills = { schema: 1, classID: 11, raceID: 4, level: 25, spellIDs: [5179, 5188] };
+  h.call('characterSave', { sheet });
+  const report = h.call('trainingReport');
+  assert.equal(report.ready, true);
+  assert.equal(report.total, report.new + report.upgrades);
+  assert.equal(report.skills.Wrath.status, 'trained');
+  assert.equal(report.skills.Wrath.progress, '↑5');
+  assert.equal(report.skills['Travel Form'].progress, '↑5');
+  assert.equal(report.skills.Moonfire.status, 'new');
+  assert.equal(report.skills.Moonfire.progress, '↑0');
+  const needed = list(h.call('skills', { filter: 'needsTraining' }));
+  assert.equal(needed.length, report.total);
+  assert.ok(needed.every((e) => e.comparison.needsTraining && e.skill.kind !== 'racial'));
+  h.call('level', { level: 29 });
+  assert.equal(h.call('trainingReport').skills.Wrath.progress, '↑1');
+  h.call('level', { level: 30 });
+  assert.equal(h.call('trainingReport').skills.Wrath.status, 'upgrade');
+  assert.equal(h.call('trainingReport').skills.Wrath.progress, '↑0');
+  h.call('level', { level: 25 });
+  const codes = Object.fromEntries(
+    ['build', 'stats', 'character', 'library'].map((kind) => [kind, h.call('export', { kind })])
+  );
+  h.call('checkTraining', { enabled: false });
+  assert.ok(list(h.call('skills', { filter: 'all' })).every((e) => !e.comparison));
+  for (const kind of Object.keys(codes)) assert.equal(h.call('export', { kind }), codes[kind]);
+  h.call('checkTraining', { enabled: true });
+  h.call('simpleView', { enabled: true });
+  assert.equal(list(h.call('skills', { filter: 'needsTraining' })).length, report.total);
+  const restored = await harness(h.call('database'));
+  assert.equal(restored.call('state').checkTraining, true);
+  restored.call('checkTraining', { enabled: false });
+  restored.call('import', { code: codes.library, includeDrafts: true });
+  assert.equal(restored.call('state').checkTraining, false);
+  assert.deepEqual(list(restored.call('training').capture.spellIDs), [5179, 5188]);
+  restored.close();
   h.close();
 });
 test('talent first ranks, live progression and removed abilities reach the browser engine', async () => {

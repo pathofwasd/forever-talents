@@ -90,6 +90,7 @@ function S.Init(classID, raceID, level)
         db.settings.minimap = true
     end
     db.settings.simpleView = db.settings.simpleView == true
+    db.settings.checkTraining = db.settings.checkTraining == true
     db.settings.scenario = FT.Simulation.State(db.settings.scenario)
     if db.settings.statsProfile and FT.Snapshot then
         local ok, code = pcall(FT.Snapshot.EncodeStats, db.settings.statsProfile)
@@ -273,6 +274,16 @@ function S.SetSimpleView(enabled)
         enabled and "Simple view enabled. Your builds and character settings are kept."
             or "Full view restored."
     )
+    return true
+end
+
+function S.CheckTraining()
+    return S.db.settings.checkTraining == true
+end
+
+function S.SetCheckTraining(enabled)
+    S.db.settings.checkTraining = not not enabled
+    FT.Changed()
     return true
 end
 

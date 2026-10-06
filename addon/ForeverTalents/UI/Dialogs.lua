@@ -398,7 +398,7 @@ function UI.SkillLevelsDialog(skill)
             13,
             W.colors.muted
         )
-        W.Text(
+        f.progressionNote = W.Text(
             f,
             "Talent skills also require their talent to be learned.\nLevels are the earliest recorded unlock or rank upgrade.",
             22,
@@ -415,6 +415,11 @@ function UI.SkillLevelsDialog(skill)
         skill.unlock
                 and ("Talent: " .. skill.unlock.name .. " • " .. skill.unlock.treeName .. "\nEarliest unlock: level " .. unlockLevel)
             or ("First learned at level " .. (levels[1] and levels[1].level or skill.firstLevel))
+    )
+    local comparison = FT.Skills.TrainingReport(S.View(), S.ViewLevel()).skills[skill.name]
+    f.progressionNote:SetText(
+        comparison and (comparison.label .. " • " .. comparison.hint)
+            or "Talent skills also require their talent to be learned.\nLevels are the earliest recorded unlock or rank upgrade."
     )
     for _, row in ipairs(f.levelRows) do
         row:Hide()
@@ -493,7 +498,11 @@ function UI.SkillDialog(skill)
     local function describe(r)
         f.selectedRank = r
         local description, source = FT.Description(r)
-        f.description:SetText(description)
+        local comparison = FT.Skills.TrainingReport(view, level).skills[skill.name]
+        f.description:SetText(
+            (comparison and (comparison.label .. " • " .. comparison.hint .. "\n\n") or "")
+                .. description
+        )
         f.descScroll:SetContentHeight(f.description:GetStringHeight() + 4)
         f.descScroll:ScrollTo(0)
         f.source:SetText(

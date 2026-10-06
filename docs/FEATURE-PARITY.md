@@ -62,6 +62,16 @@ They need no skill name or checkbox identity. Leaving restores the pinned skill/
 related-talent links keep the originating skill's assigned color in the addon. Highlighting does not
 change allocations, saved profiles or sharing strings.
 
+**Compare imported character** is off by default and persists only as a local display preference.
+Enabling it compares the displayed level and talent build with the last imported class spellbook.
+The skill area counts new skills and rank upgrades, offers a **Needs training** filter, and shows ↑N
+levels until the next rank or first unlock (↑0 means the level has been reached). Talent
+requirements remain explicit; racials and talent-granted ranks are excluded from trainer tasks.
+Unmatched or absent captures show guidance rather than treating every skill as untrained. Re-import
+after learning skills; this is a dated comparison, not a live trainer listing. The preference does
+not alter allocations, undo history, character records or shared strings, and library imports retain
+the recipient’s choice. It also works in Classic / Simple view with existing captured data.
+
 Library's **New build** creates an independent profile; the checkpoint action creates a child in its
 existing profile. Both reuse shared Store operations.
 

@@ -162,3 +162,28 @@ Updating from 1.2.4 preserved the test library byte for byte. After stopping the
 files matched the verified archive, and the recoverable backup matched the previous addon. Player
 SavedVariables were preserved. Native callbacks were verified in the Lua harness; live WoW loading
 and visual behavior still need in-game verification.
+
+## Version 1.2.6 validation
+
+Passed 53,104 native assertions, eight browser-engine tests, exact Lua 5.1/WASM training-report and
+sharing parity, generated-file checks, formatting, the production build and addon archive
+validation. Training regressions cover all nine classes, missing and unmatched captures, higher
+imported ranks, talent-granted skills, unlock requirements, future rank boundaries and overdue
+training. The native callback harness verifies the checkbox, count shortcut, filter, tooltips,
+Classic view and preference persistence. Toggling comparison leaves portable library strings and
+undo history unchanged; library imports retain the recipient's local preference.
+
+Production browser checks covered 320/375 px phones, 844×390 landscape, 1024 px tablet and 1280 px
+desktop without horizontal overflow. The checkbox and count shortcut have 44 px touch targets.
+Skills distinguish new abilities from rank upgrades, and tap-accessible details explain the next
+unlock. Level buttons changed Wrath's countdown from five levels at 25 to one at 29, then an
+available rank upgrade at 30. Simple view, keyboard toggling, missing-import guidance, empty
+searches and damaged-string rejection worked. A native FC1 capture round-tripped exactly. The
+console reported no errors.
+
+Updating from 1.2.5 preserved the test library exactly. Subsequent cache updates retained the
+imported spellbook and enabled preference. After stopping the preview server, offline reload kept
+the comparison and filter functional and exported the identical full library. Installed files
+matched the source package, the recoverable backup matched the previous addon, and player saves and
+other addons were unchanged. Native callbacks were verified in the harness; live WoW loading,
+spellbook captures and visual behavior still require in-game verification.

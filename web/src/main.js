@@ -109,7 +109,10 @@ function highlightControl(control) {
   paintHighlights();
 }
 function currentSkillFilter() {
-  return state.simpleView && !['now', 'trained'].includes(skillFilter) ? 'all' : skillFilter;
+  if (skillFilter === 'needsTraining' && !state.checkTraining) return 'all';
+  return state.simpleView && !['now', 'trained', 'needsTraining'].includes(skillFilter)
+    ? 'all'
+    : skillFilter;
 }
 function render() {
   const focus = document.activeElement;
@@ -149,11 +152,13 @@ function render() {
         ['all', 'All class skills'],
         ['now', 'Available at this level'],
         ['trained', 'Trained on captured character'],
+        ...(state.checkTraining ? [['needsTraining', 'Needs training']] : []),
       ]
     : [
         ['all', 'All skills & racials'],
         ['now', 'Available at this level'],
         ['trained', 'Trained on captured character'],
+        ...(state.checkTraining ? [['needsTraining', 'Needs training']] : []),
         ['talent', 'Unlocked by talents'],
         ['racial', 'Racial traits'],
       ]
@@ -164,7 +169,7 @@ function render() {
     )
     .join(
       ''
-    )}</select><div class="skill-list" id="skill-list"></div>${btn('Clear highlights', 'clear-highlights', 'data-full-view', 'wide')}</aside>
+    )}</select><label class="training-toggle" title="Compare the displayed level and talents with your last imported spellbook. Re-import after learning skills."><input id="check-training" type="checkbox" ${state.checkTraining ? 'checked' : ''}>Compare imported character</label><button id="training-summary" type="button" class="training-summary" data-action="needs-training" hidden></button><div class="skill-list" id="skill-list"></div>${btn('Clear highlights', 'clear-highlights', 'data-full-view', 'wide')}</aside>
   <section class="talents-panel" aria-label="Talent trees"><div class="talent-heading"><h2>Talent trees</h2><input id="talent-search" type="search" placeholder="Search talents or effects…" value="${esc(talentQuery)}" aria-label="Search talents"></div><nav class="tree-tabs" aria-label="Talent tree">${allTrees.map((t, i) => btn(`${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b>`, 'tree-tab', `data-index="${i}" aria-pressed="${i === treeTab}"`, i === treeTab ? 'active' : '')).join('')}</nav><div class="trees">${allTrees.map((tree, i) => renderTree(tree, i)).join('')}</div><p class="tree-hint"><span class="desktop-hint">Click +1 · right-click −1 · Shift fills / clears · Ctrl inspects</span><span class="touch-hint">Tap a talent to read it, then choose Add or Remove.</span></p><div class="racials" data-full-view><h2>Racial traits</h2><div id="racial-list"></div></div></section>
   <aside class="panel builds-panel" data-full-view aria-label="Build library and talent order"><div class="section-heading"><h2>Your journey</h2><span class="saved-dot">${state.readOnly || storageBlocked ? 'Saving paused' : 'Autosaved'}</span></div><div class="build-actions">${btn('Save build', 'save', '', 'primary')}${btn('Checkpoint', 'checkpoint', '', '', !state.activeProfile)}</div><div id="history-graph"></div><div class="section-heading order-heading"><h3>Talent order</h3><span>${list(state.build.order).length} ${list(state.build.order).length === 1 ? 'step' : 'steps'}</span></div><div class="order-list">${renderOrder()}</div>${btn('Library & sync', 'library', '', 'wide')}</aside>
   <section class="panel more-panel" data-full-view><h2>Atlas & tools</h2><p class="muted">Your whole library lives on this device. Use Library & sync to move it between devices and the addon.</p><div class="tool-grid">${btn('Library & sync', 'library')}${btn('Character & simulator', 'character-sheet')}${btn('Race & class atlas', 'races')}${btn('Hunter pet atlas', 'pets')}${btn('Forever perks', 'perks')}${btn('How to use', 'help')}${btn('Install app', 'install')}</div><p class="muted">Forever ${esc(catalog.meta.build)} · data ${esc(catalog.meta.tag)} · v${esc(catalog.version)}</p><p><a href="./NOTICE.txt" target="_blank" rel="noopener">Data & artwork credits</a> · <a href="./LICENSE.txt" target="_blank" rel="noopener">License</a> · <a href="./THIRD-PARTY.txt" target="_blank" rel="noopener">Runtime credits</a></p></section></div>
@@ -235,6 +240,13 @@ function renderTree(tree, i) {
 }
 function renderSkills() {
   const training = engine.call('training').capture;
+  const report = engine.call('trainingReport');
+  const summary = $('#training-summary');
+  summary.hidden = !report.enabled;
+  summary.disabled = !report.ready;
+  summary.textContent = report.caption || '';
+  summary.title = report.note || '';
+  summary.setAttribute('aria-label', [report.caption, report.note].filter(Boolean).join('. '));
   const caption = $('.skills-panel .muted');
   caption.textContent =
     currentSkillFilter() === 'trained' && training
@@ -246,13 +258,15 @@ function renderSkills() {
   $('#skill-list').innerHTML = entries.length
     ? entries
         .map(
-          ({ skill: s, current, trained }) =>
-            `<div class="skill-row"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}">${img(s.icon)}<span><strong>${esc(s.name)}</strong><small>${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${trained ? `Trained · ${esc(trained.label || 'ability')}` : current ? esc(current.label || 'available') : 'not yet available'}</small></span></button></div>`
+          ({ skill: s, current, trained, comparison }) =>
+            `<div class="skill-row ${comparison?.needsTraining ? 'needs-training' : ''}"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}" ${comparison ? `title="${esc(comparison.hint)}"` : ''}>${img(s.icon)}<span class="skill-name"><strong>${esc(s.name)}</strong><small>${comparison ? esc(comparison.label) : `${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${trained ? `Trained · ${esc(trained.label || 'ability')}` : current ? esc(current.label || 'available') : 'not yet available'}`}</small></span>${comparison?.progress ? `<span class="skill-progress" aria-label="${esc(comparison.hint)}">${esc(comparison.progress)}</span>` : ''}</button></div>`
         )
         .join('')
-    : skillFilter === 'trained'
-      ? '<p class="empty">No captured trained skills. Import a character string captured by the addon.</p>'
-      : '<p class="empty">No matches. Try another effect or category.</p>';
+    : currentSkillFilter() === 'needsTraining'
+      ? `<p class="empty">${report.ready ? 'No matching skills need training at this level. Try another search or level.' : esc(report.note)}</p>`
+      : skillFilter === 'trained'
+        ? '<p class="empty">No captured trained skills. Import a character string captured by the addon.</p>'
+        : '<p class="empty">No matches. Try another effect or category.</p>';
   const racials = list(engine.call('skills', { filter: 'racial' }));
   $('#racial-list').innerHTML = racials
     .map(
@@ -404,12 +418,16 @@ function showTalent(id) {
 function showSkill(name) {
   try {
     const s = engine.call('skill', { name });
+    const comparison = engine.call('trainingReport').skills?.[name];
+    const trainingNote = comparison
+      ? `<p class="callout training-note">${esc(comparison.label)} · ${esc(comparison.hint)}</p>`
+      : '';
     if (state.simpleView) {
       const progression = engine.call('skillLevels', { name });
       const levels = list(progression.ranks);
       openDialog(
         `${s.name} · Skill levels`,
-        `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3></div>${s.unlock ? `<p class="muted">Unlocked by ${esc(s.unlock.name)} in ${esc(s.unlock.treeName)}. Earliest talent level ${progression.unlockLevel}.</p>` : `<p class="muted">First learned at level ${levels[0]?.level ?? s.firstLevel}.</p>`}<div class="skill-levels">${levels.length ? levels.map((r) => `<div class="skill-level"><b>${esc(r.label)}</b><span>Level ${r.level}${r.toLevel ? `–${r.toLevel}` : ''}${r.talentGranted ? ' · talent unlock' : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}</span></div>`).join('') : '<p class="empty">No trainable rank levels recorded.</p>'}</div>${s.unlock ? '<p class="muted">Talent skills also require their talent to be learned.</p>' : ''}`
+        `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3></div>${s.unlock ? `<p class="muted">Unlocked by ${esc(s.unlock.name)} in ${esc(s.unlock.treeName)}. Earliest talent level ${progression.unlockLevel}.</p>` : `<p class="muted">First learned at level ${levels[0]?.level ?? s.firstLevel}.</p>`}${trainingNote}<div class="skill-levels">${levels.length ? levels.map((r) => `<div class="skill-level"><b>${esc(r.label)}</b><span>Level ${r.level}${r.toLevel ? `–${r.toLevel}` : ''}${r.talentGranted ? ' · talent unlock' : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}</span></div>`).join('') : '<p class="empty">No trainable rank levels recorded.</p>'}</div>${s.unlock ? '<p class="muted">Talent skills also require their talent to be learned.</p>' : ''}`
       );
       return;
     }
@@ -420,7 +438,7 @@ function showSkill(name) {
     const rel = list(s.related);
     openDialog(
       s.name,
-      `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3><span class="badge">${esc(s.kind)}</span></div>${s.unlock ? `<p class="callout">Unlocked by <b>${esc(s.unlock.name)}</b> in ${esc(s.unlock.treeName)}, row ${s.unlock.row + 1} (${s.unlock.gate} points in tree first).</p>` : `<p class="muted">First learned at level ${s.firstLevel}. All captured ranks appear below.</p>`}<label class="pin"><input type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} ${selected.has(skillKey(s)) ? 'checked' : ''}>Keep talent highlights</label><div class="skill-ranks">${ranks.map((r, i) => `<article class="rank-card ${r.live ? '' : 'archived'}"><div><b>${esc(r.label || 'Ability')}</b><span>Lv. ${r.level}${r.talentGranted ? ' · talent unlock' : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}${r.fromLevel ? ` · Lv. ${r.fromLevel}–${r.toLevel || 60}` : ''}${r.live ? '' : ' · archived'}${trained?.spellID === r.spellID ? ' · captured trained rank' : ''}</span></div><p>${esc(r.text || 'No description recorded in the captured snapshot.')}</p>${btn('Open simulator', 'simulate', `data-name="${esc(s.name)}" data-rank="${i + 1}"`, 'quiet')}</article>`).join('')}</div><h3>Talent interactions <span class="muted">${rel.length}</span></h3>${rel.length ? rel.map((r) => `<div class="relation">${btn(esc(talent(r.id)?.name || r.id), 'locate', `data-id="${r.id}"`)}<p>${esc(r.reason)}</p></div>`).join('') : '<p class="muted">No specific talent interaction is described in the captured data.</p>'}`
+      `<div class="detail-title">${img(s.icon)}<h3>${esc(s.name)}</h3><span class="badge">${esc(s.kind)}</span></div>${s.unlock ? `<p class="callout">Unlocked by <b>${esc(s.unlock.name)}</b> in ${esc(s.unlock.treeName)}, row ${s.unlock.row + 1} (${s.unlock.gate} points in tree first).</p>` : `<p class="muted">First learned at level ${s.firstLevel}. All captured ranks appear below.</p>`}${trainingNote}<label class="pin"><input type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} ${selected.has(skillKey(s)) ? 'checked' : ''}>Keep talent highlights</label><div class="skill-ranks">${ranks.map((r, i) => `<article class="rank-card ${r.live ? '' : 'archived'}"><div><b>${esc(r.label || 'Ability')}</b><span>Lv. ${r.level}${r.talentGranted ? ' · talent unlock' : ''}${r.talentRank ? ` · talent rank ${r.talentRank}` : ''}${r.fromLevel ? ` · Lv. ${r.fromLevel}–${r.toLevel || 60}` : ''}${r.live ? '' : ' · archived'}${trained?.spellID === r.spellID ? ' · captured trained rank' : ''}</span></div><p>${esc(r.text || 'No description recorded in the captured snapshot.')}</p>${btn('Open simulator', 'simulate', `data-name="${esc(s.name)}" data-rank="${i + 1}"`, 'quiet')}</article>`).join('')}</div><h3>Talent interactions <span class="muted">${rel.length}</span></h3>${rel.length ? rel.map((r) => `<div class="relation">${btn(esc(talent(r.id)?.name || r.id), 'locate', `data-id="${r.id}"`)}<p>${esc(r.reason)}</p></div>`).join('') : '<p class="muted">No specific talent interaction is described in the captured data.</p>'}`
     );
   } catch (e) {
     toast(e.message, true);
@@ -567,7 +585,7 @@ function showHelp() {
   }
   openDialog(
     'A quick guide',
-    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
+    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links.</p><p>Enable Compare imported character to check your last imported spellbook against the displayed level and talents. Gold rows need a new skill or higher rank; Needs training filters them. ↑3 means three more levels until the next rank or first unlock, and ↑0 means that level is reached. Talent requirements still apply. Re-import after learning skills; the comparison is a snapshot.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
     true
   );
 }
@@ -737,6 +755,11 @@ document.addEventListener('click', async (event) => {
         hovered = null;
         renderSkills();
         paintHighlights();
+        break;
+      case 'needs-training':
+        skillFilter = 'needsTraining';
+        $('#skill-filter').value = skillFilter;
+        renderSkills();
         break;
       case 'racial':
       case 'related-skill':
@@ -964,6 +987,10 @@ document.addEventListener('change', async (event) => {
     act('simpleView', { enabled: t.checked });
   }
   if (t.id === 'level') act('level', { level: Number(t.value) });
+  if (t.id === 'check-training') {
+    if (!t.checked && skillFilter === 'needsTraining') skillFilter = 'all';
+    act('checkTraining', { enabled: t.checked });
+  }
   if (t.id === 'skill-filter') {
     skillFilter = t.value;
     renderSkills();

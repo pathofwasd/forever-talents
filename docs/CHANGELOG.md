@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.6
+
+Added optional imported-character comparison in Skills & ranks: a training count, new/upgrade
+indicators, Needs training filter and ↑N levels until the next rank or first unlock. Availability
+follows the displayed level and talents; automatic talent grants and racials are excluded from
+training tasks. The local preference defaults off and keeps saved builds and sharing unchanged.
+Works in the addon and web/mobile app, including their reduced views. See
+[release notes](RELEASE-1.2.6.md).
+
 ## 1.2.5
 
 Fixed the Lua error when hovering talent-order entries and following skill-to-talent links.

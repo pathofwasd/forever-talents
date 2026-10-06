@@ -84,6 +84,13 @@ output("characterSave", {
     },
 })
 output("character")
+output("checkTraining", { enabled = true })
+output("trainingReport")
+output("skills", { filter = "needsTraining" })
+output("level", { level = 29 })
+output("trainingReport")
+output("level", { level = 25 })
+output("checkTraining", { enabled = false })
 output("export", { kind = "stats" })
 output("export", { kind = "character" })
 output("statsForSkill", { name = "Wrath", rank = 4, overrides = { coefficient = 75 } })

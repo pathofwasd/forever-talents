@@ -66,6 +66,7 @@ local function state()
         statsProfile = S.db.settings.statsProfile,
         auto = S.AutoLevel(),
         simpleView = S.SimpleView(),
+        checkTraining = S.CheckTraining(),
         preview = S.preview,
         undo = #S.Draft().undo,
         redo = #S.Draft().redo,
@@ -133,6 +134,9 @@ local commands = {
     end,
     simpleView = function(p)
         return S.SetSimpleView(p.enabled)
+    end,
+    checkTraining = function(p)
+        return S.SetCheckTraining(p.enabled)
     end,
     add = function(p)
         return S.Apply(M.Add, p.id, p.fill)
@@ -298,6 +302,9 @@ local commands = {
         local capture = FT.Character.Get(S.View()).trainedSkills
         local skill = A.Prepare(S.View().classID).byName[p.name]
         return { capture = capture, rank = skill and A.TrainedRank(skill, capture) }
+    end,
+    trainingReport = function()
+        return A.TrainingReport(S.View(), S.ViewLevel())
     end,
     skill = function(p)
         for _, entry in ipairs(A.List(S.View(), 60, "", "all")) do
