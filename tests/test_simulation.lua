@@ -80,7 +80,7 @@ local apSting =
     result(3, "Serpent Sting", { attackPower = 1000, dotAPCoefficient = 20, crit = 0 }, 18, 3)
 near(apSting.expected, 260)
 check(inputs(apSting).attackPower and not inputs(apSting).power)
-near(result(1, "Bloodthirst", { attackPower = 1000, apCoefficient = 0, crit = 0 }).expected, 37)
+near(result(1, "Bloodthirst", { attackPower = 1000, apCoefficient = 0, crit = 0 }).expected, 30)
 check(not inputs(result(1, "Bloodthirst", { apCoefficient = 0 })).attackPower)
 check(inputs(scaled).power)
 near(result(3, "Serpent Sting", { crit = 100, dotCoefficient = 0 }, 18, 3).expected, 120)
@@ -101,7 +101,8 @@ check(
         and not inputs(shield).hit
         and shield.duration == 0
 )
-near(result(1, "Bloodthirst", { crit = 0, attackPower = 1000 }).expected, 487)
+near(result(1, "Bloodthirst", { crit = 0, attackPower = 1000 }).expected, 480)
+near(result(1, "Bloodthirst", { crit = 0, attackPower = 1000 }, 48, 2).expected, 487)
 check(result(1, "Bloodthirst", { crit = 0 }).duration == 0)
 near(result(11, "Swipe", { crit = 0, attackPower = 1000 }).expected, 48)
 near(result(1, "Execute", { crit = 0, rage = 20 }).expected, 185)

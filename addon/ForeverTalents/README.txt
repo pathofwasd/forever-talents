@@ -58,8 +58,11 @@ changing race clears racial selections while keeping selected class skills.
 Some source ranks are alternate records; they remain visible and labeled.
 When the snapshot has no description, the addon can display the client's
 description if available; otherwise it labels the missing source text.
-All skills are browsable even before you unlock them. Available at this level
-filters the list to the currently planned level and talents. Selecting an
+All current skills are browsable even before you unlock them. Rank details label
+the initial talent unlock and the subsequent trainer upgrades. Removed abilities
+are excluded; archived alternates for current skills remain in full details.
+Available at this level filters the list to the planned level and talents,
+including talent-granted ranks only after learning their talent. Selecting an
 Order step changes the preview level and skill availability.
 
 Racial traits depend on both your race and class and appear along the bottom.

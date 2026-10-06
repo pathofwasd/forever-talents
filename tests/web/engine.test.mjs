@@ -112,7 +112,42 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     skillName: 'Wrath',
     state: { attackPower: 1000, apCoefficient: 20, dotAPCoefficient: 30 },
   });
+  run('switch', { classID: 1 });
+  run('skillLevels', { name: 'Bloodthirst' });
+  run('simulate', { name: 'Bloodthirst', rank: 1, state: { attackPower: 1000, crit: 0 } });
+  run('switch', { classID: 7 });
+  run('skillLevels', { name: 'Lava Burst' });
+  run('skillLevels', { name: 'Riptide' });
+  run('simulate', { name: 'Riptide', rank: 1, state: { power: 100, crit: 0 } });
   assert.deepEqual(results, native);
+  h.close();
+});
+test('talent first ranks, live progression and removed abilities reach the browser engine', async () => {
+  const h = await harness();
+  const catalog = h.call('catalog');
+  let restored = 0;
+  for (const cid of list(catalog.classOrder)) {
+    h.call('switch', { classID: cid });
+    for (const { skill } of list(h.call('skills', { filter: 'all' }))) {
+      const first = list(skill.ranks)[0];
+      if (first.label === 'Rank 1' && first.talentGranted) {
+        restored++;
+        const progression = h.call('skillLevels', { name: skill.name });
+        assert.equal(list(progression.ranks)[0].talentGranted, true);
+        assert.ok(first.level <= first.toLevel);
+      }
+    }
+  }
+  assert.equal(restored, 31);
+  h.call('switch', { classID: 11 });
+  assert.deepEqual(list(h.call('skills', { query: "Tiger's Fury", filter: 'all' })), []);
+  h.call('switch', { classID: 1 });
+  const blood = h.call('skill', { name: 'Bloodthirst' });
+  assert.equal(list(blood.ranks)[0].spellID, 23881);
+  assert.deepEqual(
+    list(h.call('skillLevels', { name: 'Bloodthirst' }).ranks).map((r) => r.level),
+    [40, 48, 54, 60]
+  );
   h.close();
 });
 test('simple view preserves all portable data, persists locally and follows shared rank records', async () => {

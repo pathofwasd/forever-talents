@@ -810,6 +810,12 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
     for _, note in ipairs(parsed.notes or {}) do
         warning(warnings, note)
     end
+    if skill.unlock and (FT.Model.Counts(build)[skill.unlock.id] or 0) == 0 then
+        warning(
+            warnings,
+            "This talent is not learned in the displayed build. Numbers are a rank preview, not a usable cast in this build."
+        )
+    end
     if rank.level and build.level < rank.level then
         warning(
             warnings,

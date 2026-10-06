@@ -375,8 +375,9 @@ function UI.SkillLevelsDialog(skill)
             rank.label
                 .. "  •  Level "
                 .. rank.level
-                .. (rank.talentRank and "  •  talent rank " .. rank.talentRank or "")
                 .. (rank.toLevel and "–" .. rank.toLevel or "")
+                .. (rank.talentGranted and "  •  talent unlock" or "")
+                .. (rank.talentRank and "  •  talent rank " .. rank.talentRank or "")
         )
         row:Show()
     end
@@ -468,6 +469,7 @@ function UI.SkillDialog(skill)
                 .. r.level
                 .. "  •  "
                 .. (r.label ~= "" and r.label or "Unranked")
+                .. (r.talentGranted and "  •  talent unlock" or "")
                 .. (not r.live and "  |cff8f9aa6Alternate source record|r" or "")
         )
         row:SetScript("OnClick", function()
@@ -479,7 +481,12 @@ function UI.SkillDialog(skill)
                 FT.Description(r),
                 not r.live
                         and "The source never marks this spell ID as the highest trainable rank. It is kept for reference."
-                    or ("Spell ID " .. r.spellID .. " • learned at level " .. r.level),
+                    or (
+                        "Spell ID "
+                        .. r.spellID
+                        .. (r.talentGranted and " • granted by talent from level " or " • learned at level ")
+                        .. r.level
+                    ),
             })
         end)
         row:SetScript("OnLeave", function(self)

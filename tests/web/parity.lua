@@ -96,3 +96,10 @@ output("export", {
     skillName = "Wrath",
     state = { attackPower = 1000, apCoefficient = 20, dotAPCoefficient = 30 },
 })
+output("switch", { classID = 1 })
+output("skillLevels", { name = "Bloodthirst" })
+output("simulate", { name = "Bloodthirst", rank = 1, state = { attackPower = 1000, crit = 0 } })
+output("switch", { classID = 7 })
+output("skillLevels", { name = "Lava Burst" })
+output("skillLevels", { name = "Riptide" })
+output("simulate", { name = "Riptide", rank = 1, state = { power = 100, crit = 0 } })

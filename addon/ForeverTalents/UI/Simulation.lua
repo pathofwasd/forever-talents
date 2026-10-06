@@ -380,7 +380,7 @@ function UI.SimulationDialog(skill, rank, overrides)
     f.title:SetText(skill.name)
     f.rank:SetText(
         (rank.label or "Ability")
-            .. " • learned at level "
+            .. (rank.talentGranted and " • granted by talent from level " or " • learned at level ")
             .. (rank.level or 1)
             .. " • displayed build • one use"
     )

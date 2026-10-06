@@ -26,6 +26,17 @@ local function rankText(skill)
 end
 
 local schools = { "Arcane", "Fire", "Frost", "Holy", "Nature", "Shadow" }
+local function firstLiveRank(skill)
+    for _, rank in ipairs(skill.ranks or {}) do
+        if
+            rank.live
+            and (not rank.toLevel or rank.toLevel >= math.max(rank.level, rank.fromLevel or 1))
+        then
+            return rank
+        end
+    end
+end
+
 local function relation(skill, talent)
     local text, ttext = rankText(skill), talent.ranks[#talent.ranks].text
     if skill.unlock and skill.unlock.id == talent.id then
@@ -136,15 +147,34 @@ function A.Prepare(classID)
     local index = FT.Model.Index(classID)
     local list, byName = {}, {}
     for _, s in ipairs(c.skills) do
-        local skill = FT.Copy(s)
-        skill.kind, skill.related = "trained", {}
-        list[#list + 1], byName[skill.name] = skill, skill
+        if firstLiveRank(s) then
+            local skill = FT.Copy(s)
+            skill.kind, skill.related = "trained", {}
+            list[#list + 1], byName[skill.name] = skill, skill
+        end
     end
     for _, tree in ipairs(c.trees) do
         for _, t in ipairs(tree.talents) do
             local skill = byName[t.name]
             if skill then
                 skill.unlock, skill.kind = t, "talent"
+                local first = firstLiveRank(skill)
+                local firstNumber = tonumber((first.label or ""):match("^Rank (%d+)$"))
+                -- Upgrade lists omit the rank granted by the talent itself.
+                -- A recorded Rank 1 may use a cast-spell alias (e.g. Mutilate).
+                if t.max == 1 and firstNumber and firstNumber > 1 then
+                    local unlockLevel = 10 + t.gate
+                    table.insert(skill.ranks, 1, {
+                        spellID = t.ranks[1].spellID,
+                        label = "Rank 1",
+                        level = unlockLevel,
+                        fromLevel = unlockLevel,
+                        toLevel = math.max(first.level, first.fromLevel or 1) - 1,
+                        live = true,
+                        talentGranted = true,
+                        text = t.ranks[1].text,
+                    })
+                end
             elseif t.max == 1 then
                 skill = {
                     name = t.name,
@@ -158,6 +188,7 @@ function A.Prepare(classID)
                             label = "Talent",
                             level = 10 + t.gate,
                             live = true,
+                            talentGranted = true,
                             text = t.ranks[1].text,
                         },
                     },
@@ -277,6 +308,7 @@ function A.Levels(skill)
                     level = level,
                     toLevel = rank.toLevel,
                     talentRank = rank.talentRank,
+                    talentGranted = rank.talentGranted,
                 }
             end
         end

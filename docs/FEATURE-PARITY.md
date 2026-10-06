@@ -35,8 +35,11 @@ authentic talent grids/descriptions/search, levels, Auto and Undo/Redo reuse the
 Skill clicks show only live rank unlock/upgrade levels, including talent requirements, derived by
 `Skills.Levels`. The class-skill list and availability filter reuse `Skills.List` with racials
 disabled. There is no separate talent catalog, allocation engine or simulator for the reduced view.
-Entering it exits a leveling preview so the hidden preview controls cannot leave editing paused.
-Returning restores all tools; mode changes do not edit builds, character data or undo history.
+The shared preparation path adds a talent-granted first rank when the trainer list begins with
+upgrades. Both views label that rank as a talent unlock and hide entirely historical skill groups;
+archived alternate ranks remain available in the full details of current skills. Entering it exits a
+leveling preview so the hidden preview controls cannot leave editing paused. Returning restores all
+tools; mode changes do not edit builds, character data or undo history.
 
 `settings.simpleView` is a local display preference. It persists in SavedVariables/browser storage,
 is excluded from FL1 library sharing, and remains the recipient's choice during a library merge.

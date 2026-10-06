@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.2
+
+Corrected October 1 Druid/Warrior descriptions and Berserker Rage's level-30 unlock. Removed Tiger's
+Fury from the current skill browser. Restored the talent-granted first rank of 31 abilities in the
+shared engine, including the Classic/Simple progression view. Added 23 first-rank simulator models
+from the existing verified client snapshot; unsupported scripted effects remain labeled. Talent
+layout, saved builds and sharing compatibility are unchanged. See [release notes](RELEASE-1.2.2.md).
+
 ## 1.2.1
 
 Added optional Classic mode in addon Settings and a visible Simple view checkbox on desktop/mobile

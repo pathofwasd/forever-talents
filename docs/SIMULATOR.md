@@ -68,6 +68,14 @@ Bloodthirst's AP ratio, Swipe's AP contribution, and Inner Focus's periodic excl
 superseded damage bonus is not applied. These corrections do not constitute a full talent-catalog
 migration to the latest beta build.
 
+The shared skill list includes talent-granted first ranks as well as trainer upgrades. Release 1.2.2
+adds 23 first-rank effect models from the same checksum-verified snapshot, including Bloodthirst,
+Lava Burst and Riptide. A restored unlock does not imply a complete simulation: scripted skills
+without usable effect rows retain the tooltip fallback and its warnings. Summon Hawk covers only the
+initial captured hit; Holy Nova's model covers damage and omits linked party healing. Read each
+result's notes for these boundaries. An unlearned talent ability is labeled as a rank preview; its
+numbers do not imply that the displayed build can cast it.
+
 **Client-data estimate** means the captured components and supported modifiers were used. **Partial
 estimate** identifies missing scaling, scripted interactions, omitted talents, low-rank penalty
 uncertainty, or reference character conversions. **Manual estimate** uses supplied amounts. Client

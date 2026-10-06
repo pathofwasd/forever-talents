@@ -42,9 +42,17 @@ def compile_spells(directory, build, catalog):
     casts = {int(r["ID"]): int(r["Base"]) / 1000 for r in table("SpellCastTimes")}
     roots = {}
     for cls in catalog["classes"].values():
+        skills = {skill["name"]: skill for skill in cls["skills"]}
         for skill in cls["skills"]:
             for rank in skill["ranks"]:
                 roots[rank["spellID"]] = (cls["id"], skill["name"], skill["icon"])
+        for tree in cls["trees"]:
+            for talent in tree["talents"]:
+                if talent["max"] == 1 and talent["name"] in skills:
+                    roots.setdefault(
+                        talent["ranks"][0]["spellID"],
+                        (cls["id"], talent["name"], talent["icon"]),
+                    )
     for cid, races in catalog["racials"].items():
         for racials in races.values():
             for skill in racials:
@@ -195,7 +203,7 @@ def compile_spells(directory, build, catalog):
                 }
             ]
             notes.append(
-                "Attack Power ratio corrected to 45% by the October 1 developer notes; the captured tooltip still says 35%."
+                "Attack Power ratio corrected to 45% by the October 1 developer notes, overriding the older client effect."
             )
         if name == "Swipe" and components:
             components[0]["ap"] = 0.03
@@ -264,6 +272,12 @@ def compile_spells(directory, build, catalog):
         if name in ["Whirlwind", "Mutilate"]:
             notes.append(
                 "This result includes the main-hand effect only. Off-hand damage is not modeled."
+            )
+        if name == "Holy Nova":
+            notes.append("This result covers damage; the linked party healing effect is not modeled.")
+        if name == "Summon Hawk":
+            notes.append(
+                "Initial captured hit only. Summoned hawk attacks and scripted Attack Power/talent scaling are not modeled."
             )
         if name in ["Serpent Sting", "Arcane Shot", "Consecration"]:
             for comp in components:

@@ -6,7 +6,9 @@ inputs. No network access is needed to regenerate the data.
 
 ## Catalog layout
 
-- `meta`: game build, snapshot date, talent rules, and compatibility tag.
+- `meta`: game build, snapshot date, talent rules, and compatibility tag. `reviewedAt` and
+  `patchSource` identify later reviewed corrections without relabeling the snapshot as an unverified
+  client build.
 - `classes`: numeric class ID lookup; each class has permitted race IDs, three ordered trees, and
   ordered skill groups with rank records.
 - `races`: numeric race ID lookup including faction.
@@ -46,6 +48,9 @@ races, 604 icons, 17 pet families, 750 tameable beasts, 102 pet skill records, a
 `tools/import_simulation_data.py` normalizes an already downloaded, reviewed set of client CSV
 tables. It does not fetch data. Normal project builds only consume the canonical catalog. Keep
 acquisition files outside the repository; the catalog records table URLs, checksums and build age.
+Talent-granted first ranks are prepared by the shared Lua skill engine, rather than duplicated in
+trainer tables. The simulator importer also reads those talent spell IDs when an ability has trainer
+upgrades, so verified first-rank effects remain available to both platforms.
 
 `data/ui/character.json` owns the original paper-doll vector geometry. The compiler renders an RGBA
 TGA for WoW and an SVG for the browser. The numerical model, sources and current coverage are
