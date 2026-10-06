@@ -172,7 +172,7 @@ local prior = FT.Copy(S.Build())
 S.LoadNode(a.id, 1)
 check(S.Draft().nodeID == 1)
 local kept = a.nodes[a.order[#a.order]]
-check(kept.parent == a2.id and M.Same(kept.build, prior))
+check(#a.order == 2 and kept.id == a2.id and #kept.build.order == 1)
 S.Undo()
 check(M.Same(S.Build(), prior) and S.Draft().nodeID == kept.id)
 S.Redo()

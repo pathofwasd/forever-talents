@@ -333,14 +333,12 @@ end
 
 function UI.UpdateSkillHighlights()
     UI.highlight = {}
-    if FT.Store.SimpleView() then
-        UI.PaintHighlights()
-        return
-    end
     local selections = {}
     for key, skill in pairs(UI.selectedSkills or {}) do
-        selections[#selections + 1] =
-            { skill = skill, color = (UI.highlightColors or {})[key] or 1 }
+        if not FT.Store.SimpleView() or skill.kind ~= "racial" then
+            selections[#selections + 1] =
+                { skill = skill, color = (UI.highlightColors or {})[key] or 1 }
+        end
     end
     if UI.hoverSkill then
         local key = UI.SkillHighlightKey(UI.hoverSkill)

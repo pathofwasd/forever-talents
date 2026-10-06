@@ -174,5 +174,48 @@ function C.Decode(input)
     return build
 end
 
+-- Allocations carry class and ordered points only; destination context stays local.
+function C.EncodeTalents(build)
+    local code, why = C.Encode(build)
+    if not code then
+        return nil, why
+    end
+    local order = code:match("^FT1:[^:]+:%d+:%d+:%d+:([^:]*):")
+    local body = "FA1:" .. FT.Data.meta.tag .. ":" .. build.classID .. ":" .. order
+    return body .. ":" .. C.Checksum(body)
+end
+
+function C.DecodeTalents(input)
+    if type(input) ~= "string" or #input > 512 then
+        return nil, "Paste a complete talents-only string (at most 512 characters)."
+    end
+    input = input:match("^%s*(.-)%s*$")
+    local version, tag, classID, order, checksum =
+        input:match("^(FA%d+):([%x]+):(%d+):([%w_-]*):([%x]+)$")
+    if not version then
+        return nil, "This is not a talents-only string. Use Copy talents in either app."
+    end
+    if version ~= "FA1" then
+        return nil, "These talents need a newer version of Forever Talents."
+    end
+    if tag ~= FT.Data.meta.tag then
+        return nil,
+            "These talents use a different dataset. Both players need the same data version."
+    end
+    local body = input:match("^(.*):[^:]+$")
+    if #checksum ~= 8 or C.Checksum(body) ~= checksum then
+        return nil, "The talents string is incomplete or damaged. Copy the entire string again."
+    end
+    classID = tonumber(classID)
+    local class = FT.Model.Class(classID)
+    if not class then
+        return nil, "Unknown class in these talents."
+    end
+    -- The existing build decoder owns ordinal lookup and legal order validation.
+    local full = table.concat({ "FT1", tag, classID, class.races[1], 60, order, "" }, ":")
+    local build, why = C.Decode(full .. ":" .. C.Checksum(full))
+    return build and { classID = classID, order = build.order } or nil, why
+end
+
 -- Shared envelope codecs use the same canonical URL-safe encoding.
 C.Base64, C.Unbase64 = base64, unbase64

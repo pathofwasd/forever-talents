@@ -111,10 +111,7 @@ check(#imported.order == 4 and imported.nodes[a.id].parent == 2)
 check(assert(L.EncodeProfile(imported.id)) == code, "profile string changed across import")
 check(assert(L.ProfileLink(imported.id)) == link)
 check(FT.Library.Pack(S.db.settings.characters) == character)
-check(
-    own.nodes[2] and buildCode(own.nodes[2].build) == prior,
-    "opening shared profile lost previous edits"
-)
+check(#own.order == 1, "opening shared profile created an implicit checkpoint")
 check(S.Undo() and buildCode() == prior and S.AutoLevel())
 check(S.Redo() and buildCode() == working and not S.AutoLevel())
 check(P.Apply(snap) and #S.db.profileOrder == 2, "re-import duplicated an identical profile")

@@ -113,11 +113,24 @@ function UI.Create()
         local point, _, relativePoint, x, y = f:GetPoint()
         S.db.settings.position = { point = point, relativePoint = relativePoint, x = x, y = y }
     end)
-    W.Text(f, "Forever Talents", 22, -16, 270, 23, W.colors.gold)
-    UI.buildName = W.Text(f, "", 302, -20, 550, 14)
-    UI.buildName:SetWordWrap(false)
-    UI.saveButton = W.Button(f, "Save build", 902, -13, 110, function()
-        UI.SaveDialog(S.ActiveProfile() ~= nil)
+    W.Text(f, "Forever Talents", 22, -10, 270, 20, W.colors.gold)
+    UI.simpleToggle = W.Checkbox(f, 22, -34, function(checked)
+        S.SetSimpleView(checked)
+    end)
+    UI.simpleLabel = W.Button(f, "Simple view", 48, -34, 110, function()
+        S.SetSimpleView(not S.SimpleView())
+    end, false, 20)
+    UI.simpleToggle.tip =
+        "Keep class, talents, skill levels and colored highlights. Turn off to restore the full view."
+    UI.buildName = W.Text(f, "", 302, -20, 508, 14)
+    UI.buildName:SetWordWrap(true)
+    UI.buildName:SetHeight(34)
+    UI.saveButton = W.Button(f, "Save build", 830, -13, 182, function()
+        if S.ActiveProfile() then
+            W.Result(S.UpdateCheckpoint())
+        else
+            UI.SaveDialog(false)
+        end
     end, true, 31)
     UI.shareButton = W.Button(f, "Share", 1024, -13, 90, function()
         UI.ShareDialog()
@@ -137,7 +150,7 @@ function UI.Create()
             S.SwitchClass(cid)
         end, false, 34)
         local icon = W.Icon(b, c.icon, 3, -3, 29)
-        b.tip = c.name .. " • drafts are kept when changing class"
+        b.tip = c.name .. " • edits are kept when changing class"
         UI.classButtons[cid] = b
     end
     UI.raceButton = W.Button(toolbar, "", 380, -8, 204, function(self)
@@ -211,7 +224,7 @@ function UI.Create()
         W.Result(S.Apply(M.Reset))
         UI.Status("Build reset. Undo restores it.")
     end)
-    UI.reset.tip = "Clear all trees. Your checkpoints stay saved; Undo restores this draft."
+    UI.reset.tip = "Clear all trees. Your checkpoints stay saved; Undo restores these talents."
     UI.characterButton = W.Button(toolbar, "Character", 1066, -8, 94, UI.CharacterSheet)
     UI.helpButton = W.Button(toolbar, "Help", 1168, -8, 72, UI.HelpDialog)
     local hero = W.Panel(f, 16, -112, 1248, 62, { 0.067, 0.097, 0.123 })
@@ -228,12 +241,18 @@ function UI.Create()
     UI.CreateBrowser(f)
     local talentbar = W.Panel(f, 252, -188, 750, 38)
     W.Text(talentbar, "Talents", 12, -12, 82, 14)
-    UI.talentSearch = W.Edit(talentbar, "Search talents or effects…", 96, -5, 456, function(text)
+    UI.talentSearch = W.Edit(talentbar, "Search talents or effects…", 96, -5, 280, function(text)
         UI.talentQuery = text
         UI.RefreshTrees()
     end)
-    UI.talentMatches = W.Text(talentbar, "", 568, -12, 168, 13, W.colors.gold)
+    UI.talentMatches = W.Text(talentbar, "", 380, -12, 76, 13, W.colors.gold)
     UI.talentMatches:SetJustifyH("RIGHT")
+    UI.copyTalents = W.Button(talentbar, "Copy talents", 464, -5, 132, function()
+        UI.TalentTransferDialog(false)
+    end)
+    UI.pasteTalents = W.Button(talentbar, "Paste talents", 604, -5, 132, function()
+        UI.TalentTransferDialog(true)
+    end)
     UI.CreateTrees(f)
     UI.CreateHistory(f)
     local racial = W.Panel(f, 16, -728, 1248, 54)
@@ -380,15 +399,17 @@ function UI.Refresh()
     end
     UI.lastRace = build.raceID
     local d = S.Draft()
-    local p = S.ActiveProfile()
+    local p, node = S.ActiveProfile()
     UI.buildName:SetText(
         S.SimpleView() and "Classic mode • class, talents and skill levels"
-            or (
-                FT.SafeText(p and p.name or build.name, 48)
-                .. (S.Dirty() and "  • draft" or "  • saved")
-            )
+            or p and ("Active: " .. FT.SafeText(node.title, 48) .. (S.Dirty() and " • unsaved changes" or " • saved"))
+            or "No saved checkpoint • " .. FT.SafeText(build.name, 48)
     )
-    UI.saveButton:SetText(p and "Checkpoint" or "Save build")
+    UI.saveButton:SetText(p and "Update checkpoint" or "Save build")
+    UI.saveButton:SetEnabled(not S.readOnly and not S.preview and (not p or S.Dirty()))
+    UI.pasteTalents:SetEnabled(not S.preview)
+    UI.simpleToggle:SetChecked(S.SimpleView())
+    UI.simpleToggle:Paint(false)
     for id, b in pairs(UI.classButtons) do
         b:SetActive(id == build.classID)
     end
@@ -419,8 +440,9 @@ function UI.Refresh()
     end
     UI.heroTrees:SetText(table.concat(summary, "  /  "))
     UI.heroHint:SetText(
-        S.SimpleView() and "Click a skill for its unlock and upgrade levels"
-            or S.preview and "Level preview • Full build returns to your saved draft"
+        S.SimpleView()
+                and "Check skills to highlight talents • Click for unlock and upgrade levels"
+            or S.preview and "Level preview • Full build returns to your talents"
             or "Plan your path • Every point keeps its place in the leveling order"
     )
     UI.heroLevel:SetText(

@@ -415,6 +415,50 @@ function S.SwitchClass(classID)
     return true
 end
 
+function S.CopyTalents()
+    return FT.Codec.EncodeTalents(S.ExportView())
+end
+
+function S.PrepareTalents(input)
+    if S.preview then
+        return nil, "Return to the full build before pasting talents."
+    end
+    local allocation, why = FT.Codec.DecodeTalents(input)
+    if not allocation then
+        return nil, why
+    end
+    local build = FT.Copy(S.Build())
+    if allocation.classID ~= build.classID then
+        return nil,
+            "These talents are for "
+                .. FT.Model.Class(allocation.classID).name
+                .. ". Select that class before pasting."
+    end
+    build.order = FT.Copy(allocation.order)
+    local required = FT.Model.RequiredLevel(build)
+    if S.AutoLevel() then
+        build.level = required
+    elseif build.level < required then
+        return nil,
+            "These talents require level "
+                .. required
+                .. ". Raise the target level or enable Auto before pasting."
+    end
+    local ok, error = validBuild(build)
+    return ok and build or nil, error
+end
+
+function S.PasteTalents(input)
+    local build, why = S.PrepareTalents(input)
+    if not build then
+        return false, why
+    end
+    return S.Edit(
+        build,
+        "Talents pasted. Update checkpoint to save here, or save as a new checkpoint."
+    )
+end
+
 function S.Import(build)
     local ok, why = validBuild(build)
     if not ok then
@@ -502,15 +546,6 @@ local function checkpointNode(p, parent, draft, title)
     return p.nodes[id]
 end
 
-local function matchingChild(p, parent, draft)
-    for _, id in ipairs(p.order) do
-        local child = p.nodes[id]
-        if child.parent == parent.id and FT.Model.Same(child.build, draft.build) then
-            return child
-        end
-    end
-end
-
 function S.ShareProfile(profileID)
     local p = S.db.profiles[profileID]
     if not p then
@@ -577,53 +612,11 @@ function S.LoadNode(profileID, nodeID)
     if not node then
         return false, "Checkpoint not found."
     end
-    -- Navigation must not replace a profile's working changes with an older
-    -- snapshot. Save a child before leaving, including a destination class's
-    -- draft when switching classes. Preflight both before changing either.
-    local pending = {}
-    local classes = { S.classID }
-    if node.build.classID ~= S.classID then
-        classes[#classes + 1] = node.build.classID
-    end
-    for _, classID in ipairs(classes) do
-        local draft = S.db.drafts[classID]
-        local profile = draft and S.db.profiles[draft.profileID]
-        local parent = profile and profile.nodes[draft.nodeID]
-        if parent and not FT.Model.Same(draft.build, parent.build) then
-            if S.readOnly then
-                return false,
-                    "Saving is disabled. Your working changes are kept; use Undo to return."
-            end
-            local existing = matchingChild(profile, parent, draft)
-            if not existing and #profile.order >= 400 then
-                return false,
-                    "This profile has 400 checkpoints. Save your draft as a new build before switching."
-            end
-            local ok, why = validBuild(draft.build)
-            if not ok then
-                return false, why
-            end
-            pending[#pending + 1] =
-                { profile = profile, parent = parent, draft = draft, existing = existing }
-        end
-    end
-    local saved
-    for _, item in ipairs(pending) do
-        local title =
-            FT.SafeText("Autosaved · " .. item.parent.title:gsub("^Autosaved · ", ""), 48)
-        saved = item.existing or checkpointNode(item.profile, item.parent, item.draft, title)
-        item.draft.nodeID = saved.id
-    end
     S.SwitchClass(node.build.classID)
     local autoDisabled = S.AutoLevel() and node.build.level ~= FT.Model.RequiredLevel(node.build)
     local notice = "Loaded "
         .. node.title
-        .. ". New checkpoints branch from this node; Undo returns to your previous work."
-    if saved then
-        notice = #pending == 1
-                and ("Changes saved as " .. saved.title .. ". Loaded " .. node.title .. ".")
-            or "Both working drafts saved as child checkpoints before switching."
-    end
+        .. ". Unsaved edits are not saved to a checkpoint. Undo returns to your previous work."
     if autoDisabled then
         notice = notice .. " Auto turned off to restore saved level " .. node.build.level .. "."
     end

@@ -209,6 +209,48 @@ function UI.TalentDialog(id)
     f.scroll:ScrollTo(0)
 end
 
+function UI.TalentTransferDialog(paste)
+    local f, first =
+        UI.Dialog("talentTransfer", paste and "Paste talents" or "Copy talents", 720, 272)
+    if first then
+        f.help = W.Text(f, "", 22, -62, 676, 13, W.colors.muted)
+        f.input = W.Edit(f, "Paste a talents-only string…", 22, -116, 676, function()
+            if not f.paste then
+                return
+            end
+            local build, why = S.PrepareTalents(f.input:GetText())
+            f.apply:SetEnabled(build ~= nil)
+            f.summary:SetText(
+                build
+                        and (#build.order .. " points • destination: " .. ((select(
+                            2,
+                            S.ActiveProfile()
+                        ) or {}).title or "unsaved build"))
+                    or why
+            )
+        end, 512)
+        f.summary = W.Text(f, "", 22, -162, 676, 12, W.colors.gold)
+        f.apply = W.Button(f, "Paste talents", 22, -220, 676, function()
+            if W.Result(S.PasteTalents(f.input:GetText())) then
+                UI.CloseDialog()
+            end
+        end, true, 30)
+    end
+    f.paste = paste
+    f.help:SetText(
+        paste
+                and "Replaces only talents and point order. Keeps this checkpoint, race, level and character stats.\nUpdate checkpoint to save here, or Save as new checkpoint to branch."
+            or "Copy this entire string with Ctrl+C. It contains class and ordered talents only.\nLoad your destination checkpoint, then use Paste talents."
+    )
+    f.summary:SetText("")
+    f.apply:SetShown(paste)
+    f.apply:SetEnabled(false)
+    f.input:SetText(paste and "" or (S.CopyTalents() or ""))
+    f.input.clear:SetShown(paste)
+    f.input:SetFocus()
+    f.input:HighlightText()
+end
+
 function UI.SaveDialog(checkpoint)
     local profile = checkpoint and S.ActiveProfile() or nil
     local f, first =
@@ -226,7 +268,7 @@ function UI.SaveDialog(checkpoint)
     f.detail:SetText(
         profile
                 and "This creates a new node below your selected checkpoint.\nLoad any older node to try a different branch."
-            or "Your draft already autosaves. A named profile keeps this build\nand lets you collect alternate paths as checkpoints."
+            or "Your edits stay on this device between sessions. A named profile keeps this build\nand lets you collect alternate paths as checkpoints."
     )
     f.error:SetText("")
     f.input:SetText(
@@ -401,7 +443,7 @@ function UI.ImportDialog(code)
     if first then
         W.Text(
             f,
-            "Paste a complete Forever Talents build link or sharing string below.\nYour current draft stays here until you choose Load.",
+            "Paste a complete Forever Talents build link or sharing string below.\nYour current talents stay here until you choose Load.",
             22,
             -64,
             636,
@@ -431,7 +473,7 @@ function UI.ImportDialog(code)
         f.summary = W.Text(f, "", 22, -232, 636, 15, W.colors.gold)
         f.detail = W.Text(f, "", 22, -264, 636, 13, W.colors.muted)
         f.error = W.Text(f, "", 22, -312, 636, 12, { 1, 0.48, 0.40 })
-        f.load = W.Button(f, "Load into draft", 22, -363, 300, nil, true, 30)
+        f.load = W.Button(f, "Load build", 22, -363, 300, nil, true, 30)
         f.save = W.Button(f, "Load & save a copy", 336, -363, 322, nil, false, 30)
         local function update()
             if
@@ -866,7 +908,7 @@ function UI.GraphDialog()
         f.summary = W.Text(f, "", 22, -62, 956, 14, W.colors.gold)
         W.Text(
             f,
-            "Update checkpoint replaces the selected snapshot and keeps its branches. New checkpoint creates a child.\nUnsaved edits become a child before switching. Sharing includes saved checkpoints only. The x deletes a subtree.",
+            "Update checkpoint replaces the selected snapshot and keeps its branches. Save as new checkpoint creates a child.\nLoading another node leaves edits unsaved; Undo brings them back. Sharing includes saved checkpoints only. The x deletes a subtree.",
             22,
             -88,
             956,
@@ -902,7 +944,7 @@ function UI.GraphDialog()
                 UI.GraphDialog()
             end
         end, true, 30)
-        f.checkpoint = W.Button(f, "+ New checkpoint", 778, -640, 240, function()
+        f.checkpoint = W.Button(f, "Save as new checkpoint", 778, -640, 240, function()
             UI.SaveDialog(true)
         end, false, 30)
     end
@@ -943,18 +985,21 @@ function UI.GraphDialog()
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", x, -y)
         row:Show()
-        row:SetActive(node.working or (not S.Dirty() and selected.id == node.id))
+        row:SetActive(selected.id == node.id)
         row.title:SetText(FT.SafeText(node.title, 48))
-        row.detail:SetText("Lv. " .. node.build.level .. " • " .. #node.build.order .. " pts")
+        row.detail:SetText(
+            (selected.id == node.id and "ACTIVE • " or "")
+                .. "Lv. "
+                .. node.build.level
+                .. " • "
+                .. #node.build.order
+                .. " pts"
+        )
         row:SetScript("OnClick", function()
-            if node.working then
-                S.Preview(nil)
-            else
-                W.Result(S.LoadNode(p.id, node.id))
-            end
+            W.Result(S.LoadNode(p.id, node.id))
             UI.GraphDialog()
         end)
-        row.delete:SetShown(not node.working)
+        row.delete:Show()
         row.delete:SetEnabled(not S.readOnly)
         row.delete:SetScript("OnClick", function()
             UI.DeleteNodeDialog(p.id, node.id, true)
@@ -962,9 +1007,8 @@ function UI.GraphDialog()
         row:SetScript("OnEnter", function(self)
             self:Paint(true)
             W.Tooltip(self, FT.SafeText(node.title, 48), {
-                node.working
-                        and "Current edits. They save as a child checkpoint before you switch."
-                    or "Click to load this checkpoint. Your current edits are saved first.",
+                selected.id == node.id and "Active checkpoint." or "Click to load this checkpoint.",
+                "Loading does not save edits. Undo returns to them.",
                 #node.build.order .. " points • target " .. node.build.level,
             })
         end)
@@ -984,7 +1028,9 @@ function UI.GraphDialog()
             .. " • "
             .. #p.order
             .. " checkpoints"
-            .. (S.Dirty() and " • current draft autosaved" or "")
+            .. " • Active: "
+            .. FT.SafeText(selected.title, 48)
+            .. (S.Dirty() and " • UNSAVED CHANGES" or " • saved")
     )
     f.selected:SetText(
         "Selected: "
@@ -998,7 +1044,7 @@ function UI.GraphDialog()
     f.horizontal:SetMinMaxValues(0, math.max(1, maxHorizontal))
     f.horizontal:SetValue(math.min(f.horizontal:GetValue(), maxHorizontal))
     f.horizontal:SetShown(contentWidth > 984)
-    local focusID = S.Dirty() and 0 or selected.id
+    local focusID = selected.id
     local position = positions[focusID]
     if position and (f.profileID ~= p.id or f.focusID ~= focusID) then
         f.scroll:ScrollTo(math.max(0, position.y - 180))
@@ -1083,7 +1129,7 @@ function UI.RaceDialog()
 end
 
 function UI.HelpDialog()
-    local f, first = UI.Dialog("help", "A quick guide", 850, 594)
+    local f, first = UI.Dialog("help", "A quick guide", 850, 616)
     if first then
         W.Text(f, "Plan the whole journey", 22, -68, 806, 16, W.colors.gold)
         W.Text(
@@ -1097,7 +1143,7 @@ function UI.HelpDialog()
         W.Text(f, "Find the skill, understand the talents", 22, -172, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nCheck boxes to keep multiple highlights; Clear highlights unchecks all. Click a skill for ranks.\nAlt click opens full talent details; Ctrl click inspects a skill. Simulator explains its assumptions.",
+            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nColored skill checkboxes work in Simple view too; Clear highlights unchecks all. Click a skill for ranks.\nAlt click opens full talent details; Ctrl click inspects a skill. Simulator explains its assumptions.",
             22,
             -204,
             806,
@@ -1106,18 +1152,18 @@ function UI.HelpDialog()
         W.Text(f, "Undo, preview, and branch", 22, -276, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Drafts autosave between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nUpdate checkpoint replaces the selected snapshot, keeping its branches. New checkpoint creates a child.\nIf you switch without updating, edits save as a child. Checkpoint links include saved nodes only.",
+            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Edits stay local between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nUpdate checkpoint replaces the selected snapshot, keeping its branches. Save as new checkpoint creates a child.\nLoading another node leaves edits unsaved; Undo brings them back. Checkpoint links include saved nodes only.\nCopy talents / Paste talents beside search moves points without changing the destination checkpoint.",
             22,
             -308,
             806,
             13
         )
-        W.Text(f, "Share and open quickly", 22, -380, 806, 16, W.colors.gold)
+        W.Text(f, "Share and open quickly", 22, -402, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Share copies a build string or Web link with Ctrl+C. Import previews pasted links and strings.\nAddon whisper gives your friend a clickable receipt and stores it in Library → Received.\nCtrl click a Library profile to share; right click it to rename or delete. Text whisper opens a draft.\nOpen with /ftc, /forevertalents, the minimap button, or a key set in WoW's Key Bindings.",
+            "Share copies a build string or Web link with Ctrl+C. Import previews pasted links and strings.\nAddon whisper gives your friend a clickable receipt and stores it in Library → Received.\nCtrl click a Library profile to share; right click it to rename or delete. Text whisper opens a build.\nOpen with /ftc, /forevertalents, the minimap button, or a key set in WoW's Key Bindings.",
             22,
-            -412,
+            -434,
             806,
             13
         )
@@ -1125,15 +1171,15 @@ function UI.HelpDialog()
             f,
             "Free, unofficial community project. Not affiliated with or endorsed by Blizzard Entertainment.\nWorld of Warcraft artwork and text © Blizzard Entertainment and respective rights holders. See NOTICE.txt.",
             22,
-            -480,
+            -502,
             806,
             11,
             W.colors.muted
         )
-        f.data = W.Text(f, "", 22, -514, 806, 11, W.colors.muted)
-        W.Button(f, "Hunter pet atlas", 22, -552, 210, UI.PetDialog)
-        W.Button(f, "Forever perk reference", 244, -552, 230, UI.PerkDialog)
-        W.Button(f, "Settings", 486, -552, 342, UI.SettingsDialog)
+        f.data = W.Text(f, "", 22, -536, 806, 11, W.colors.muted)
+        W.Button(f, "Hunter pet atlas", 22, -574, 210, UI.PetDialog)
+        W.Button(f, "Forever perk reference", 244, -574, 230, UI.PerkDialog)
+        W.Button(f, "Settings", 486, -574, 342, UI.SettingsDialog)
     end
     f.data:SetText(
         "Data snapshot: "

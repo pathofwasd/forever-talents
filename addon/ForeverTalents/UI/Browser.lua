@@ -350,7 +350,7 @@ function UI.RefreshBrowser()
     UI.skillFilter:SetText(
         (simple and filter == "all" and "All class skills" or filterLabels[filter]) .. "  v"
     )
-    UI.clearHighlight:SetShown(not simple)
+    UI.clearHighlight:Show()
     UI.trainingCheck:SetChecked(comparing)
     UI.trainingCheck:Paint(false)
     local report = FT.Skills.TrainingReport(build, level)
@@ -377,18 +377,15 @@ function UI.RefreshBrowser()
             row.skill = s
             row.source:SetShown(entry.shownTrained)
             row.comparison = entry.comparison
-            row.check:SetShown(not simple)
-            row.title:SetWidth(
-                (simple and 145 or 119)
-                    - (entry.comparison and entry.comparison.progress and 34 or 0)
-            )
+            row.check:Show()
+            row.title:SetWidth(119 - (entry.comparison and entry.comparison.progress and 34 or 0))
             local comparison = entry.comparison
-            row.detail:SetWidth(simple and 133 or 107)
+            row.detail:SetWidth(107)
             row.detail:ClearAllPoints()
             row.detail:SetPoint("TOPLEFT", entry.progression and 54 or 42, -23)
             row.unlock:SetShown(entry.progression ~= nil)
             row.progress:ClearAllPoints()
-            row.progress:SetPoint("TOPRIGHT", simple and -7 or -34, -7)
+            row.progress:SetPoint("TOPRIGHT", -34, -7)
             row.progress:SetText(comparison and comparison.progress or "")
             row.progress:SetShown(comparison and comparison.progress ~= nil or false)
             local secondary = entry.progression and entry.progression.secondary

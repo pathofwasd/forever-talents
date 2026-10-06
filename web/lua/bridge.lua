@@ -178,6 +178,13 @@ local commands = {
         return S.Checkpoint(p.title)
     end,
     updateCheckpoint = S.UpdateCheckpoint,
+    copyTalents = S.CopyTalents,
+    talentsPreview = function(p)
+        return S.PrepareTalents(p.code)
+    end,
+    pasteTalents = function(p)
+        return S.PasteTalents(p.code)
+    end,
     load = function(p)
         return S.LoadNode(p.profileID, p.nodeID)
     end,

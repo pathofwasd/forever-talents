@@ -30,7 +30,10 @@ for _, control in ipairs(UI.fullControls) do
 end
 check(UI.heroRace:GetText() == "Classic mode")
 check(next(UI.highlight) == nil)
-check(not UI.clearHighlight:IsVisible())
+check(UI.clearHighlight:IsVisible())
+check(UI.simpleToggle:IsVisible() and UI.simpleToggle:GetChecked())
+local _, toggleX, toggleY = UI.simpleToggle:GetPoint()
+check(toggleX == 22 and toggleY == -34, "Simple view toggle is not at the top left")
 UI.CloseDialog()
 for _, cid in ipairs(FT.classOrder) do
     UI.classButtons[cid]:Click()
@@ -39,9 +42,14 @@ for _, cid in ipairs(FT.classOrder) do
     for _, row in ipairs(UI.skillRows) do
         if row:IsVisible() then
             check(row.skill.kind ~= "racial")
-            check(not row.check:IsVisible())
+            check(row.check:IsVisible())
+            row.check:Click()
+            check(UI.IsSkillHighlighted(row.skill))
+            check(row.check.highlightColor ~= nil)
+            check(next(UI.highlight) ~= nil or #row.skill.related == 0)
+            UI.clearHighlight:Click()
+            check(not row.check:GetChecked() and next(UI.selectedSkills) == nil)
             row:Trigger("OnEnter")
-            check(next(UI.highlight) == nil)
             check(GameTooltip:IsShown())
             row:Trigger("OnLeave")
             row:Click()
@@ -75,7 +83,8 @@ S.SetSimpleView(true)
 check(S.preview == nil)
 UI.SkillDialog(FT.Skills.Prepare(11).byName.Wrath)
 check(UI.dialogs.skillLevels:IsVisible())
-S.SetSimpleView(false)
+UI.simpleLabel:Click()
+check(not UI.simpleToggle:GetChecked())
 check(not UI.dialogOverlay:IsVisible(), "mode switch left the old skill dialog visible")
 check(UI.frame:GetWidth() == 1280 and UI.frame:GetHeight() == 824)
 for _, control in ipairs(UI.fullControls) do

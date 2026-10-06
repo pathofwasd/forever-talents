@@ -232,8 +232,9 @@ test("checkpoint creation preserves snapshots and forms genuine branches", funct
     local persisted = FT.Copy(S.db)
     _G.ForeverTalentsDB = persisted
     S.Init(11, 4)
-    check(#S.db.profiles[root.id].order == 5)
-    check(#S.db.profiles[root.id].nodes[5].build.order == 2, "navigation lost the draft")
+    check(#S.db.profiles[root.id].order == 4)
+    check(S.Undo() and #S.Build().order == 2, "Undo lost unsaved edits after reload")
+    check(S.Redo())
     check(M.Same(S.Build(), branch.build))
     check(S.RenameProfile(root.id, "Another title"))
     check(S.DeleteProfile(root.id))

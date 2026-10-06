@@ -861,9 +861,6 @@ h1 span {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px #edbb7033;
 }
-.graph-node.working {
-  border-style: dashed;
-}
 .node-main {
   border: 0;
   background: transparent;
@@ -3021,4 +3018,106 @@ h1 span,
 /* Planner updates keep the user’s chosen viewport rather than re-anchoring replaced nodes. */
 #app {
   overflow-anchor: none;
+}
+
+/* The active saved node remains identifiable while its allocation is edited. */
+.checkpoint-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  border: 1px solid #edbb7055;
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  background: #15232d;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.checkpoint-status[hidden] {
+  display: none;
+}
+.checkpoint-current {
+  min-width: 0;
+}
+.checkpoint-current > * {
+  display: block;
+}
+.checkpoint-current .eyebrow {
+  font-size: 10px;
+  margin-bottom: 4px;
+  color: var(--gold);
+}
+.checkpoint-current strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.checkpoint-current small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.checkpoint-save-state.unsaved {
+  color: var(--gold);
+}
+.checkpoint-status-actions,
+.talent-transfer-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.talent-heading {
+  flex-wrap: wrap;
+}
+.talent-transfer-actions button {
+  font-size: 12px;
+}
+.graph-node.active {
+  border-width: 2px;
+  background: #27332d;
+}
+.active-node-badge {
+  display: block;
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 12px;
+}
+.graph-node.active .node-main strong {
+  margin-top: 2px;
+}
+@media (max-width: 1050px) {
+  .checkpoint-status {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .checkpoint-current {
+    width: 100%;
+  }
+  .checkpoint-status-actions {
+    width: 100%;
+  }
+  .checkpoint-status-actions button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 12px;
+    padding: 8px;
+  }
+  .talent-transfer-actions {
+    margin-left: auto;
+  }
+  .talent-transfer-actions button {
+    min-height: 44px;
+  }
+}
+
+.sheet-checkpoint {
+  display: block;
+  color: var(--gold);
+  font-size: 11px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

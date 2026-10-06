@@ -179,7 +179,7 @@ UI.dialogs.save.save:Click()
 check(#S.db.profileOrder == 2 and #profile.order == 1)
 UI.historyTab = "graph"
 UI.RefreshHistory()
-check(UI.checkpointButton.fontString:GetText() == "+ New checkpoint")
+check(UI.checkpointButton.fontString:GetText() == "Save as new checkpoint")
 
 -- Colors remain stable when another selection changes, and overlap shows both.
 UI.ClearSkillHighlights()
@@ -247,7 +247,10 @@ UI.HighlightSkill(nil)
 checkPinnedOnly()
 S.SetSimpleView(true)
 UI.HighlightSkill({ related = { { id = id } } })
-check(not next(UI.highlight), "Classic mode displayed temporary highlights")
+check(
+    UI.highlight[id] and UI.IsSkillHighlighted(wrath) and UI.IsSkillHighlighted(starfire),
+    "Simple view lost skill highlights"
+)
 S.SetSimpleView(false)
 UI.ClearSkillHighlights()
 check(not next(UI.selectedSkills) and not next(UI.highlightColors) and not next(UI.highlight))

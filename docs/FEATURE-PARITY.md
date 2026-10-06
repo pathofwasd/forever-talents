@@ -29,9 +29,9 @@ both FP1 strings and profile links; update or create a checkpoint to include tho
 never changes source saves. `Library` owns compact encoding, validation through the existing store,
 deduplication and import. No other profiles, character stats, equipment or undo history are exported
 in FP1. Both imports preview the checkpoint count; the PWA previews each node. Accepted profiles
-open at the selected snapshot’s saved level, preserving previous edits as child checkpoints.
-Existing FT1 allocation links and all earlier sharing formats remain supported. Large profiles can
-use an FP1 string/file when they exceed the 64 KiB link limit. Addon whispers remain
+open at the selected snapshot’s saved level, keeping previous same-class edits available through
+Undo. Existing FT1 allocation links and all earlier sharing formats remain supported. Large profiles
+can use an FP1 string/file when they exceed the 64 KiB link limit. Addon whispers remain
 single-allocation.
 
 Authentic three trees with prerequisites; current/next/all rank descriptions; legal exact point
@@ -52,23 +52,31 @@ branch indentation, scrolling for deep trees and selection centering. Saving, sh
 deletion return to that workspace. Graph layout remains platform presentation; branch mutation stays
 in the shared store.
 
-Checkpoints can be updated explicitly through `Store.UpdateCheckpoint`. It replaces only the
-selected snapshot, retaining its ID, title, parent, creation time and all child/sibling snapshots.
-Both interfaces expose **Update checkpoint** separately from **New checkpoint**. Updates validate
-the build and respect preview/read-only protection; successful updates clear stale Redo. The shared
-store saves remaining changed profile drafts as child nodes before checkpoint navigation replaces
-them, including source and destination classes. Identical children are reused. Both graphs show a
-separate **Current draft** while editing and ordinary **Autosaved** children after navigation.
-Loading restores the saved target level and explicitly turns off Auto if it conflicts. Undo/Redo
-preserve each build's level mode. Successful profile and checkpoint saves clear stale Redo
-continuations. Auto-saved nodes use the existing FL1 format and subtree deletion rules. Read-only
-saves or a full profile block navigation rather than discarding work.
+Checkpoints use explicit saves. **Update checkpoint** replaces only the active snapshot, retaining
+its ID, title, parent, creation time and all child/sibling snapshots. **Save as new checkpoint**
+creates a child. Navigation never creates a node or overwrites a saved checkpoint. Previous
+same-class edits remain in Undo; other class allocations stay local. Both graphs contain only saved
+nodes and keep the active node highlighted during edits. An active-checkpoint banner names the node
+and shows **Saved** or **Unsaved changes**. Loading restores saved target levels and explicitly
+turns off Auto if it conflicts. Updates validate builds, respect preview/read-only protection and
+clear stale Redo. Existing saved autosave nodes are retained as ordinary saved checkpoints for
+compatibility.
 
-The addon calls the reduced view **Classic mode** (Settings; `/ftc classic` / `/ftc full`). The PWA
-calls it **Simple view**, with a visible checkbox above the class picker. Both hide race/racials,
-character/simulator, highlights, sharing, checkpoint/order/library and atlas tools. Class selection,
-authentic talent grids/descriptions/search, levels, Auto and Undo/Redo reuse the full-view controls.
-Skill clicks show only live rank unlock/upgrade levels, including talent requirements, derived by
+**Copy talents / Paste talents** are next to talent search in both interfaces. FA1 carries only the
+data tag, class, exact ordered talents and checksum. The shared codec reuses existing ordinal and
+allocation validation. Pasting retains profile/node association, name, race, manual target level,
+character stats and equipment. Auto follows the pasted allocation; an insufficient manual level or
+wrong class rejects the paste before mutation. Preview is read-only, corrupt inputs are rejected,
+and paste participates in Undo/Redo. FA1 requires the new version at both ends; previous build,
+character, stats, profile and library formats remain supported without a save migration.
+
+Both interfaces have a visible **Simple view** checkbox: top left in the addon, above the class
+picker in the PWA. Addon Settings and `/ftc classic` / `/ftc full` remain available. Both hide
+race/racials, character/simulator, sharing, checkpoint/order/library and atlas tools. Colored
+class-skill checkboxes and Clear highlights remain available; hidden racial selections do not
+highlight the tree until full view returns. Class selection, authentic talent
+grids/descriptions/search, levels, Auto and Undo/Redo reuse the full-view controls. Skill clicks
+show only live rank unlock/upgrade levels, including talent requirements, derived by
 `Skills.Levels`. The class-skill list and availability filter reuse `Skills.List` with racials
 disabled. There is no separate talent catalog, allocation engine or simulator for the reduced view.
 The shared preparation path adds a talent-granted first rank when the trainer list begins with

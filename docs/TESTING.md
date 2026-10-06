@@ -36,9 +36,10 @@ test origin.
 
 Check Classic / Simple view in both interfaces: all classes and talent edits still work, skills show
 only unlock/upgrade levels, and race/racials and extra tools disappear. Turn it off and confirm the
-library, gear, selected highlights and full skill tools return. Enter from a leveling preview and
-confirm editing resumes. Verify the preference persists locally, remains independent of FL1 library
-imports, and never hides browser recovery controls.
+library, gear, selected highlights and full skill tools return. Check colored class-skill boxes and
+Clear highlights within the reduced view; hidden racial selections must not paint the tree. Enter
+from a leveling preview and confirm editing resumes. Verify the preference persists locally, remains
+independent of FL1 library imports, and never hides browser recovery controls.
 
 ## Native release checks
 
@@ -345,3 +346,31 @@ branches and navigation worked offline. A parent update kept both children's dis
 and point orders. Browser console checks reported no errors. Native callbacks were checked in the
 API harness; live WoW visual behavior remains unverified. No game installation or player
 SavedVariables were changed.
+
+## Version 1.2.13 validation
+
+Passed eighteen native suites and twenty-one browser tests, including exact native Lua 5.1/WASM
+operation and sharing parity for all nine classes. Explicit checkpoint updates retain the graph;
+loading never creates nodes, and Undo restores unsaved edits and profile context. Tests cover
+Auto/saved levels, stale Redo, read-only saves, reload recovery, branching and subtree deletion. FA1
+checks class, data tag, checksum, ordinals, rank limits, tier gates and point budget before
+mutation. Copy/paste retains destination context and character data, rejects insufficient manual
+levels and preview edits, and participates in Undo/Redo.
+
+Production browser checks covered desktop, 390 and 320 px phones, and 844×390 landscape without
+horizontal page overflow. Active titles and saved/unsaved status appear above the planner, inside
+the graph workspace and in phone talent details. A long active node title fits its 84 px card at 320
+px. Update retains node counts; Save as new checkpoint creates a child only after confirmation.
+Valid native-generated FA1 pasted into the PWA retains level 55 and its selected checkpoint; damaged
+input disables Apply. Browser clipboard automation uses a separate clipboard binding, so system
+clipboard round-trip was not established by that check.
+
+Simple view retains colored skill checkboxes, six-color shared highlighting and Clear highlights;
+racials and advanced tools stay hidden. Phone skill clicks show only unlock/rank levels. Native
+callback tests verify the top-left toggle, mode persistence, all classes, selected colors and
+clearing. Live WoW visual behavior remains unverified.
+
+A production cache update from 1.2.12 retained a byte-identical 60,778-character full library. With
+the preview server stopped, offline reload retained the updated 65,882-character library exactly;
+failed update checks correctly report a connection failure. Browser error logs were empty before the
+intentional offline test. Player SavedVariables and the game install were not changed.

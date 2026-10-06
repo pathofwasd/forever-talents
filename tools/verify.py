@@ -20,6 +20,7 @@ for suite in [
     "regressions",
     "removal",
     "checkpoints",
+    "talent_transfer",
     "auto_level",
     "nodes",
     "portability",

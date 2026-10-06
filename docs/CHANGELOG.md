@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.13
+
+- Added a top-left Simple view checkbox in the addon. Colored skill selections and Clear highlights
+  now remain available in Simple view on both platforms.
+
+- Named the active checkpoint above the planner and within the checkpoint workspace, with Saved /
+  Unsaved changes feedback. Active graph nodes stay highlighted while editing.
+- Removed automatic checkpoint branches and draft nodes. Update checkpoint saves in place; Save as
+  new checkpoint creates a child. Loading another node leaves prior edits in Undo.
+- Added visible Copy talents / Paste talents controls beside talent search. FA1 moves class and
+  ordered points only; paste retains the destination checkpoint, race, manual level and character.
+- Kept old saved nodes and sharing formats. Saved-only profile links and full-library backups remain
+  available; the addon and PWA use the same allocation transfer and checkpoint behavior.
+
 ## 1.2.12
 
 - Added **Update checkpoint** to the addon and PWA. Replace the selected node's talents and target

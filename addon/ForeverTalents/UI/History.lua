@@ -26,11 +26,7 @@ function UI.CreateHistory(parent)
     UI.profileHint = W.Text(p, "", 12, -68, 228, 11, W.colors.muted)
     UI.profileHint:SetWordWrap(false)
     UI.checkpointButton = W.Button(p, "+ Checkpoint", 12, -90, 145, function()
-        if UI.historyTab ~= "library" and FT.Store.ActiveProfile() and FT.Store.Dirty() then
-            W.Result(FT.Store.UpdateCheckpoint())
-        else
-            UI.SaveDialog(UI.historyTab ~= "library")
-        end
+        UI.SaveDialog(UI.historyTab ~= "library")
     end)
     UI.graphButton = W.Button(p, "Open", 165, -90, 75, function()
         UI.GraphDialog()
@@ -96,23 +92,10 @@ function UI.ProfileNodes(profile)
         children[parent] = children[parent] or {}
         children[parent][#children[parent] + 1] = node
     end
-    local active, parent = FT.Store.ActiveProfile()
-    if active and active.id == profile.id and FT.Store.Dirty() then
-        children[parent.id] = children[parent.id] or {}
-        children[parent.id][#children[parent.id] + 1] = {
-            id = 0,
-            parent = parent.id,
-            title = "Current draft",
-            build = FT.Store.Build(),
-            working = true,
-        }
-    end
     local function walk(parent, depth)
         for _, node in ipairs(children[parent] or {}) do
             result[#result + 1] = { node = node, depth = depth }
-            if not node.working then
-                walk(node.id, depth + 1)
-            end
+            walk(node.id, depth + 1)
         end
     end
     walk(0, 0)
@@ -138,19 +121,15 @@ function UI.RefreshHistory()
     local p, node = FT.Store.ActiveProfile()
     local dirty = FT.Store.Dirty()
     UI.checkpointButton:SetText(
-        UI.historyTab == "library" and "+ New build"
-            or p and dirty and "Update checkpoint"
-            or "+ New checkpoint"
+        UI.historyTab == "library" and "+ New build" or "Save as new checkpoint"
     )
     UI.checkpointButton:SetEnabled(not FT.Store.readOnly and not FT.Store.preview)
-    UI.profileName:SetText(p and FT.SafeText(p.name, 48) or "Unsaved build")
+    UI.profileName:SetText(
+        p and ("Active: " .. FT.SafeText(node.title, 48)) or "No saved checkpoint"
+    )
     UI.profileHint:SetText(
-        p
-                and (dirty and "Editing • " .. FT.SafeText(node.title, 48) or "Saved • " .. FT.SafeText(
-                    node.title,
-                    48
-                ))
-            or "Draft autosaves • name it to keep"
+        p and (dirty and "Unsaved changes • use Update" or "Saved • " .. p.name)
+            or "Save build to start checkpoints"
     )
     UI.graphButton:SetEnabled(p ~= nil)
     for k, b in pairs(UI.historyTabs) do
@@ -221,15 +200,11 @@ function UI.RefreshHistory()
                         .. " pts"
                         .. (item.depth > 4 and " • branch " .. item.depth or "")
                 )
-                r:SetActive(n.working or (not dirty and node and node.id == n.id))
+                r:SetActive(node and node.id == n.id)
                 r:SetScript("OnClick", function()
-                    if n.working then
-                        FT.Store.Preview(nil)
-                    else
-                        W.Result(FT.Store.LoadNode(p.id, n.id))
-                    end
+                    W.Result(FT.Store.LoadNode(p.id, n.id))
                 end)
-                r.delete:SetShown(not n.working)
+                r.delete:Show()
                 r.delete:SetEnabled(not FT.Store.readOnly)
                 r.delete:SetScript("OnClick", function()
                     UI.DeleteNodeDialog(p.id, n.id)
@@ -237,12 +212,10 @@ function UI.RefreshHistory()
                 r:SetScript("OnEnter", function(self)
                     self:Paint(true)
                     W.Tooltip(self, FT.SafeText(n.title, 48), {
-                        n.working
-                                and "Your latest edits are shown here, separate from the saved checkpoint."
-                            or "Click to load this saved checkpoint.",
-                        "Working changes save as a new child checkpoint before you switch nodes.",
-                        n.working and "Use + Checkpoint to give these edits a title now."
-                            or "The x deletes this node and all its descendants.",
+                        node and node.id == n.id and "Active checkpoint."
+                            or "Click to load this checkpoint.",
+                        "Update saves edits here. Save as new checkpoint creates a child.",
+                        "Loading another node does not save edits; Undo returns to them.",
                     })
                 end)
                 r:SetScript("OnLeave", function(self)
@@ -333,7 +306,7 @@ function UI.RefreshHistory()
         end
         UI.historyEmpty:SetText(
             library == "saved"
-                    and "No saved profiles yet.\n\nUse Save build to give your draft a name. Your profiles are shared across your characters.\n\nCtrl click a saved profile to share it."
+                    and "No saved profiles yet.\n\nUse Save build to give your build a name. Your profiles are shared across your characters.\n\nCtrl click a saved profile to share it."
                 or "No builds received yet.\n\nA friend's addon whisper appears here and as a clickable chat receipt.\n\nYou can also paste their string with Import."
         )
     end

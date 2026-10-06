@@ -12,10 +12,10 @@ collapsed. The **Source code** downloads are for developers.
 ## Features
 
 - All nine classes, original talent layouts, rank descriptions and prerequisite checks.
-- Optional Classic mode in the addon and Simple view on the web: class, talents and skill levels.
+- Simple view in the addon and on the web: class, talents, skill levels and colored highlights.
 - Search skills and racials, see rank unlock levels, and highlight related talents.
 - Track your leveling order with Auto level, undo/redo and branching checkpoints you can update in
-  place.
+  place. Copy and paste just talents to move an allocation between checkpoints.
 - Share builds as browser links, text or addon whispers. Transfer character stats or your entire
   saved library between the addon and web app.
 - Build a central character with custom gear or live stats. Simulate individual skills with
@@ -54,8 +54,9 @@ Desktop web app:
 <details>
 <summary>Classic mode / Simple view</summary>
 
-Enable **Classic mode** in addon Settings, or check **Simple view** above the web class picker. Both
-keep class, talents and skill levels. Turn it off to restore the full interface and saved data.
+Check **Simple view** at the top left of the addon or above the web class picker. Both keep class,
+talents, skill levels and colored skill highlights. Turn it off to restore the full interface and
+saved data.
 
 ![Simple view with all three talent trees and the class skill list](docs/screenshots/simple-view.jpg)
 
