@@ -352,6 +352,9 @@ def main():
     }
     if "character" in previous:
         catalog["simulation"]["character"] = previous["character"]
+    for key in ("talentNotes", "unsupportedFallbacks"):
+        if key in previous:
+            catalog["simulation"][key] = previous[key]
     path.write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
     print(f"Normalized {len(catalog['simulation']['spells'])} spell models from {args.build}.")
 

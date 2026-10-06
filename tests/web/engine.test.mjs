@@ -20,7 +20,10 @@ async function harness(saved = {}) {
   return { lua, call, raw, init, close: () => lua.global.close() };
 }
 test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs, graph and numerical estimates', async () => {
-  const native = execFileSync('lua5.1', ['tests/web/parity.lua'], { encoding: 'utf8' })
+  const native = execFileSync('lua5.1', ['tests/web/parity.lua'], {
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  })
     .trim()
     .split('\n')
     .map(JSON.parse);
@@ -129,6 +132,36 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
   run('skillLevels', { name: 'Lava Burst' });
   run('skillLevels', { name: 'Riptide' });
   run('simulate', { name: 'Riptide', rank: 1, state: { power: 100, crit: 0 } });
+  run('switch', { classID: 2 });
+  run('auto', { enabled: false });
+  for (const level of [49, 50, 53, 54, 60]) {
+    run('level', { level });
+    run('skills', { query: 'Holy Light', includeRacials: false });
+  }
+  run('simulate', { name: 'Holy Light', rank: 7, state: { power: 100, crit: 0 } });
+  for (const classID of [4, 5, 8, 9]) {
+    run('switch', { classID });
+    run('level', { level: 60 });
+    run('skills', { filter: 'all' });
+  }
+  run('switch', { classID: 8 });
+  run('race', { raceID: 7 });
+  run('characterSave', {
+    sheet: {
+      schema: 1,
+      mode: 'gear',
+      name: 'Alias capture',
+      trainedSkills: { schema: 1, classID: 8, raceID: 7, level: 60, spellIDs: [28271] },
+      stats: {},
+      gear: {},
+    },
+  });
+  run('training', { name: 'Polymorph' });
+  run('checkTraining', { enabled: true });
+  run('trainingReport');
+  run('export', { kind: 'character' });
+  run('export', { kind: 'library' });
+  run('simulate', { name: 'Fireball', rank: 12, state: { power: 100, crit: 0, cooldowns: true } });
   assert.deepEqual(results, native);
   h.close();
 });
@@ -227,7 +260,7 @@ test('talent first ranks, live progression and removed abilities reach the brows
       }
     }
   }
-  assert.equal(restored, 31);
+  assert.equal(restored, 32);
   h.call('switch', { classID: 11 });
   assert.deepEqual(list(h.call('skills', { query: "Tiger's Fury", filter: 'all' })), []);
   h.call('switch', { classID: 1 });

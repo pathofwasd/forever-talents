@@ -55,11 +55,11 @@ for _, cid in ipairs(FT.classOrder) do
         end
     end
 end
-check(restored == 31)
+check(restored == 32)
 check(not A.Prepare(11).byName["Tiger's Fury"], "removed ability remains in skill browser")
 check(#A.List(M.New(11), 60, "Tiger's Fury", "all") == 0)
 local mutilate = A.Prepare(4).byName.Mutilate
-check(not mutilate.ranks[1].talentGranted and mutilate.ranks[1].label == "Rank 1")
+check(mutilate.ranks[1].talentGranted and mutilate.ranks[1].spellID == 1310707)
 local lava = A.Prepare(7).byName["Lava Burst"]
 check(A.CurrentRank(lava, 49, { [lava.unlock.id] = 1 }).spellID == 408490)
 check(A.CurrentRank(lava, 50, { [lava.unlock.id] = 1 }).spellID == 1238299)

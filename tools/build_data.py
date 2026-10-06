@@ -81,6 +81,26 @@ def validate(data, icons):
     ), "Changed talent rules require an engine review."
     assert len(data["classes"]) == 9 and len(data["races"]) == 10
     for class_id, cls in data["classes"].items():
+        for skill in cls["skills"]:
+            targets = {
+                r["spellID"]
+                for r in skill["ranks"]
+                if not r.get("aliasOf") and not r.get("referenceOnly")
+            }
+            targets.update(
+                t["ranks"][0]["spellID"]
+                for tree in cls["trees"]
+                for t in tree["talents"]
+                if t["name"] == skill["name"] and t["max"] == 1
+            )
+            for rank in skill["ranks"]:
+                if rank.get("aliasOf"):
+                    assert rank["aliasOf"] in targets and rank["aliasOf"] != rank["spellID"], (
+                        "Invalid skill alias"
+                    )
+                    assert not rank["live"], "Skill alias must not replace a player rank"
+                if rank.get("referenceOnly"):
+                    assert not rank["live"], "Auxiliary spell must not be a live player rank"
         assert cls["id"] == class_id and len(cls["trees"]) == 3
         assert all(race in data["races"] for race in cls["races"])
         index = 0

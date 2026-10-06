@@ -64,9 +64,20 @@ The effect snapshot is client build **1.60.1.70009**, reviewed October 5, 2026. 
 level growth, scaling coefficients, intervals, critical flags and attack category come from the
 client tables. Selected numerical corrections follow Blizzard's
 [Forever development notes](https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-1/2360696):
-Bloodthirst's AP ratio, Swipe's AP contribution, and Inner Focus's periodic exclusion. Eureka's
-superseded damage bonus is not applied. These corrections do not constitute a full talent-catalog
-migration to the latest beta build.
+Bloodthirst's AP ratio, Swipe's AP contribution, and Inner Focus's periodic exclusion. Eureka is not
+modeled: its class-specific spell eligibility and scripted bonuses remain unverified. Gnome
+simulations display this limitation and mark the result as a partial estimate. These corrections do
+not constitute a full talent-catalog migration to the latest beta build.
+
+Rank pickers use player-facing spells, with verified helper and cosmetic aliases recognized when
+reading an imported spellbook. Holy Light keeps rank 7 through level 53; rank 8 starts at 54.
+Mutilate and Penance retain their proper cast descriptions, but their scripted weapon hits and
+damage/healing volleys require manual measured amounts when no complete client model exists. A
+single helper effect is not presented as the full cast.
+
+Vengeance uses the reviewed Arcane/Nature critical-damage bonus. Savage Strikes uses the talent's
+2/4% melee critical chance. Their broader effects in the class overview disagree with current rank
+data; relevant calculations explain that uncertainty instead of substituting unconfirmed numbers.
 
 The shared skill list includes talent-granted first ranks as well as trainer upgrades. Release 1.2.2
 adds 23 first-rank effect models from the same checksum-verified snapshot, including Bloodthirst,

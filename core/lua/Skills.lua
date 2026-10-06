@@ -149,6 +149,14 @@ function A.Prepare(classID)
     for _, s in ipairs(c.skills) do
         if firstLiveRank(s) then
             local skill = FT.Copy(s)
+            skill.ranks, skill.aliases = {}, {}
+            for _, rank in ipairs(s.ranks) do
+                if rank.aliasOf then
+                    skill.aliases[rank.spellID] = rank.aliasOf
+                elseif not rank.referenceOnly then
+                    skill.ranks[#skill.ranks + 1] = FT.Copy(rank)
+                end
+            end
             skill.kind, skill.related = "trained", {}
             list[#list + 1], byName[skill.name] = skill, skill
         end
@@ -305,8 +313,25 @@ function A.TrainedRank(skill, snapshot)
     for _, id in ipairs(snapshot.spellIDs) do
         known[id] = true
     end
+    for id, target in pairs(skill.aliases or {}) do
+        if known[id] then
+            known[target] = true
+        end
+    end
+    -- Captures retain their original IDs. Presentation and training comparison
+    -- resolve verified cosmetic/helper aliases to the player-facing rank.
     for _, rank in ipairs(skill.ranks) do
-        if known[rank.spellID] and (not current or rank.level >= current.level) then
+        if known[rank.spellID] and rank.aliasOf then
+            known[rank.aliasOf] = true
+        end
+    end
+    for _, rank in ipairs(skill.ranks) do
+        if
+            known[rank.spellID]
+            and not rank.aliasOf
+            and not rank.referenceOnly
+            and (not current or rank.level >= current.level)
+        then
             current = rank
         end
     end

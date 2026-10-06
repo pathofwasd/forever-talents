@@ -702,7 +702,15 @@ let pet = { mode: 'skills', family: '', query: '', page: 1 };
 function showPets() {
   openDialog(
     'Hunter pet atlas',
-    `<p class="muted">Rank levels and tameable beasts from the captured dataset.</p><div class="pet-filters"><input id="pet-search" type="search" value="${esc(pet.query)}" placeholder="Search pet skills or beasts…" aria-label="Search pets"><select id="pet-family" aria-label="Pet family"><option value="">All families</option>${list(
+    `<p class="muted">Rank levels and tameable beasts from the captured dataset.</p>${list(
+      catalog.pets.notes
+    )
+      .map(
+        (note) => `<p class="notice"><strong>${esc(note.title)}</strong><br>${esc(note.text)}</p>`
+      )
+      .join(
+        ''
+      )}<div class="pet-filters"><input id="pet-search" type="search" value="${esc(pet.query)}" placeholder="Search pet skills or beasts…" aria-label="Search pets"><select id="pet-family" aria-label="Pet family"><option value="">All families</option>${list(
       catalog.pets.families
     )
       .map(

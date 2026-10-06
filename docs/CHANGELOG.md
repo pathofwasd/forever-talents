@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.9
+
+- Corrected player-rank selection and imported helper/cosmetic aliases, including Holy Light at
+  levels 50–53, Mutilate, Penance, Polymorph and Shadow Bolt. Retained legitimate same-level ranks.
+- Added explicit simulator limitations for Eureka, scripted volleys and conflicting talent
+  descriptions. Added missing racial restrictions and an announced Fox pet reference note.
+- Kept addon/PWA behavior, saved libraries and existing sharing formats in sync.
+
 ## 1.2.8
 
 Share builds with a browser link from the addon or PWA. Opening one previews the class, race, level

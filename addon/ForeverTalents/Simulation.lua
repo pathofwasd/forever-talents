@@ -136,8 +136,16 @@ function Sim.ParseTooltip(rank, skill)
 end
 
 function Sim.Parse(rank, skill, level, effectMode)
+    if rank.referenceOnly then
+        return nil,
+            "This auxiliary spell is not a player rank. Choose a recorded player skill rank."
+    end
     local model = FT.Data.simulation and FT.Data.simulation.spells[rank.spellID]
     if not model then
+        local unsupported = FT.Data.simulation and FT.Data.simulation.unsupportedFallbacks or {}
+        if skill and unsupported[skill.name] then
+            return nil, unsupported[skill.name]
+        end
         local parsed, why = Sim.ParseTooltip(rank, skill)
         if parsed then
             parsed.components = {}
@@ -711,7 +719,16 @@ local function display(n)
 end
 
 local function racial(build, state, parsed)
-    local out = { damage = 0, direct = 0, crit = 0, hit = 0, power = 1, ap = 1, included = {} }
+    local out = {
+        damage = 0,
+        direct = 0,
+        crit = 0,
+        hit = 0,
+        power = 1,
+        ap = 1,
+        included = {},
+        warnings = {},
+    }
     if parsed.selfDamage then
         return out
     end
@@ -740,6 +757,9 @@ local function racial(build, state, parsed)
             out.power, out.ap, applies = 1.1, 1.1, true
         elseif state.cooldowns and name == "Elune's Light" then
             out.crit, applies = out.crit + 10, true
+        elseif name == "Eureka!" then
+            out.warnings[#out.warnings + 1] =
+                "Eureka! is not modeled: current spell eligibility and scripted bonuses are unverified. Results exclude its active bonuses."
         end
         if applies then
             out.included[#out.included + 1] = name
@@ -849,6 +869,21 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
             }
         or Sim.Modifiers(build, skill, parsed, state)
     local race = racial(build, state, parsed)
+    for _, note in ipairs(race.warnings) do
+        warning(warnings, note)
+    end
+    if withTalents ~= false then
+        for id in pairs(FT.Model.Counts(build)) do
+            local note = (FT.Data.simulation.talentNotes or {})[id]
+            if
+                note
+                and note.kind == parsed.kind
+                and (not note.attack or note.attack == parsed.attack)
+            then
+                warning(warnings, note.text)
+            end
+        end
+    end
     local directCount, periodicCount = 0, 0
     for _, c in ipairs(parsed.components) do
         if c.part == "periodic" then
