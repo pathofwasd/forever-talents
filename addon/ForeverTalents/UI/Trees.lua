@@ -47,11 +47,13 @@ function UI.TalentTooltip(button)
     local related = FT.Skills.TalentSkills(build.classID, t.id)
     if not FT.Store.SimpleView() and #related > 0 then
         local names = {}
-        for i = 1, math.min(6, #related) do
+        for i = 1, math.min(8, #related) do
             names[#names + 1] = related[i]
         end
         GameTooltip:AddLine(
-            "\nInteracts with: " .. table.concat(names, ", ") .. (#related > 6 and " …" or ""),
+            "\nAffected skills: "
+                .. table.concat(names, ", ")
+                .. (#related > 8 and (" • +" .. (#related - 8) .. " more in details") or ""),
             0.36,
             0.79,
             0.80,
@@ -73,7 +75,7 @@ function UI.TalentTooltip(button)
         )
     else
         GameTooltip:AddLine(
-            "\nLeft click: add • Right click: remove\nShift: fill / clear • Ctrl: inspect skill\nHold Shift while hovering for all ranks.",
+            "\nLeft click: add • Right click: remove\nShift: fill / clear • Alt click: talent details\nCtrl click: inspect skill • Hold Shift for all ranks.",
             0.56,
             0.63,
             0.68,
@@ -136,6 +138,10 @@ function UI.CreateTrees(parent)
                 GameTooltip:Hide()
             end)
             b:SetScript("OnClick", function(self, mouse)
+                if IsAltKeyDown and IsAltKeyDown() then
+                    UI.TalentDialog(self.talent.id)
+                    return
+                end
                 if IsControlKeyDown and IsControlKeyDown() then
                     UI.FocusTalentSkill(self.talent)
                     return

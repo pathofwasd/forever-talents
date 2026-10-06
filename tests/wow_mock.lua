@@ -8,6 +8,7 @@ local Mock = {
     clock = 100,
     ctrl = false,
     shift = false,
+    alt = false,
 }
 local methods = {}
 local function object(kind, name, parent)
@@ -449,6 +450,9 @@ function IsControlKeyDown()
 end
 function IsShiftKeyDown()
     return Mock.shift
+end
+function IsAltKeyDown()
+    return Mock.alt
 end
 function GetCurrentKeyBoardFocus()
     return Mock.focus and Mock.focus:IsVisible() and Mock.focus or nil

@@ -99,8 +99,19 @@ local function catalog()
         pets = FT.Data.pets,
         classOrder = FT.classOrder,
         version = FT.version,
+        buildURL = C.WebURL,
         highlightPalette = A.highlightPalette,
     }
+end
+local function decode(p)
+    if p.buildOnly then
+        local build, why = C.Decode(p.code)
+        return build and { kind = "build", build = build } or nil, why
+    end
+    if type(p.code) == "string" and p.code:match("^%s*FL1:") then
+        return FT.Library.Decode(p.code)
+    end
+    return FT.Snapshot.Decode(p.code)
 end
 local commands = {
     highlightColor = function(p)
@@ -182,19 +193,9 @@ local commands = {
     share = function()
         return C.Encode(S.ExportView())
     end,
-    decode = function(p)
-        if p.code:match("^%s*FL1:") then
-            return FT.Library.Decode(p.code)
-        end
-        return FT.Snapshot.Decode(p.code)
-    end,
+    decode = decode,
     import = function(p)
-        local snap, why
-        if p.code:match("^%s*FL1:") then
-            snap, why = FT.Library.Decode(p.code)
-        else
-            snap, why = FT.Snapshot.Decode(p.code)
-        end
+        local snap, why = decode(p)
         if not snap then
             return nil, why
         end
@@ -204,6 +205,9 @@ local commands = {
         return FT.Snapshot.Apply(snap)
     end,
     export = function(p)
+        if p.kind == "link" then
+            return C.BuildLink(S.ExportView())
+        end
         if p.kind == "library" then
             return FT.Library.Encode()
         end

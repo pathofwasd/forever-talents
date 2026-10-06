@@ -360,7 +360,7 @@ function P.Decode(code)
         return nil, "Paste a sharing string."
     end
     code = code:match("^%s*(.-)%s*$")
-    if code:sub(1, 4) == "FT1:" then
+    if code:sub(1, 4) == "FT1:" or code:match("^https?://") then
         local b, why = C.Decode(code)
         return b and { kind = "build", build = b } or nil, why
     end
@@ -477,7 +477,8 @@ function P.Apply(snapshot)
         FT.Store.db.settings.characters[snapshot.stats.classID] = FT.Copy(character)
     end
     FT.Changed(
-        snapshot.kind == "stats" and "Simulation stats loaded. Your talents and level are kept."
+        snapshot.kind == "build" and "Build loaded. Its shared talent order is preserved."
+            or snapshot.kind == "stats" and "Simulation stats loaded. Your talents and level are kept."
             or "Snapshot loaded. Original live point-spending order is unavailable; live imports use a legal derived order."
     )
     return true

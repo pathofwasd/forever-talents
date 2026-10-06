@@ -1,6 +1,7 @@
 local _, FT = ...
 local C = {}
 FT.Codec = C
+C.WebURL = "https://pathofwasd.github.io/forever-talents/"
 local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 local values = {}
 for i = 1, #alphabet do
@@ -81,7 +82,44 @@ function C.Encode(build)
     return body .. ":" .. C.Checksum(body)
 end
 
+function C.BuildLink(build)
+    local code, why = C.Encode(build)
+    return code and (C.WebURL .. "#build=" .. code) or nil, why
+end
+
+local function linkCode(input)
+    local prefix = C.WebURL .. "#build="
+    if input:sub(1, #prefix) ~= prefix then
+        return nil, "Paste a Forever Talents build link or build string."
+    end
+    local code = input:sub(#prefix + 1)
+    -- Accept browsers' percent-escaped fragments without changing the FT1 format.
+    local invalid = false
+    code = code:gsub("%%(..)", function(pair)
+        local byte = pair:match("^%x%x$") and tonumber(pair, 16)
+        if not byte then
+            invalid = true
+            return ""
+        end
+        return string.char(byte)
+    end)
+    if invalid or code:find("%%") then
+        return nil, "The build link is incomplete or damaged. Copy the entire link again."
+    end
+    return code
+end
+
 function C.Decode(input)
+    if type(input) == "string" and input:match("^%s*https?://") then
+        if #input > 2048 then
+            return nil, "Build links must be at most 2048 characters."
+        end
+        local why
+        input, why = linkCode(input:match("^%s*(.-)%s*$"))
+        if not input then
+            return nil, why
+        end
+    end
     if type(input) ~= "string" or #input > 512 then
         return nil, "Paste a Forever Talents build string (at most 512 characters)."
     end

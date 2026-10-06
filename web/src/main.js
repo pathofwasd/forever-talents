@@ -30,7 +30,9 @@ let panel = 'trees',
   installPrompt,
   registration;
 const modal = $('#modal'),
+  talentSheet = $('#talent-sheet'),
   app = $('#app');
+let sheetTalent = null;
 function toast(message, error = false) {
   const node = $('#toast');
   node.textContent = message;
@@ -170,7 +172,7 @@ function render() {
     .join(
       ''
     )}</select><label class="training-toggle" title="Compare the displayed level and talents with your last imported spellbook. Re-import after learning skills."><input id="check-training" type="checkbox" ${state.checkTraining ? 'checked' : ''}>Compare imported character</label><button id="training-summary" type="button" class="training-summary" data-action="needs-training" hidden></button><div class="skill-list" id="skill-list"></div>${btn('Clear highlights', 'clear-highlights', 'data-full-view', 'wide')}</aside>
-  <section class="talents-panel" aria-label="Talent trees"><div class="talent-heading"><h2>Talent trees</h2><input id="talent-search" type="search" placeholder="Search talents or effects…" value="${esc(talentQuery)}" aria-label="Search talents"></div><nav class="tree-tabs" aria-label="Talent tree">${allTrees.map((t, i) => btn(`${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b>`, 'tree-tab', `data-index="${i}" aria-pressed="${i === treeTab}"`, i === treeTab ? 'active' : '')).join('')}</nav><div class="trees">${allTrees.map((tree, i) => renderTree(tree, i)).join('')}</div><p class="tree-hint"><span class="desktop-hint">Click +1 · right-click −1 · Shift fills / clears · Ctrl inspects</span><span class="touch-hint">Tap a talent to read it, then choose Add or Remove.</span></p><div class="racials" data-full-view><h2>Racial traits</h2><div id="racial-list"></div></div></section>
+  <section class="talents-panel" aria-label="Talent trees"><div class="talent-heading"><h2>Talent trees</h2><input id="talent-search" type="search" placeholder="Search talents or effects…" value="${esc(talentQuery)}" aria-label="Search talents"></div><nav class="tree-tabs" aria-label="Talent tree">${allTrees.map((t, i) => btn(`${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b>`, 'tree-tab', `data-index="${i}" aria-pressed="${i === treeTab}"`, i === treeTab ? 'active' : '')).join('')}</nav><div class="trees">${allTrees.map((tree, i) => renderTree(tree, i)).join('')}</div><p class="tree-hint"><span class="desktop-hint">Click +1 · right-click −1 · Shift fills / clears · Alt: details</span><span class="touch-hint">Tap a talent for details; use + / − while the tree stays in view.</span></p><div class="racials" data-full-view><h2>Racial traits</h2><div id="racial-list"></div></div></section>
   <aside class="panel builds-panel" data-full-view aria-label="Build library and talent order"><div class="section-heading"><h2>Your journey</h2><span class="saved-dot">${state.readOnly || storageBlocked ? 'Saving paused' : 'Autosaved'}</span></div><div class="build-actions">${btn('Save build', 'save', '', 'primary')}${btn('Checkpoint', 'checkpoint', '', '', !state.activeProfile)}</div><div id="history-graph"></div><div class="section-heading order-heading"><h3>Talent order</h3><span>${list(state.build.order).length} ${list(state.build.order).length === 1 ? 'step' : 'steps'}</span></div><div class="order-list">${renderOrder()}</div>${btn('Library & sync', 'library', '', 'wide')}</aside>
   <section class="panel more-panel" data-full-view><h2>Atlas & tools</h2><p class="muted">Your whole library lives on this device. Use Library & sync to move it between devices and the addon.</p><div class="tool-grid">${btn('Library & sync', 'library')}${btn('Character & simulator', 'character-sheet')}${btn('Race & class atlas', 'races')}${btn('Hunter pet atlas', 'pets')}${btn('Forever perks', 'perks')}${btn('How to use', 'help')}${btn('Install app', 'install')}</div><p class="muted">Forever ${esc(catalog.meta.build)} · data ${esc(catalog.meta.tag)} · v${esc(catalog.version)}</p><p><a href="./NOTICE.txt" target="_blank" rel="noopener">Data & artwork credits</a> · <a href="./LICENSE.txt" target="_blank" rel="noopener">License</a> · <a href="./THIRD-PARTY.txt" target="_blank" rel="noopener">Runtime credits</a></p></section></div>
   <footer><span>Forever ${esc(catalog.meta.build)} · v${esc(catalog.version)} · data ${esc(catalog.meta.tag)}</span><div data-full-view>${btn('Pet atlas', 'pets', '', 'quiet')}${btn('Perks', 'perks', '', 'quiet')}${btn('Library & sync', 'library', '', 'quiet')}</div><p class="project-notice"><span>Free, unofficial community project. Not affiliated with or endorsed by Blizzard Entertainment.</span><span>World of Warcraft artwork and text © Blizzard Entertainment and respective rights holders.</span><a href="./NOTICE.txt" target="_blank" rel="noopener">Copyright & ownership notice <span class="notice-link-hint">(opens in a new tab)</span></a></p></footer></main>
@@ -198,6 +200,7 @@ function render() {
   renderSkills();
   renderHistory();
   paintHighlights();
+  if (sheetTalent !== null) renderTalentSheet();
   if (registration?.waiting) $('#update-banner').hidden = false;
   if (key) {
     const node = document.getElementById(key);
@@ -258,8 +261,8 @@ function renderSkills() {
   $('#skill-list').innerHTML = entries.length
     ? entries
         .map(
-          ({ skill: s, current, trained, comparison, progression }) =>
-            `<div class="skill-row ${comparison?.needsTraining ? 'needs-training' : ''}"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}" ${comparison ? `title="${esc(comparison.hint)}"` : ''}>${img(s.icon)}<span class="skill-name"><strong>${esc(s.name)}</strong><small>${comparison ? esc(comparison.label) : `${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${trained ? `Trained · ${esc(trained.label || 'ability')}` : current ? esc(current.label || 'available') : 'not yet available'}`}</small>${progression ? `<small class="rank-progression">${esc(progression.label)}</small>` : ''}</span>${comparison?.progress ? `<span class="skill-progress" aria-label="${esc(comparison.hint)}">${esc(comparison.progress)}</span>` : ''}</button></div>`
+          ({ skill: s, current, trained, shownTrained, comparison, progression }) =>
+            `<div class="skill-row ${comparison?.needsTraining ? 'needs-training' : ''}"><input data-full-view type="checkbox" data-skill-check="${esc(s.name)}" ${highlightStyle(s)} aria-label="Keep ${esc(s.name)} talent highlights" ${selected.has(skillKey(s)) ? 'checked' : ''}><button class="skill-details" data-skill="${esc(s.name)}" ${comparison ? `title="${esc(comparison.hint)}"` : ''}>${img(s.icon)}<span class="skill-name"><strong>${esc(s.name)}${shownTrained ? '<span class="trained-badge">Trained</span>' : ''}</strong><small>${progression ? `<svg class="unlock-icon" viewBox="0 0 16 18" role="img" aria-label="First unlock"><path d="M3 8V5a4 4 0 0 1 8-1M2 8h12v8H2z"/></svg>${esc(progression.summary)}` : comparison ? esc(comparison.label) : `${s.unlock ? `${esc(s.unlock.treeName)} talent · ` : `Lv. ${s.firstLevel} · `}${trained ? `Trained · ${esc(trained.label || 'ability')}` : current ? esc(current.label || 'available') : 'not yet available'}`}</small>${progression?.secondary ? `<small class="rank-progression">${progression.next ? `<svg class="unlock-icon" viewBox="0 0 16 18" role="img" aria-label="${progression.nextLocked ? 'Locked until level ' + progression.nextLevel : 'Next rank level reached'}"><path d="${progression.nextLocked ? 'M4 8V5a4 4 0 0 1 8 0v3' : 'M3 8V5a4 4 0 0 1 8-1'}M2 8h12v8H2z"/></svg>` : ''}${esc(progression.secondary)}</small>` : ''}</span>${comparison?.progress ? `<span class="skill-progress" aria-label="${esc(comparison.hint)}">${esc(comparison.progress)}</span>` : ''}</button></div>`
         )
         .join('')
     : currentSkillFilter() === 'needsTraining'
@@ -375,6 +378,9 @@ function openDialog(title, html, wide = false, onReturn = null) {
   modal.querySelector('[data-action="close"]').focus({ preventScroll: true });
 }
 function closeDialog(dismiss = false) {
+  const linkHash = $('#import-code')?.dataset.linkHash;
+  if (linkHash && location.hash === linkHash)
+    history.replaceState(history.state, '', location.pathname + location.search);
   const previous = !dismiss && dialogStack.pop();
   if (previous) {
     modal.replaceChildren(previous.fragment);
@@ -403,10 +409,37 @@ function description(t) {
 function showTalent(id) {
   const t = talent(id);
   if (!t) return;
+  if (matchMedia('(max-width: 1050px), (pointer: coarse)').matches) {
+    const sameTalent = sheetTalent === Number(id) && talentSheet.open;
+    sheetTalent = Number(id);
+    renderTalentSheet();
+    if (!talentSheet.open) talentSheet.show();
+    document.body.classList.add('talent-sheet-open');
+    if (!sameTalent) {
+      talentSheet.querySelector('details').open = false;
+      talentSheet.querySelector('.talent-sheet-body').scrollTop = 0;
+      talentSheet.querySelector('[data-action="close-talent"]').focus({ preventScroll: true });
+      // Leave the selected node visible above the panel while the tree stays scrollable.
+      requestAnimationFrame(() => {
+        const node = $(`[data-talent="${id}"]`);
+        if (!node) return;
+        const rect = node.getBoundingClientRect();
+        const top = talentSheet.getBoundingClientRect().top;
+        if (rect.bottom > top - 16 || rect.top < 16)
+          window.scrollBy({
+            top: rect.top - Math.max(16, (top - rect.height) / 2),
+            behavior: 'smooth',
+          });
+      });
+    }
+    return;
+  }
+  closeTalentSheet(false);
+  const available = engine.call('talents')[t.id].available;
   const related = list(engine.call('talentSkills', { id: t.id }));
   openDialog(
     t.name,
-    `${description(t)}<div class="allocation-actions">${btn('− Remove', 'talent-remove', `data-id="${id}"`, '', !(state.counts[id] > 0) || state.preview !== undefined)}${btn('+ Add point', 'talent-add', `data-id="${id}"`, 'primary', state.preview !== undefined)}${btn('Fill ranks', 'talent-fill', `data-id="${id}"`, '', state.preview !== undefined)}${btn('Clear ranks', 'talent-clear', `data-id="${id}"`, '', state.preview !== undefined)}</div><details><summary>Every rank</summary>${list(
+    `${description(t)}<div class="allocation-actions">${btn('− Remove', 'talent-remove', `data-id="${id}"`, '', !(state.counts[id] > 0) || state.preview !== undefined)}${btn('+ Add point', 'talent-add', `data-id="${id}"`, 'primary', !available || state.preview !== undefined)}${btn('Fill ranks', 'talent-fill', `data-id="${id}"`, '', !available || state.preview !== undefined)}${btn('Clear ranks', 'talent-clear', `data-id="${id}"`, '', !(state.counts[id] > 0) || state.preview !== undefined)}</div><details><summary>Every rank</summary>${list(
       t.ranks
     )
       .map((r, i) => `<p><b>Rank ${i + 1}</b><br>${esc(r.text)}</p>`)
@@ -414,6 +447,49 @@ function showTalent(id) {
         ''
       )}</details>${!state.simpleView && related.length ? `<h3>Related skills</h3><div class="chips">${related.map((n) => btn(esc(n), 'related-skill', `data-name="${esc(n)}"`)).join('')}</div>` : ''}`
   );
+}
+function renderTalentSheet() {
+  const t = talent(sheetTalent);
+  if (!t) {
+    closeTalentSheet(false);
+    return;
+  }
+  const focusAction = talentSheet.contains(document.activeElement)
+    ? document.activeElement.dataset.action
+    : null;
+  const scrollTop = talentSheet.querySelector('.talent-sheet-body')?.scrollTop || 0;
+  const expanded = talentSheet.querySelector('details')?.open;
+  const rank = state.counts[t.id] || 0;
+  const access = engine.call('talents')[t.id];
+  const related = !state.simpleView && list(engine.call('talentSkills', { id: t.id }));
+  talentSheet.innerHTML = `<header class="talent-sheet-head">${img(t.icon)}<div><h2 id="talent-sheet-title">${esc(t.name)}</h2><span class="muted">${esc(list(cls().trees).find((tree) => list(tree.talents).some((n) => n.id === t.id))?.name)} · Level ${state.viewLevel} · ${Math.max(0, state.budget - order().length)} points left</span></div>${btn('×', 'close-talent', 'aria-label="Close talent details"', 'close')}</header><div class="talent-sheet-body">${description(t)}<details><summary>Every rank & related skills</summary>${list(
+    t.ranks
+  )
+    .map((r, i) => `<p><b>Rank ${i + 1}</b><br>${esc(r.text)}</p>`)
+    .join(
+      ''
+    )}${related?.length ? `<h3>Related skills</h3><div class="chips">${related.map((n) => btn(esc(n), 'related-skill', `data-name="${esc(n)}"`)).join('')}</div>` : ''}<div class="allocation-actions">${btn('Fill ranks', 'talent-fill', `data-id="${t.id}"`, '', !access.available || state.preview !== undefined)}${btn('Clear ranks', 'talent-clear', `data-id="${t.id}"`, '', !rank || state.preview !== undefined)}</div></details></div><footer class="talent-sheet-actions">${btn('−', 'talent-remove', `data-id="${t.id}" aria-label="Remove one point from ${esc(t.name)}"`, '', !rank || state.preview !== undefined)}<span aria-live="polite"><b>${rank}</b> / ${t.max}</span>${btn('+', 'talent-add', `data-id="${t.id}" aria-label="Add one point to ${esc(t.name)}"`, 'primary', !access.available || state.preview !== undefined)}</footer>`;
+  talentSheet.querySelector('details').open = !!expanded;
+  talentSheet.querySelector('.talent-sheet-body').scrollTop = scrollTop;
+  if (focusAction) {
+    const control = talentSheet.querySelector(`[data-action="${focusAction}"]`);
+    (control?.disabled
+      ? talentSheet.querySelector('[data-action="close-talent"]')
+      : control
+    )?.focus({ preventScroll: true });
+  }
+  for (const node of document.querySelectorAll('[data-talent]'))
+    node.classList.toggle('inspecting', Number(node.dataset.talent) === sheetTalent);
+}
+function closeTalentSheet(restoreFocus = true) {
+  const id = sheetTalent;
+  sheetTalent = null;
+  talentSheet.close();
+  document.body.classList.remove('talent-sheet-open');
+  document
+    .querySelectorAll('.talent.inspecting')
+    .forEach((node) => node.classList.remove('inspecting'));
+  if (restoreFocus && id !== null) $(`[data-talent="${id}"]`)?.focus({ preventScroll: true });
 }
 function showSkill(name) {
   try {
@@ -444,10 +520,10 @@ function showSkill(name) {
     toast(e.message, true);
   }
 }
-function showImport(code = '') {
+function showImport(code = '', buildLink = false) {
   openDialog(
-    'Import from addon or another device',
-    `<p class="muted">Build <b>FT1</b> · character <b>FC1</b> · stats & gear <b>FS2</b> (FS1 supported) · full library <b>FL1</b>. Your draft stays here until you load.</p><label class="field-label" for="import-code">Paste a complete sharing string</label><textarea id="import-code" rows="5" maxlength="3145728" spellcheck="false" autocapitalize="off" autocomplete="off">${esc(code)}</textarea><div id="import-preview" class="callout">Paste a string to preview it.</div><label class="pin" id="import-drafts-label" hidden><input id="import-drafts" type="checkbox">Also replace class drafts when merging the library</label><p class="muted" id="import-note"></p><div class="dialog-actions">${btn('Load snapshot', 'import-load', '', 'primary', true)}${btn('Cancel', 'close')}</div>`
+    buildLink ? 'Open shared build' : 'Import from addon or another device',
+    `<p class="muted">${buildLink ? 'Review this build before loading. Your saved builds stay here, and Undo can restore your draft.' : 'Build link or <b>FT1</b> · character <b>FC1</b> · stats & gear <b>FS2</b> (FS1 supported) · full library <b>FL1</b>. Your draft stays here until you load.'}</p><label class="field-label" for="import-code">${buildLink ? 'Shared build link' : 'Paste a complete build link or sharing string'}</label><textarea id="import-code" rows="${buildLink ? 3 : 5}" maxlength="3145728" spellcheck="false" autocapitalize="off" autocomplete="off" ${buildLink ? `data-build-only="true" data-link-hash="${esc(location.hash)}"` : ''}>${esc(code)}</textarea><div id="import-preview" class="callout">Paste a link or string to preview it.</div><label class="pin" id="import-drafts-label" hidden><input id="import-drafts" type="checkbox">Also replace class drafts when merging the library</label><p class="muted" id="import-note"></p><div class="dialog-actions">${btn(buildLink ? 'Load build' : 'Load snapshot', 'import-load', '', 'primary', true)}${btn('Cancel', 'close')}</div>`
   );
   if (code) previewImport();
   $('#import-code').focus();
@@ -456,20 +532,30 @@ function previewImport() {
   const input = $('#import-code').value;
   const load = $('[data-action="import-load"]');
   try {
-    const snap = engine.call('decode', { code: input });
+    const snap = engine.call('decode', {
+      code: input,
+      buildOnly: $('#import-code').dataset.buildOnly === 'true',
+    });
     load.disabled = false;
     $('#import-drafts-label').hidden = snap.kind !== 'library';
-    load.textContent = snap.kind === 'library' ? 'Merge library' : 'Load snapshot';
+    load.textContent =
+      snap.kind === 'library'
+        ? 'Merge library'
+        : snap.kind === 'build'
+          ? 'Load build'
+          : 'Load snapshot';
     $('#import-preview').textContent =
       snap.kind === 'library'
         ? `${snap.profiles} profiles · ${snap.nodes} checkpoints · ${snap.drafts} class drafts`
-        : `${catalog.classes[(snap.build || snap.stats).classID].name} · ${catalog.races[(snap.build || snap.stats).raceID].name} · level ${(snap.build || snap.stats).level} · ${snap.kind}${snap.build ? ` · ${list(snap.build.order).length} points` : ''}`;
+        : `${snap.build ? snap.build.name + ' · ' : ''}${catalog.classes[(snap.build || snap.stats).classID].name} · ${catalog.races[(snap.build || snap.stats).raceID].name} · level ${(snap.build || snap.stats).level} · ${snap.kind}${snap.build ? ` · ${list(snap.build.order).length} points` : ''}`;
     $('#import-note').textContent =
       snap.kind === 'library'
         ? 'Profiles merge without replacing existing profiles; exact duplicates are skipped. Character workspaces and simulation settings also sync. Checked above: incoming class drafts replace drafts for those classes. Export your library first for a backup.'
         : snap.kind === 'stats'
           ? 'Loads simulation stats only. Your talents, race and level stay as they are.'
-          : 'Loads the shared class, race, level and talent order. Character snapshots also load the central stat/equipment workspace. Undo restores talents; character stats stay separate.';
+          : snap.kind === 'build'
+            ? 'Loads class, race, level, talents and exact point order into a draft. Saved profiles and character stats stay here. Save it as a new build to keep a named copy.'
+            : 'Loads the shared class, race, level and talent order. Character snapshots also load the central stat/equipment workspace. Undo restores talents; character stats stay separate.';
   } catch (e) {
     load.disabled = true;
     $('#import-drafts-label').hidden = true;
@@ -477,10 +563,14 @@ function previewImport() {
     $('#import-note').textContent = '';
   }
 }
-function showShare(kind = 'build', context = {}) {
+function openBuildLink() {
+  if (location.hash.startsWith('#build=')) showImport(catalog.buildURL + location.hash, true);
+}
+function showShare(kind = 'link', context = {}) {
   openDialog(
     'Copy & share',
-    `<p class="muted">These strings work in both the addon and PWA. Friends need the same data version for talent builds. Stats-only strings keep their current talents.</p><label class="field-label" for="share-kind">What to copy</label><select id="share-kind">${[
+    `<p class="muted">Send a build link for a friend to open in their browser, or copy a sharing string for the addon and PWA. Friends need the same data version for talent builds.</p><label class="field-label" for="share-kind">What to copy</label><select id="share-kind">${[
+      ['link', 'Web link to this build'],
       ['build', 'Talent build + ordered points'],
       ['character', 'Character: level + talents + stats + gear'],
       ['stats', 'Character stats + gear (or temporary skill inputs)'],
@@ -491,7 +581,7 @@ function showShare(kind = 'build', context = {}) {
       )
       .join(
         ''
-      )}</select><label class="field-label" for="share-code">Sharing string</label><textarea id="share-code" rows="5" readonly spellcheck="false"></textarea><p class="muted" id="share-note"></p><div class="dialog-actions">${btn('Copy string', 'copy-code', '', 'primary')}${btn('Save to file', 'download-code')}${btn('Import a string', 'import')}</div><p class="muted">In-game clickable whispers need the WoW addon. Paste these strings into any messenger, or choose Import in the other version.</p>`
+      )}</select><label class="field-label" id="share-label" for="share-code">Sharing string</label><textarea id="share-code" rows="5" readonly spellcheck="false"></textarea><p class="muted" id="share-note"></p><div class="dialog-actions">${btn('Copy build link', 'copy-code', '', 'primary')}${btn('Save to file', 'download-code')}${btn('Import a link or string', 'import')}</div><p class="muted">In-game clickable whispers need the WoW addon. You can also paste web links into Import in the addon.</p>`
   );
   modal.shareContext = context;
   refreshShare();
@@ -501,12 +591,18 @@ function refreshShare() {
     const kind = $('#share-kind').value;
     const code = engine.call('export', { kind, ...modal.shareContext });
     $('#share-code').value = code;
+    $('#share-code').rows = kind === 'link' ? 3 : 5;
+    $('#share-label').textContent = kind === 'link' ? 'Build link' : 'Sharing string';
+    $('[data-action="copy-code"]').textContent =
+      kind === 'link' ? 'Copy build link' : 'Copy string';
     $('#share-note').textContent =
-      kind === 'library'
-        ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
-        : kind === 'stats'
-          ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
-          : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
+      kind === 'link'
+        ? 'Includes class, race, displayed level, talents and exact point order. Your friend can review before loading; no account needed. Character stats, gear and your library are shared separately.'
+        : kind === 'library'
+          ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
+          : kind === 'stats'
+            ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
+            : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
   } catch (e) {
     toast(e.message, true);
   }
@@ -515,7 +611,11 @@ async function copyCode() {
   const field = $('#share-code');
   try {
     await navigator.clipboard.writeText(field.value);
-    toast('Copied. Paste into the addon or another device.');
+    toast(
+      $('#share-kind').value === 'link'
+        ? 'Build link copied. Send it to a friend to open in the web app.'
+        : 'Copied. Paste into the addon or another device.'
+    );
   } catch {
     field.focus();
     field.select();
@@ -585,7 +685,7 @@ function showHelp() {
   }
   openDialog(
     'A quick guide',
-    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Shift fills or clears its ranks. On phones, tap a talent to read it, then use Add / Remove. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links. Each class-skill row shows its next rank and unlock level, or Max rank when there are no further upgrades. This works with comparison off.</p><p>Enable Compare imported character to check your last imported spellbook against the displayed level and talents. Gold rows need a new skill or higher rank; Needs training filters them. ↑3 means three more levels until the next rank or first unlock, and ↑0 means that level is reached. Talent requirements still apply. Re-import after learning skills; the comparison is a snapshot.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
+    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Alt-click opens the full talent details and affected skills. Shift fills or clears its ranks. On phones, tap a talent to open the bottom panel, then use + / −. The tree stays scrollable and interactive; tap another talent to inspect it without closing. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links. Each class-skill row shows its first unlock level and the displayed rank’s own level. Trained marks imported spellbook ranks. A second line shows the next rank with a lock until its required level; the line disappears at maximum rank. Talent requirements still apply. This works with comparison off.</p><p>Enable Compare imported character to check your last imported spellbook against the displayed level and talents. Gold rows need a new skill or higher rank; Needs training filters them. ↑3 means three more levels until the next rank or first unlock, and ↑0 means that level is reached. Talent requirements still apply. Re-import after learning skills; the comparison is a snapshot.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>Share → Copy build link sends a browser link with the displayed class, race, level, talents and exact point order. Friends review it before loading; no account is needed. Addon Share → Web link makes the same link, and either interface accepts it through Import.</p><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
     true
   );
 }
@@ -672,6 +772,7 @@ function showPerks() {
   );
 }
 function changeContext(dismissDialogs = false) {
+  closeTalentSheet(false);
   if (dismissDialogs && modal.open) closeDialog(true);
   selected.clear();
   selectionColors.clear();
@@ -685,7 +786,8 @@ document.addEventListener('click', async (event) => {
     const t = event.target.closest('[data-talent]');
     if (t) {
       const id = Number(t.dataset.talent);
-      if (event.ctrlKey || event.metaKey) {
+      if (event.altKey) showTalent(id);
+      else if (event.ctrlKey || event.metaKey) {
         const names = list(engine.call('talentSkills', { id }));
         if (names.length === 1) showSkill(names[0]);
         else showTalent(id);
@@ -710,6 +812,9 @@ document.addEventListener('click', async (event) => {
     switch (a) {
       case 'close':
         closeDialog();
+        break;
+      case 'close-talent':
+        closeTalentSheet();
         break;
       case 'recovery':
         download(
@@ -741,10 +846,12 @@ document.addEventListener('click', async (event) => {
         act('reset', { treeID: id });
         break;
       case 'tree-tab':
+        closeTalentSheet(false);
         treeTab = Number(node.dataset.index);
         render();
         break;
       case 'panel':
+        closeTalentSheet(false);
         panel = node.dataset.panel;
         render();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -777,11 +884,13 @@ document.addEventListener('click', async (event) => {
       }
       case 'talent-add':
       case 'talent-fill':
-        if (act('add', { id, fill: a === 'talent-fill' }) !== null) showTalent(id);
+        if (act('add', { id, fill: a === 'talent-fill' }) !== null && !talentSheet.open)
+          showTalent(id);
         break;
       case 'talent-remove':
       case 'talent-clear':
-        if (act('remove', { id, all: a === 'talent-clear' }) !== null) showTalent(id);
+        if (act('remove', { id, all: a === 'talent-clear' }) !== null && !talentSheet.open)
+          showTalent(id);
         break;
       case 'save':
         showSave();
@@ -857,6 +966,7 @@ document.addEventListener('click', async (event) => {
         if (
           act('import', {
             code: $('#import-code').value,
+            buildOnly: $('#import-code').dataset.buildOnly === 'true',
             includeDrafts: $('#import-drafts').checked,
           }) !== null
         ) {
@@ -1040,7 +1150,14 @@ document.addEventListener('mouseover', (event) => {
   const t = event.target.closest('[data-talent]');
   if (t && !modal.open) {
     const tip = $('#tooltip');
-    tip.innerHTML = description(talent(t.dataset.talent));
+    const related =
+      !state.simpleView && list(engine.call('talentSkills', { id: Number(t.dataset.talent) }));
+    tip.innerHTML =
+      description(talent(t.dataset.talent)) +
+      (related?.length
+        ? `<p class="tooltip-skills"><b>Affected skills</b><br>${related.slice(0, 8).map(esc).join(', ')}${related.length > 8 ? ` · +${related.length - 8} more in details` : ''}</p>`
+        : '') +
+      '<p class="tooltip-hint">Alt-click or Enter: talent details · Right-click: remove</p>';
     tip.hidden = false;
     const rect = t.getBoundingClientRect();
     tip.style.left = `${Math.min(innerWidth - 344, Math.max(8, rect.right + 12))}px`;
@@ -1079,11 +1196,15 @@ modal.addEventListener('close', () => {
   hovered = null;
   paintHighlights();
   if (modal.returnSelector) {
-    const target = app.querySelector(modal.returnSelector);
+    const target = document.querySelector(modal.returnSelector);
     if (target && target.getClientRects().length) target.focus({ preventScroll: true });
   }
 });
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && talentSheet.open && !modal.open) {
+    event.preventDefault();
+    closeTalentSheet();
+  }
   if (
     (event.ctrlKey || event.metaKey) &&
     !['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) &&
@@ -1175,6 +1296,10 @@ try {
   if (state.readOnly) toast(state.message, true);
   persist();
   offline();
+  openBuildLink();
 } catch (e) {
   app.innerHTML = `<div class="loading"><h1>Calculator could not start</h1><p>${esc(e.message)}</p><p>Reload while online to finish downloading the engine. Your saved library is kept.</p><button onclick="location.reload()">Reload</button></div>`;
 }
+window.addEventListener('hashchange', () => {
+  if (engine && catalog) openBuildLink();
+});

@@ -37,6 +37,8 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     run('checkpoint', { title: 'Branch fixture' });
     run('state');
     run('export', { kind: 'build' });
+    run('export', { kind: 'link' });
+    run('decode', { code: h.call('export', { kind: 'link' }), buildOnly: true });
     run('scenario', {
       state: {
         power: 175.25,
@@ -425,5 +427,72 @@ test('captured trained ranks persist, reject invalid records, and share between 
     }),
     { 123: { 2: true, 5: true } }
   );
+  h.close();
+});
+
+test('build links preview safely, preserve point order, reject non-build payloads and load undoable drafts', async () => {
+  const h = await harness();
+  const c = h.call('catalog');
+  h.call('save', { title: 'Keep this profile' });
+  h.call('checkpoint', { title: 'Keep its branch' });
+  h.call('auto', { enabled: true });
+  const before = h.call('state').build;
+  const profiles = h.call('state').profiles;
+  const source = await harness();
+  source.call('switch', { classID: 11 });
+  source.call('level', { level: 35 });
+  const trees = list(c.classes[11].trees);
+  for (const tree of trees) source.call('add', { id: list(tree.talents)[0].id, fill: true });
+  source.call('save', { title: 'Shared leveling order' });
+  const code = source.call('export', { kind: 'build' });
+  const link = source.call('export', { kind: 'link' });
+  assert.equal(link, c.buildURL + '#build=' + code);
+  const library = h.call('export', { kind: 'library' });
+  assert.deepEqual(
+    h.call('decode', { code: link, buildOnly: true }).build,
+    source.call('state').build
+  );
+  assert.equal(h.call('export', { kind: 'library' }), library);
+  for (const invalid of [
+    link + '!',
+    c.buildURL + '#build=bad',
+    source.call('export', { kind: 'character' }),
+    source.call('export', { kind: 'library' }),
+  ]) {
+    assert.equal(h.raw('decode', { code: invalid, buildOnly: true }).ok, false);
+    assert.equal(h.raw('import', { code: invalid, buildOnly: true }).ok, false);
+    assert.equal(h.call('export', { kind: 'library' }), library);
+  }
+  h.call('import', { code: link, buildOnly: true });
+  assert.equal(h.call('export', { kind: 'build' }), code);
+  assert.equal(h.call('state').auto, false);
+  assert.deepEqual(h.call('state').profiles, profiles);
+  h.call('undo');
+  assert.deepEqual(h.call('state').build, before);
+  assert.equal(h.call('state').auto, true);
+  h.call('redo');
+  assert.equal(h.call('export', { kind: 'build' }), code);
+  const restored = await harness(h.call('database'));
+  assert.equal(restored.call('export', { kind: 'link' }), link);
+  restored.call('preview', { count: 3 });
+  const preview = restored.call('decode', { code: restored.call('export', { kind: 'link' }) });
+  assert.equal(preview.build.level, 12);
+  assert.equal(list(preview.build.order).length, 3);
+  source.close();
+  restored.close();
+  h.close();
+});
+test('skill summary separates first unlock and displayed rank level without a duplicate maximum line', async () => {
+  const h = await harness();
+  const entry = (name) =>
+    list(h.call('skills', { query: name })).find((e) => e.skill.name === name);
+  h.call('level', { level: 60 });
+  assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Max rank 5 Lv. 54');
+  assert.equal(entry('Shred').progression.secondary, undefined);
+  h.call('level', { level: 45 });
+  assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Rank 3 Lv. 38');
+  assert.equal(entry('Shred').progression.secondary, 'Rank 4 Lv. 46');
+  h.call('simpleView', { enabled: true });
+  assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Rank 3 Lv. 38');
   h.close();
 });

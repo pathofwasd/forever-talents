@@ -5,6 +5,7 @@
 | Captured data, authentic grid positions, ranks, prerequisites             | `data/catalog.json` → `tools/build_data.py` → addon Data.lua → shared browser engine |
 | Budget, gates, allocation, removal and point reordering                   | `core/lua/Model.lua`                                                                 |
 | FT1 build, FS1/FS2 stats and gear, FC1 character formats                  | `core/lua/Codec.lua`, `Snapshot.lua`                                                 |
+| Build links, exact ordered FT1 payload and link validation                | `core/lua/Codec.lua`; native Share / Import and browser URL preview                  |
 | Full FL1 library encoding, validation, merge and duplicate handling       | `core/lua/Library.lua`                                                               |
 | Drafts, Auto level, undo/redo, immutable checkpoints and subtree deletion | `core/lua/Store.lua`                                                                 |
 | Skill ranks, search, unlocks and related talent evidence                  | `core/lua/Skills.lua`                                                                |
@@ -72,13 +73,40 @@ after learning skills; this is a dated comparison, not a live trainer listing. T
 not alter allocations, undo history, character records or shared strings, and library imports retain
 the recipient’s choice. It also works in Classic / Simple view with existing captured data.
 
-Every class-skill row also shows **Next rank N · level X**, **Max rank N**, or the first unlock
-level. Abilities without upgrades say **No rank upgrades**. This line works with comparison off and
-follows the displayed rank: the imported rank when shown, the available rank in an uncaptured plan,
-or the rank marked as the current training target. Shared `Skills.Progression` selects only valid
-live records and retains talent unlock levels. Archived captures without a current rank match are
-identified rather than labeled maximum. The native row has a dedicated third line; the PWA wraps it
-on narrow screens. Classic / Simple view uses the same progression.
+Every class-skill row separates first unlock from the displayed rank’s own level, for example **🔓
+Lv. 22 · Max rank 5 Lv. 54**. **Trained** identifies ranks from the imported spellbook. A secondary
+line appears only when another rank/unlock exists, such as **🔒 Rank 4 Lv. 46**. The lock disappears
+once that level is reached; talent requirements remain explicit. Maximum ranks have no duplicate
+progression line. This works with comparison off and follows the imported rank when shown, the
+available rank in an uncaptured plan, or the current training target. Shared `Skills.Progression`
+selects only valid live records and retains talent unlock levels. Archived captures without a
+current rank match are identified rather than labeled maximum. Native rows wrap the primary text and
+draw their own padlock; PWA rows use an accessible inline icon. Classic / Simple view uses the same
+progression.
+
+Share offers a **Web link** in the addon and defaults to **Copy build link** in the PWA. The shared
+Lua codec places the unchanged FT1 payload in the website’s `#build=` fragment. It includes class,
+race, displayed level, title, talent allocation and exact point order; stats and libraries keep
+their separate export formats. Both interfaces accept the full canonical URL through Import. Opening
+a web link previews a validated build before loading; Cancel preserves the draft and saved library,
+and Load imports an undoable independent draft. Build links cannot load character/stats or library
+envelopes. Loading or canceling removes the fragment to avoid reopening an old link on reload. No
+login, server-side build storage or live WoW connection is needed. Native in-game whispers keep FT1
+strings and existing clickable addon receipts.
+
+On phones and touch screens, talent inspection uses a non-modal bottom panel. The tree stays
+interactive and scrollable; tap another node to change the inspected talent. Sticky + / − controls
+update the ranks and budget in place. Locked additions and maximum ranks disable +; previews pause
+editing. Additional ranks and related skills expand inside the panel, and closing a related-skill
+dialog returns to it. The selected talent is outlined, scrolling leaves room beneath the tree, and X
+/ Escape closes inspection. Native hover inspection already leaves its trees interactive.
+
+Desktop talent tooltips list up to eight affected skills from the shared interaction index, with a
+count pointing to full details for larger lists. **Alt-click** opens the full talent inspector in
+both interfaces; browser keyboard Enter and mobile tap do the same. Right-click keeps removing a
+point, and Ctrl-click retains the skill shortcut. Native talent details provide rank descriptions,
+point controls and affected-skill buttons; closing a skill returns to the talent inspector. Reduced
+views keep talent descriptions and allocation controls while hiding skill-interaction tools.
 
 Library's **New build** creates an independent profile; the checkpoint action creates a child in its
 existing profile. Both reuse shared Store operations.

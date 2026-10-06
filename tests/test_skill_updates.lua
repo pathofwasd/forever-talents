@@ -155,11 +155,11 @@ check(FT.Library.Encode() == portable)
 S.SetCheckTraining(false)
 UI.skillQuery = "Arcane Shot"
 UI.RefreshBrowser()
-check(UI.skillRows[1].nextRank:GetText() == "Next rank 2 · level 12")
+check(UI.skillRows[1].nextRank:GetText() == "Rank 2 Lv. 12")
 check(UI.skillRows[1].nextRank:IsShown())
 check(UI.skillRows[1].nextRank:GetStringWidth() <= UI.skillRows[1].nextRank:GetWidth())
 S.SetSimpleView(true)
-check(UI.skillRows[1].nextRank:GetText() == "Next rank 2 · level 12")
+check(UI.skillRows[1].nextRank:GetText() == "Rank 2 Lv. 12")
 S.SetSimpleView(false)
 UI.skillQuery = ""
 local archived = {

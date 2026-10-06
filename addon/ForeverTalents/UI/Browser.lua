@@ -271,18 +271,40 @@ function UI.CreateBrowser(parent)
     UI.skillScroll = W.Scroll(p, 8, -158, 210, 324)
     UI.skillRows = {}
     for i = 1, 110 do
-        local row = W.Button(UI.skillScroll.content, "", 0, -(i - 1) * 61, 194, function(self)
+        local row = W.Button(UI.skillScroll.content, "", 0, -(i - 1) * 77, 194, function(self)
             UI.SkillDialog(self.skill)
-        end, false, 58)
+        end, false, 74)
         row.icon = W.Icon(row, "class_druid", 7, -14, 28)
+        row.source = W.Text(row, "Trained", 5, -49, 32, 8, W.colors.teal)
+        row.source:SetJustifyH("CENTER")
         row.title = W.Text(row, "", 42, -7, 119, 12)
         row.title:SetWordWrap(false)
         row.detail = W.Text(row, "", 42, -23, 119, 10, W.colors.muted)
-        row.detail:SetWordWrap(false)
+        row.detail:SetWordWrap(true)
+        row.detail:SetHeight(29)
+        row.unlock = CreateFrame("Frame", nil, row)
+        row.unlock:SetPoint("TOPLEFT", 42, -26)
+        row.unlock:SetSize(9, 11)
+        -- A small open padlock drawn with the same solid UI primitives as the frame.
+        for _, bar in ipairs({ { 0, 5, 9, 6 }, { 1, 1, 1, 5 }, { 1, 0, 6, 1 }, { 6, 1, 1, 2 } }) do
+            local texture = row.unlock:CreateTexture(nil, "ARTWORK")
+            texture:SetPoint("TOPLEFT", bar[1], -bar[2])
+            texture:SetSize(bar[3], bar[4])
+            texture:SetColorTexture(unpack(W.colors.teal))
+        end
         row.progress = W.Text(row, "", 127, -23, 34, 10, W.colors.gold)
         row.progress:SetJustifyH("RIGHT")
-        row.nextRank = W.Text(row, "", 42, -40, 145, 10, W.colors.muted)
+        row.nextRank = W.Text(row, "", 42, -57, 145, 10, W.colors.muted)
         row.nextRank:SetWordWrap(false)
+        row.nextLock = CreateFrame("Frame", nil, row)
+        row.nextLock:SetPoint("TOPLEFT", 42, -59)
+        row.nextLock:SetSize(9, 11)
+        for _, bar in ipairs({ { 0, 5, 9, 6 }, { 1, 1, 1, 5 }, { 1, 0, 6, 1 }, { 6, 1, 1, 5 } }) do
+            local texture = row.nextLock:CreateTexture(nil, "ARTWORK")
+            texture:SetPoint("TOPLEFT", bar[1], -bar[2])
+            texture:SetSize(bar[3], bar[4])
+            texture:SetColorTexture(unpack(W.colors.muted))
+        end
         UI.AddHighlightCheckbox(row, 167, -18)
         row:SetScript("OnEnter", function(self)
             self:Paint(true)
@@ -353,19 +375,36 @@ function UI.RefreshBrowser()
         if entry then
             local s = entry.skill
             row.skill = s
+            row.source:SetShown(entry.shownTrained)
             row.comparison = entry.comparison
             row.check:SetShown(not simple)
-            row.title:SetWidth(simple and 145 or 119)
-            local comparison = entry.comparison
-            row.detail:SetWidth(
-                (simple and 145 or 119) - (comparison and comparison.progress and 40 or 0)
+            row.title:SetWidth(
+                (simple and 145 or 119)
+                    - (entry.comparison and entry.comparison.progress and 34 or 0)
             )
+            local comparison = entry.comparison
+            row.detail:SetWidth(simple and 133 or 107)
+            row.detail:ClearAllPoints()
+            row.detail:SetPoint("TOPLEFT", entry.progression and 54 or 42, -23)
+            row.unlock:SetShown(entry.progression ~= nil)
             row.progress:ClearAllPoints()
-            row.progress:SetPoint("TOPRIGHT", simple and -7 or -34, -23)
+            row.progress:SetPoint("TOPRIGHT", simple and -7 or -34, -7)
             row.progress:SetText(comparison and comparison.progress or "")
             row.progress:SetShown(comparison and comparison.progress ~= nil or false)
-            row.nextRank:SetText(entry.progression and entry.progression.label or "")
-            row.nextRank:SetShown(entry.progression ~= nil)
+            local secondary = entry.progression and entry.progression.secondary
+            row.nextRank:SetText(secondary or "")
+            row.nextRank:SetShown(secondary ~= nil)
+            row.nextLock:SetShown(entry.progression and entry.progression.nextLocked or false)
+            row.nextRank:ClearAllPoints()
+            row.nextRank:SetPoint(
+                "TOPLEFT",
+                entry.progression and entry.progression.nextLocked and 54 or 42,
+                -57
+            )
+            row.nextRank:SetWidth(entry.progression and entry.progression.nextLocked and 133 or 145)
+            row.nextRank:SetTextColor(
+                unpack(comparison and comparison.needsTraining and W.colors.gold or W.colors.muted)
+            )
             row.title:SetText(s.name)
             row.icon:SetTexture(
                 "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. s.icon .. ".tga"
@@ -385,13 +424,15 @@ function UI.RefreshBrowser()
                         )
                 )
             row.detail:SetText(
-                comparison and comparison.label
+                entry.progression and entry.progression.summary
+                    or comparison and comparison.label
                     or entry.trained and "Trained • " .. (entry.trained.label ~= "" and entry.trained.label or "ability")
                     or detail
             )
             row.detail:SetTextColor(
                 unpack(
-                    comparison and comparison.needsTraining and W.colors.gold
+                    entry.progression and W.colors.teal
+                        or comparison and comparison.needsTraining and W.colors.gold
                         or (entry.current or entry.trained) and W.colors.teal
                         or W.colors.muted
                 )
@@ -408,7 +449,7 @@ function UI.RefreshBrowser()
             or filter == "trained" and "No captured trained skills.\nCharacter → Import my talents & skills."
             or "No matching skills.\nTry a name, school, or effect."
     )
-    UI.skillScroll:SetContentHeight(#list * 61)
+    UI.skillScroll:SetContentHeight(#list * 77)
     UI.RefreshHighlightChecks()
 end
 

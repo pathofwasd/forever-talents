@@ -262,7 +262,7 @@ function UI.Create()
     end
     UI.status = W.Text(
         f,
-        "Click to add • Right click to remove • Shift to fill • Ctrl to inspect",
+        "Click to add • Right click to remove • Shift to fill • Alt: talent details",
         22,
         -801,
         1040,

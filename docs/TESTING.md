@@ -208,3 +208,35 @@ server stopped, the new progression labels reloaded offline and the full-library
 identical. Installed files matched source, the recoverable backup matched the previous addon, and
 player saves and other addons were unchanged. Native behavior was checked in the callback harness;
 live WoW loading and native visual behavior still require in-game verification.
+
+## Version 1.2.8 validation
+
+Passed 55,664 native assertions, eleven browser-engine tests, exact Lua 5.1/WASM sharing parity,
+generated-file checks, production build, formatting and archive validation. Build-link regressions
+cover all nine classes, 51 ordered points, URL escaping, corrupted or foreign links, unsupported
+payloads, safe previews, unchanged libraries, Auto restoration through Undo, and leveling-prefix
+exports. The native callback harness verifies string/link selection, preserved FT1 whispers, link
+import, precise skill-level labels, trained rank sources, locked talent inspection, Alt-click,
+allocation controls and returning from related skills. Existing saved-data recovery, branch deletion
+and randomized edit regressions also pass.
+
+Production browser checks covered 320/375 px phones, 844×390 landscape, 1024 px tablet and 1280 px
+desktop without horizontal overflow. Mobile inspection leaves the tree interactive, keeps point
+controls visible, outlines the selected node and scrolls long descriptions independently.
+Add/remove, switching talents, compact new selections, expanded related-skill navigation, X and
+Escape worked. Desktop tooltips list affected skills; Alt-click and keyboard Enter open full
+details, and closing a related skill returns to its talent. Locked additions are disabled. Skill
+rows showed Shred’s first unlock at 22, rank 3 at 38, next rank 4 at 46, and maximum rank 5 at 54.
+Trained captures remain marked, reached next-rank levels use an open lock, and maximum rows have no
+duplicate secondary line. Classic / Simple view follows the same records.
+
+Native FC1 and build-link exports matched the browser byte for byte, and the copy button copied the
+exact native link. Incoming links preview before loading; Cancel leaves the full library intact,
+damaged links disable Load, and explicit import round-trips the point order. Updating from 1.2.7
+preserved the entire test library exactly; subsequent coherent cache updates also preserved saves.
+With the preview server stopped, link preview/loading, the talent panel and Undo/Redo worked
+offline, and the full-library export remained identical before edits.
+
+Installed files match the verified source package, and the recoverable backup matches the previous
+addon. Player SavedVariables and other addons were unchanged. Native callbacks were checked in the
+harness; live WoW loading and native visual behavior still require in-game verification.

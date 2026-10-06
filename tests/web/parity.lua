@@ -23,6 +23,8 @@ for _, cid in ipairs(FT.classOrder) do
     output("checkpoint", { title = "Branch fixture" })
     output("state")
     output("export", { kind = "build" })
+    output("export", { kind = "link" })
+    output("decode", { code = FT.Codec.BuildLink(FT.Store.ExportView()), buildOnly = true })
     output("scenario", {
         state = {
             power = 175.25,

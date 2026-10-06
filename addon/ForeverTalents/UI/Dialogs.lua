@@ -100,6 +100,115 @@ function UI.Dialog(key, title, width, height)
     return f, first
 end
 
+function UI.TalentDialog(id)
+    if GameTooltip then
+        GameTooltip:Hide()
+    end
+    local t = M.Index(S.View().classID)[id]
+    if not t then
+        return
+    end
+    local f, first = UI.Dialog("talent", t.name, 700, 596)
+    if first then
+        f.summary = W.Text(f, "", 22, -62, 656, 13, W.colors.teal)
+        f.scroll = W.Scroll(f, 22, -98, 656, 406)
+        f.rankRows, f.related = {}, {}
+        f.relatedTitle = W.Text(f.scroll.content, "Affected skills", 0, 0, 630, 14, W.colors.gold)
+        f.remove = W.Button(f, "− Remove", 22, -520, 152, nil, false, 32)
+        f.add = W.Button(f, "+ Add point", 186, -520, 152, nil, true, 32)
+        f.fill = W.Button(f, "Fill ranks", 350, -520, 152, nil, false, 32)
+        f.clear = W.Button(f, "Clear ranks", 514, -520, 164, nil, false, 32)
+        f.reason = W.Text(f, "", 22, -566, 656, 12, W.colors.muted)
+    end
+    local function refresh()
+        local build = S.View()
+        if not M.Index(build.classID)[id] then
+            UI.CloseDialog()
+            return
+        end
+        local rank = M.Counts(build)[id] or 0
+        local available, why = M.CanAdd(S.PlanningView(), id)
+        f.summary:SetText(
+            t.treeName .. " • Rank " .. rank .. " / " .. t.max .. " • level " .. S.ViewLevel()
+        )
+        for _, row in ipairs(f.rankRows) do
+            row:Hide()
+        end
+        for _, button in ipairs(f.related) do
+            button:Hide()
+        end
+        local y = 0
+        for i, r in ipairs(t.ranks) do
+            local row = f.rankRows[i] or W.Text(f.scroll.content, "", 0, 0, 626, 13)
+            f.rankRows[i] = row
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", 0, -y)
+            row:SetText(
+                "Rank "
+                    .. i
+                    .. (rank == i and " • current" or rank + 1 == i and " • next" or "")
+                    .. "\n"
+                    .. r.text
+            )
+            row:SetTextColor(
+                unpack(
+                    rank == i and W.colors.teal or rank + 1 == i and W.colors.gold or W.colors.text
+                )
+            )
+            row:Show()
+            y = y + row:GetStringHeight() + 18
+        end
+        local names = not S.SimpleView() and FT.Skills.TalentSkills(build.classID, id) or {}
+        f.relatedTitle:SetShown(#names > 0)
+        f.relatedTitle:ClearAllPoints()
+        f.relatedTitle:SetPoint("TOPLEFT", 0, -y)
+        y = y + 30
+        for i, name in ipairs(names) do
+            local button = f.related[i] or W.Button(f.scroll.content, "", 0, 0, 302, nil, false, 30)
+            f.related[i] = button
+            button:ClearAllPoints()
+            button:SetPoint("TOPLEFT", (i - 1) % 2 * 318, -y - math.floor((i - 1) / 2) * 38)
+            button:SetText(name)
+            button:SetScript("OnClick", function()
+                local skill = FT.Skills.Prepare(build.classID).byName[name]
+                if skill then
+                    UI.SkillDialog(skill)
+                end
+            end)
+            button:Show()
+        end
+        f.scroll:SetContentHeight(y + math.ceil(#names / 2) * 38)
+        local editable = S.preview == nil
+        f.add:SetEnabled(editable and available)
+        f.fill:SetEnabled(editable and available)
+        f.remove:SetEnabled(editable and rank > 0)
+        f.clear:SetEnabled(editable and rank > 0)
+        f.reason:SetText(
+            not editable and "Level preview: return to the full build to edit."
+                or why
+                or "Click a skill for its ranks and talent interactions."
+        )
+    end
+    for _, entry in ipairs({
+        { f.add, M.Add, false },
+        { f.fill, M.Add, true },
+        { f.remove, M.Remove, false },
+        { f.clear, M.Remove, true },
+    }) do
+        local button, action, all = unpack(entry)
+        button:SetScript("OnClick", function()
+            local ok, why = S.Apply(action, id, all)
+            refresh()
+            if not ok then
+                f.reason:SetText(why)
+            end
+        end)
+    end
+    f.onReturn = refresh
+    refresh()
+    f.scroll:ScrollTo(0)
+end
+
 function UI.SaveDialog(checkpoint)
     local profile = checkpoint and S.ActiveProfile() or nil
     local f, first =
@@ -168,10 +277,10 @@ function UI.ShareDialog(build, title)
         UI.Status(why, true)
         return
     end
-    local f, first = UI.Dialog("share", "Share a build", 720, 354)
+    local f, first = UI.Dialog("share", "Share a build", 720, 392)
     if first then
         f.summary = W.Text(f, "", 22, -61, 676, 14, W.colors.gold)
-        W.Text(
+        f.help = W.Text(
             f,
             "Copy this entire string with Ctrl+C. It includes the race, target level,\nall talent ranks, and the exact leveling order.",
             22,
@@ -180,15 +289,17 @@ function UI.ShareDialog(build, title)
             13,
             W.colors.muted
         )
-        f.code = W.Edit(f, "", 22, -146, 676, nil, 512)
+        f.string = W.Button(f, "Build string", 22, -130, 170, nil, false, 28)
+        f.link = W.Button(f, "Web link", 202, -130, 170, nil, false, 28)
+        f.code = W.Edit(f, "", 22, -166, 676, nil, 2048)
         f.code:SetHeight(48)
         f.code:SetMultiLine(true)
         f.code:SetTextInsets(10, 10, 8, 8)
-        W.Text(f, "In-game sharing", 22, -214, 220, 14)
-        f.recipient = W.Edit(f, "Player or Player-Realm", 22, -240, 320, nil, 64)
-        f.send = W.Button(f, "Send addon whisper", 354, -240, 192, nil, true)
-        f.text = W.Button(f, "Text whisper", 558, -240, 140, nil)
-        f.message = W.Text(f, "", 22, -286, 676, 12, W.colors.muted)
+        W.Text(f, "In-game sharing", 22, -232, 220, 14)
+        f.recipient = W.Edit(f, "Player or Player-Realm", 22, -258, 320, nil, 64)
+        f.send = W.Button(f, "Send addon whisper", 354, -258, 192, nil, true)
+        f.text = W.Button(f, "Text whisper", 558, -258, 140, nil)
+        f.message = W.Text(f, "", 22, -310, 676, 12, W.colors.muted)
     end
     f.summary:SetText(
         FT.SafeText(build.name, 48)
@@ -198,13 +309,32 @@ function UI.ShareDialog(build, title)
             .. #build.order
             .. " points"
     )
-    f.code:SetText(code)
-    f.code.clear:Hide()
-    f.code:SetFocus()
-    f.code:HighlightText()
-    f.message:SetText(
-        "Both players need Forever Talents for clickable addon whispers. Text strings work anywhere."
-    )
+    local function selectFormat(asLink)
+        f.string:SetActive(not asLink)
+        f.link:SetActive(asLink)
+        f.code:SetText(asLink and FT.Codec.BuildLink(build) or code)
+        f.code.clear:Hide()
+        f.code:SetFocus()
+        f.code:HighlightText()
+        f.help:SetText(
+            asLink
+                    and "Copy the whole link with Ctrl+C and send it to a friend.\nIt opens the web app with a preview of this build before loading."
+                or "Copy this entire string with Ctrl+C. It includes the race, target level,\nall talent ranks, and the exact leveling order."
+        )
+        f.message:SetText(
+            asLink
+                    and "Web links share talents and their order. In-game whispers below still use build strings."
+                or "Both players need Forever Talents for clickable addon whispers. Text strings work anywhere."
+        )
+        f.message:SetTextColor(unpack(W.colors.muted))
+    end
+    f.string:SetScript("OnClick", function()
+        selectFormat(false)
+    end)
+    f.link:SetScript("OnClick", function()
+        selectFormat(true)
+    end)
+    selectFormat(false)
     f.send:SetScript("OnClick", function()
         local ok, msg = FT.Comms.Send(build, f.recipient:GetText())
         f.message:SetText(msg)
@@ -237,7 +367,7 @@ function UI.ImportDialog(code)
     if first then
         W.Text(
             f,
-            "Paste a complete Forever Talents string below.\nYour current draft stays here until you choose Load.",
+            "Paste a complete Forever Talents build link or sharing string below.\nYour current draft stays here until you choose Load.",
             22,
             -64,
             636,
@@ -252,7 +382,15 @@ function UI.ImportDialog(code)
                 f.error:SetText(why)
             end
         end, true, 30)
-        f.input = W.Edit(f, "FT1 / FC1 / FS2 / FL1:…", 22, -160, 636, nil, 3 * 1024 * 1024)
+        f.input = W.Edit(
+            f,
+            "Build link or FT1 / FC1 / FS2 / FL1:…",
+            22,
+            -160,
+            636,
+            nil,
+            3 * 1024 * 1024
+        )
         f.input:SetHeight(48)
         f.input:SetMultiLine(true)
         f.input:SetTextInsets(10, 25, 8, 8)
@@ -888,7 +1026,7 @@ function UI.HelpDialog()
         W.Text(f, "Find the skill, understand the talents", 22, -172, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nCheck boxes to keep multiple highlights; Clear highlights unchecks all. Click a skill for ranks.\nCtrl click a talent to inspect skills. Simulator estimates one use; Advanced explains its assumptions.",
+            "Search names, schools, or description text. Hover a skill to highlight its talent interactions.\nCheck boxes to keep multiple highlights; Clear highlights unchecks all. Click a skill for ranks.\nAlt click opens full talent details; Ctrl click inspects a skill. Simulator explains its assumptions.",
             22,
             -204,
             806,
@@ -906,7 +1044,7 @@ function UI.HelpDialog()
         W.Text(f, "Share and open quickly", 22, -380, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Share opens a selected string you can Ctrl+C and send anywhere. Import previews a pasted string.\nAddon whisper gives your friend a clickable receipt and stores it in Library → Received.\nCtrl click a Library profile to share; right click it to rename or delete. Text whisper opens a draft.\nOpen with /ftc, /forevertalents, the minimap button, or a key set in WoW's Key Bindings.",
+            "Share copies a build string or Web link with Ctrl+C. Import previews pasted links and strings.\nAddon whisper gives your friend a clickable receipt and stores it in Library → Received.\nCtrl click a Library profile to share; right click it to rename or delete. Text whisper opens a draft.\nOpen with /ftc, /forevertalents, the minimap button, or a key set in WoW's Key Bindings.",
             22,
             -412,
             806,

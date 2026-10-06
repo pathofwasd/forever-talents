@@ -340,7 +340,7 @@ local function unlockLevel(skill, rank)
 end
 
 -- Progression follows the rank actually displayed, independently of training comparison.
-function A.Progression(skill, shownRank)
+function A.Progression(skill, shownRank, level)
     if skill.kind == "racial" then
         return nil
     end
@@ -357,8 +357,29 @@ function A.Progression(skill, shownRank)
     if #ranks == 0 then
         return nil
     end
+    local function describe(result)
+        result.unlockLevel = ranks[1].level
+        result.level = shown and ranks[shown].level
+        result.rankLabel = shownRank and (shownRank.label ~= "" and shownRank.label or "Available")
+            or skill.unlock and "Requires talent"
+            or "Not yet available"
+        if result.max and rankNumber(shownRank) then
+            result.rankLabel = "Max rank " .. rankNumber(shownRank)
+        end
+        result.summary = "Lv. "
+            .. result.unlockLevel
+            .. " · "
+            .. result.rankLabel
+            .. (result.level and (" Lv. " .. result.level) or "")
+        result.secondary = result.next
+                and ((result.next.label ~= "" and result.next.label or "Unlock") .. " Lv. " .. result.nextLevel)
+            or not result.max and result.label
+            or nil
+        result.nextLocked = result.nextLevel and level and result.nextLevel > level or false
+        return result
+    end
     if shownRank and not shown then
-        return { label = "No current rank match" }
+        return describe({ label = "No current rank match" })
     end
     local upcoming = ranks[(shown or 0) + 1]
     if upcoming then
@@ -366,17 +387,17 @@ function A.Progression(skill, shownRank)
         local prefix = shown and (number and "Next rank " .. number or "Next upgrade")
             or skill.unlock and "Talent unlock"
             or (number and "Unlock rank " .. number or "Unlock")
-        return {
+        return describe({
             next = upcoming.rank,
             nextLevel = upcoming.level,
             label = prefix .. " · level " .. upcoming.level,
-        }
+        })
     end
     local number = rankNumber(shownRank)
-    return {
+    return describe({
         max = true,
         label = number and "Max rank " .. number or "No rank upgrades",
-    }
+    })
 end
 
 local function grantedRank(skill, rank)
@@ -581,8 +602,9 @@ function A.List(build, level, query, filter, includeRacials)
                 skill = skill,
                 current = rank,
                 trained = trained,
+                shownTrained = trained ~= nil and shownRank == trained,
                 comparison = comparison,
-                progression = A.Progression(skill, shownRank),
+                progression = A.Progression(skill, shownRank, level),
             }
         end
     end

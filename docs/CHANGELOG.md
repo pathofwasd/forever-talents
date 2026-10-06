@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.8
+
+Share builds with a browser link from the addon or PWA. Opening one previews the class, race, level
+and exact talent order before loading an undoable draft; existing saves stay intact. Both interfaces
+accept links through Import. Mobile talent details now open in a bottom panel with pinned point
+controls while the tree remains interactive. Skill rows distinguish first unlock and current rank
+level, show a lock beside the next rank until its level is reached, and remove the duplicate
+max-rank line. Imported ranks retain a Trained marker. See [release notes](RELEASE-1.2.8.md).
+
+Talent tooltips list affected skills, and Alt-click opens the full talent inspector in both
+interfaces. The native inspector adds rank descriptions, point controls and related-skill links
+without changing right-click removal.
+
 ## 1.2.7
 
 Skill rows show the next rank and its unlock level, or the maximum rank when no further upgrade

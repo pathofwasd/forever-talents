@@ -15,8 +15,8 @@ collapsed. The **Source code** downloads are for developers.
 - Optional Classic mode in the addon and Simple view on the web: class, talents and skill levels.
 - Search skills and racials, see rank unlock levels, and highlight related talents.
 - Track your leveling order with Auto level, undo/redo and branching checkpoints.
-- Share builds as text or through addon whispers. Transfer character stats or your entire saved
-  library between the addon and web app.
+- Share builds as browser links, text or addon whispers. Transfer character stats or your entire
+  saved library between the addon and web app.
 - Build a central character with custom gear or live stats. Simulate individual skills with
   applicable inputs, calculation steps and clear accuracy notes.
 
