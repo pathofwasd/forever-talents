@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.4
+
+Fixed live talent import for Forever’s C_Traits combat configurations. The importer reads the active
+spec group, matches talent spell definitions, checks every rank and point total, and keeps the
+current build on incomplete data or pending game talent edits. Character captures and portable
+sharing use the corrected reader; the web guide explains the native capture steps. See
+[release notes](RELEASE-1.2.4.md).
+
 ## 1.2.3
 
 Nested screens now return to their parent with X or Escape, preserving temporary simulator inputs.

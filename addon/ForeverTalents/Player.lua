@@ -13,7 +13,188 @@ local function safe(fn, ...)
     end
     return unpack(values, 2, values.n)
 end
+local function integer(value, minimum, maximum)
+    return type(value) == "number" and value % 1 == 0 and value >= minimum and value <= maximum
+end
+local function array(value, minimum, maximum)
+    if type(value) ~= "table" or #value < minimum or #value > maximum then
+        return false
+    end
+    local count = 0
+    for key in pairs(value) do
+        if not integer(key, 1, #value) then
+            return false
+        end
+        count = count + 1
+    end
+    return count == #value
+end
+local function activeTraitConfig()
+    if C_SpecializationInfo and C_SpecializationInfo.GetCombatConfigIDForSpecGroup then
+        local group = safe(C_SpecializationInfo.GetActiveSpecGroup, false, false)
+        return group and safe(C_SpecializationInfo.GetCombatConfigIDForSpecGroup, group)
+    end
+    return safe(C_ClassTalents and C_ClassTalents.GetActiveConfigID)
+end
+local function readTraitRanks(class)
+    local api = C_Traits
+    local configID = activeTraitConfig()
+    if not integer(configID, 1, 2147483647) then
+        return false,
+            "Active talents are not ready. Open the game's Talents window and retry; your draft is preserved."
+    end
+    local staged = safe(api.ConfigHasStagedChanges, configID)
+    if staged == nil then
+        return false,
+            "Talent configuration could not be checked. Open Talents and retry; your draft is preserved."
+    elseif staged then
+        return false,
+            "Apply or cancel pending changes in the game's Talents window, then retry importing."
+    end
+    local config = safe(api.GetConfigInfo, configID)
+    if not config or not array(config.treeIDs, 1, 16) then
+        return false, "The active talent configuration is unavailable. Open Talents and retry."
+    end
+    local bySpell, expected = {}, 0
+    for _, tree in ipairs(class.trees) do
+        for _, talent in ipairs(tree.talents) do
+            expected = expected + 1
+            for _, rank in ipairs(talent.ranks) do
+                bySpell[rank.spellID] = talent
+            end
+        end
+    end
+    local ranks, seenTrees, seenNodes, observed = {}, {}, {}, 0
+    for _, treeID in ipairs(config.treeIDs) do
+        if not integer(treeID, 1, 2147483647) or seenTrees[treeID] then
+            return false,
+                "The client returned invalid talent trees. Import stopped; your draft is preserved."
+        end
+        seenTrees[treeID] = true
+        local nodes = safe(api.GetTreeNodes, treeID)
+        if not array(nodes, 1, 1024) then
+            return false,
+                "Talent nodes are not ready. Open Talents and retry; your draft is preserved."
+        end
+        local points = 0
+        for _, nodeID in ipairs(nodes) do
+            if not integer(nodeID, 1, 2147483647) or seenNodes[nodeID] then
+                return false,
+                    "The client returned duplicate or invalid talent nodes. Import stopped."
+            end
+            seenNodes[nodeID] = true
+            local node = safe(api.GetNodeInfo, configID, nodeID)
+            if
+                not node
+                or not integer(node.ranksPurchased, 0, 51)
+                or not array(node.entryIDs, 0, 16)
+            then
+                return false,
+                    "A talent node could not be read. Open Talents and retry; your draft is preserved."
+            end
+            local talent
+            for _, entryID in ipairs(node.entryIDs) do
+                local entry = safe(api.GetEntryInfo, configID, entryID)
+                local definition = entry and safe(api.GetDefinitionInfo, entry.definitionID)
+                if not definition then
+                    return false,
+                        "A talent spell could not be read. Open Talents and retry; your draft is preserved."
+                end
+                local matched = bySpell[definition.spellID] or bySpell[definition.overriddenSpellID]
+                if matched then
+                    if talent and talent ~= matched then
+                        return false,
+                            "The client has talent choices outside this dataset. Update Forever Talents before importing."
+                    end
+                    talent = matched
+                elseif node.isVisible ~= false or node.ranksPurchased > 0 then
+                    return false,
+                        "The client has talent spells outside this dataset. Update Forever Talents before importing."
+                end
+            end
+            if talent then
+                if
+                    node.maxRanks ~= talent.max
+                    or node.ranksPurchased > talent.max
+                    or ranks[talent.id] ~= nil
+                then
+                    return false,
+                        "The client's talent ranks differ from this dataset. Update Forever Talents before importing."
+                end
+                -- Purchased ranks are the allocated points. activeRank can also
+                -- contain granted ranks; preview edits must never become a capture.
+                ranks[talent.id] = node.ranksPurchased
+                observed = observed + 1
+                points = points + node.ranksPurchased
+            elseif node.ranksPurchased > 0 then
+                return false,
+                    "A purchased talent could not be matched. Import stopped; your draft is preserved."
+            end
+        end
+        if api.GetTreeCurrencyInfo then
+            local currencies = safe(api.GetTreeCurrencyInfo, configID, treeID, true)
+            if not array(currencies, 1, 16) then
+                return false, "Talent point totals are not ready. Open Talents and retry."
+            end
+            local spent, complete = 0, true
+            for _, currency in ipairs(currencies) do
+                local amount = currency.spentInTree
+                if amount == nil and #config.treeIDs == 1 then
+                    amount = currency.spent
+                end
+                if integer(amount, 0, 51) then
+                    spent = spent + amount
+                else
+                    complete = false
+                end
+            end
+            if complete and spent ~= points then
+                return false,
+                    "Read talents do not match the client's spent-point total. Open Talents and retry."
+            end
+        end
+    end
+    if observed ~= expected then
+        return false,
+            string.format(
+                "Read %d of %d talents. Open Talents and retry; your draft is preserved.",
+                observed,
+                expected
+            )
+    end
+    if activeTraitConfig() ~= configID or safe(api.ConfigHasStagedChanges, configID) ~= false then
+        return false,
+            "Active talents changed during capture. Finish your changes, then retry importing."
+    end
+    return ranks
+end
 function FT.ReadPlayerBuild()
+    local _, _, cid = UnitClass("player")
+    local _, _, rid = UnitRace("player")
+    local class = M.Class(cid)
+    if not class then
+        return false, "This character's class is outside this dataset."
+    end
+    local level = safe(UnitLevel, "player")
+    if type(level) ~= "number" or level < 1 then
+        return false, "Character level is not ready."
+    end
+    -- Forever (Camelot) uses a C_Traits combat configuration. The deprecated
+    -- Classic namespace still exists but may return no records at all.
+    if
+        C_Traits
+        and C_Traits.GetNodeInfo
+        and (
+            C_ClassTalents and C_ClassTalents.GetActiveConfigID
+            or C_SpecializationInfo and C_SpecializationInfo.GetCombatConfigIDForSpecGroup
+        )
+    then
+        local ranks, why = readTraitRanks(class)
+        if not ranks then
+            return false, why
+        end
+        return M.FromRanks(cid, rid, math.min(60, level), ranks, "My " .. class.name .. " talents")
+    end
     local modern = C_SpecializationInfo and C_SpecializationInfo.GetTalentInfo
     if not GetTalentInfo and not modern then
         return false,
@@ -26,12 +207,6 @@ function FT.ReadPlayerBuild()
     then
         return false,
             "Talent data is not ready. Open the game's Talents window, then retry Import my talents & skills."
-    end
-    local _, _, cid = UnitClass("player")
-    local _, _, rid = UnitRace("player")
-    local class = M.Class(cid)
-    if not class then
-        return false, "This character's class is outside this dataset."
     end
     local group = safe(C_SpecializationInfo and C_SpecializationInfo.GetActiveSpecGroup)
         or safe(GetActiveTalentGroup)
@@ -160,10 +335,6 @@ function FT.ReadPlayerBuild()
                     "Read ranks do not match the client's spent-point total. Open Talents and retry."
             end
         end
-    end
-    local level = safe(UnitLevel, "player")
-    if type(level) ~= "number" or level < 1 then
-        return false, "Character level is not ready."
     end
     return M.FromRanks(cid, rid, math.min(60, level), ranks, "My " .. class.name .. " talents")
 end

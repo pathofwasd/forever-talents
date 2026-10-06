@@ -119,3 +119,26 @@ trained filtering, Library and full-library export still worked.
 
 Native behavior was exercised through API fixtures and the addon callback harness. Live client
 loading, live captures and native visual behavior still require in-game verification.
+
+## Version 1.2.4 validation
+
+Passed 51,993 native assertions, seven browser-engine tests, exact Lua 5.1/WASM format parity,
+generated-file checks, production build, formatting and archive validation. Forever-specific
+C_Traits fixtures cover all nine classes at zero, partial and 51 points; active second spec-group
+selection; arbitrary node order and IDs; purchased versus granted ranks; incomplete records; missing
+definitions; changed maximum ranks; point-total mismatches; duplicates; pending edits and
+configuration changes during capture. Failed imports preserve both the draft and Character.
+
+The adapter follows the Forever client's
+[talent window](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_PlayerSpells/Camelot/ClassTalents/Blizzard_ClassTalentsFrame.lua)
+and its
+[documented trait API](https://github.com/Gethe/wow-ui-source/blob/forever/Interface/AddOns/Blizzard_APIDocumentationGenerated/SharedTraitsDocumentation.lua).
+The previous Classic API fixtures did not cover this path. Live character capture still needs
+in-game verification; fixture results are not evidence of live client behavior.
+
+Production browser checks covered 320/375 px phones, 844×390 landscape, 1024 px tablet and 1280 px
+desktop. They verified the new capture guidance without horizontal overflow, keyboard closing and
+scrollable long help text, character preview and damaged-string rejection, trained-rank filtering,
+and an exact native FC1 round trip. Updating from 1.2.3 preserved the entire test library byte for
+byte, including profiles, checkpoints, class drafts and Character. With the preview server stopped,
+1.2.4 reloaded offline and retained talents, trained ranks, saved builds and library export.

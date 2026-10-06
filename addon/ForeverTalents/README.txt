@@ -96,6 +96,15 @@ stay saved; deleting the starting node removes the entire profile. Your current
 working talents are kept. If the selected node is removed, the draft branches
 from its surviving parent. Node deletion cannot be undone; talent edits still can.
 
+LIVE CHARACTER IMPORT
+Open Import or Character and choose Import my talents & skills. The addon reads
+the active Forever talent configuration, learned skill ranks, level and stats.
+Apply or cancel pending changes in the game’s Talents window before importing.
+If client data is loading, open Talents and Spellbook and retry. Failed reads
+keep your draft and character capture; unread talents are never assumed empty.
+Original spending order is unavailable; the importer derives a legal order.
+Copy a character string (FC1) to carry this capture into the web/mobile app.
+
 SHARE
 Share selects one compact FT1: string. Press Ctrl+C, send it in any text chat,
 and have your friend paste it into Import. The string includes class, race,

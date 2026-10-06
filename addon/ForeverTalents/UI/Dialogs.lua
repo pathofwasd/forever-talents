@@ -920,6 +920,6 @@ function UI.HelpDialog()
             .. FT.Data.meta.generatedAt:sub(1, 10)
             .. " • client "
             .. FT.Data.meta.build
-            .. " • 27 trees / 466 talents.\nPlanning is independent of your learned talents. Import my talents & skills reads your character; its talent order is reconstructed."
+            .. " • 27 trees / 466 talents.\nPlanning is independent of your learned talents. Import my talents & skills reads your active character talents; apply or cancel pending game talent changes first. Its talent order is reconstructed."
     )
 end

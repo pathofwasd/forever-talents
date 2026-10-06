@@ -61,13 +61,16 @@ Library's **New build** creates an independent profile; the checkpoint action cr
 existing profile. Both reuse shared Store operations.
 
 The addon offers **Import my talents & trained skills** in Import and Character. It reads active
-player talent ranks, learned player spellbook IDs, level, stats and available equipment in one
-capture. Future, flyout, pet and inactive specialization entries are excluded. Talent order is
-reconstructed because the original live spending order is unavailable. Incomplete talent/spellbook
-reads preserve the existing draft and capture. **Trained on captured character** uses exact recorded
-spell IDs independently of the planned level; it also works after FC1/FS2/FL1 import into the PWA.
-Older snapshots without trained ranks remain supported. All skills remains the planning catalog;
-training is a dated-by-level snapshot, not a live browser connection.
+player talent ranks through Forever’s C_Traits combat configuration, learned player spellbook IDs,
+level, stats and available equipment in one capture. Future, flyout, pet and inactive specialization
+entries are excluded. Talent order is reconstructed because the original live spending order is
+unavailable. Incomplete talent/spellbook reads preserve the existing draft and capture. Pending game
+talent changes must be applied or canceled first. Every catalog talent must be read explicitly,
+including zero ranks; spell definitions identify talents independently of node order, localization
+and client layout pixels. **Trained on captured character** uses exact recorded spell IDs
+independently of the planned level; it also works after FC1/FS2/FL1 import into the PWA. Older
+snapshots without trained ranks remain supported. All skills remains the planning catalog; training
+is a dated-by-level snapshot, not a live browser connection.
 
 ## Platform limits
 
