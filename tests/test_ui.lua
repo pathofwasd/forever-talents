@@ -241,8 +241,27 @@ S.Checkpoint("Feral detour")
 UI.historyTab = "graph"
 UI.RefreshHistory()
 check(UI.historyRows[1]:IsShown())
-UI.GraphDialog()
-check(UI.dialogs.graph.rows[3]:IsShown())
+UI.historyTabs.graph:Click()
+local graphWorkspace = UI.dialogs.graph
+check(graphWorkspace:IsVisible() and graphWorkspace:GetWidth() == 1040)
+check(graphWorkspace.rows[3]:IsShown())
+check(graphWorkspace.rows[3].title.wrap and graphWorkspace.rows[3].title:GetWidth() == 244)
+check(graphWorkspace.rows[3]:GetWidth() == 272 and graphWorkspace.rows[3]:GetHeight() == 76)
+graphWorkspace.checkpoint:Click()
+UI.dialogs.save.input:UserText("Checkpoint from workspace")
+UI.dialogs.save.save:Click()
+check(
+    graphWorkspace:IsVisible() and not UI.dialogs.save:IsShown(),
+    "Saving did not return to the checkpoint workspace"
+)
+check(
+    graphWorkspace.rows[4]:IsShown()
+        and graphWorkspace.rows[4].title:GetText() == "Checkpoint from workspace"
+)
+graphWorkspace.share:Click()
+check(FT.Library.IsProfileShare(UI.dialogs.share.code:GetText()))
+UI.CloseDialog()
+check(graphWorkspace:IsVisible(), "Sharing did not return to the checkpoint workspace")
 UI.CloseDialog()
 UI.historyTab = "order"
 UI.RefreshHistory()
@@ -519,6 +538,38 @@ Mock.Dump("preview/races.json", UI.frame)
 UI.CloseDialog()
 UI.PetDialog()
 Mock.Dump("preview/pets.json", UI.frame)
+UI.CloseDialog()
+-- Deep branches open at the selected node and retain manual graph scrolling.
+local deep = S.CreateProfile("Deep checkpoint workspace")
+for i = 1, 25 do
+    check(S.Checkpoint("Long checkpoint title for branch depth " .. i))
+end
+UI.historyTabs.graph:Click()
+local graph = UI.dialogs.graph
+check(graph.rows[26]:IsShown() and graph.horizontal:IsShown())
+local selectedX, selectedY = 14 + 25 * 52, 14 + 25 * 96
+check(
+    selectedY - graph.scroll.offset >= 0
+        and selectedY - graph.scroll.offset + 76 <= graph.scroll.viewport
+)
+check(
+    selectedX - graph.horizontal:GetValue() >= 0
+        and selectedX - graph.horizontal:GetValue() + 272 <= 984
+)
+graph.scroll:ScrollTo(100)
+graph.horizontal:SetValue(50)
+UI.GraphDialog()
+check(
+    graph.scroll.offset == 100 and graph.horizontal:GetValue() == 50,
+    "Refreshing reset manual graph scrolling"
+)
+UI.CloseDialog()
+check(S.LoadNode(deep.id, 1))
+UI.historyTabs.graph:Click()
+check(
+    graph.scroll.offset == 0 and graph.horizontal:GetValue() == 0,
+    "Root selection retained a deep-node viewport"
+)
 UI.CloseDialog()
 print(
     string.format(

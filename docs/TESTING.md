@@ -294,3 +294,29 @@ navigation, Undo/Redo and incoming link previews worked offline. The first reloa
 optional saved flags, and the second reload produced an identical full-library export. Browser
 console checks reported no errors. Native callbacks were verified in the API harness; live WoW
 loading and native visual behavior remain unverified. No installed addon files were changed.
+
+## Version 1.2.11 validation
+
+Passed 119,166 native assertions and nineteen browser tests, including exact Lua 5.1/WASM sharing
+parity, the reported Feral allocation, legal support-point replacement, blocked-removal immutability
+and checkpoint-safe undo/redo. Update-monitor tests cover current, downloading, waiting, offline
+failure, synchronous failure/retry, concurrent checks and cache-install failure. Generated outputs,
+formatting, Python checks, the production build and addon archive validation passed.
+
+Native callbacks cover opening the full workspace from Checkpoints, wrapped titles, saving and
+sharing back to the graph, deletion cancellation, deep selected-node visibility, horizontal bounds,
+manual scroll retention and returning to the root. These use the native Lua callback harness;
+in-game appearance and live-client interaction still need client verification.
+
+Production browser checks covered 320/375 px phones, 844×390 landscape, 1024 px tablet and 1280/1600
+px desktop. Repeated talent +/− edits retained the exact main scroll position, selected-node
+position and panel height through zero and maximum rank. Expanded details stayed open, with their
+own scrolling and fixed point controls. Orientation changes kept inspection usable. Dedicated
+checkpoint workspaces showed long titles, selected branches and separate talent order without page
+overflow; keyboard graph scrolling, sharing all branches, corrupt-link rejection and deletion
+cancellation worked. Simple view retained talent editing and restored the full tools afterward.
+
+Cached updates retained the full test library byte for byte. Manual checks reported current,
+downloading, ready and network failure accurately. With the preview server stopped, the app reloaded
+offline and exported the identical library. Browser test data and screenshots stayed outside the
+repository; no production browser saves or game SavedVariables were changed.

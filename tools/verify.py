@@ -36,6 +36,6 @@ for suite in [
 ]:
     run("lua5.1", f"tests/test_{suite}.lua")
 run("python3", "tools/check_package.py", "--source-only")
-run("node", "--test", "tests/web/engine.test.mjs")
+run("node", "--test", "tests/web/engine.test.mjs", "tests/web/updates.test.mjs")
 run("python3", "tools/sync_core.py", "--check")
 print("Shared engine, native addon, portable formats and PWA parity passed.")

@@ -17,7 +17,7 @@
 | Responsive layout, keyboard/touch interaction, clipboard/files            | `web/src/main.js`, `simulator.js`, `style.css`                                       |
 | Browser object/table adaptation, whitelisted engine calls                 | `web/lua/bridge.lua`                                                                 |
 | Shared module copies, engine hashes, local WASM/icon assets               | `tools/sync_core.py`                                                                 |
-| Atomic offline cache, update lifecycle and static archive                 | `tools/build_pwa.mjs`                                                                |
+| Atomic offline cache, update lifecycle and static archive                 | `tools/build_pwa.mjs`, `web/src/updates.js`                                          |
 | GitHub Pages verification, build and manual deployment                    | `.github/workflows/pages.yml`; setup in `docs/HOSTING.md`                            |
 | Code license and content ownership                                        | Root NOTICE/LICENSE copied into addon and PWA                                        |
 
@@ -44,6 +44,12 @@ Talent removal preserves the surviving order whenever it is already legal. If a 
 blocks an otherwise legal allocation, `Model.Remove` replays the earliest eligible surviving points
 without removing any other ranks. Both interfaces display the adjustment notice. Real prerequisites
 and tier gates remain enforced, and Undo restores the exact previous order.
+
+The PWA puts **Checkpoints & order** in a dedicated desktop workspace; phones retain **Builds**. The
+addon’s **Checkpoints** tab opens its full graph. Both use readable wrapped node titles, compact
+branch indentation, scrolling for deep trees and selection centering. Saving, sharing and canceling
+deletion return to that workspace. Graph layout remains platform presentation; branch mutation stays
+in the shared store.
 
 Checkpoints are immutable snapshots. The shared store saves changed profile drafts as child nodes
 before checkpoint navigation replaces them, including source and destination classes. Identical
@@ -74,13 +80,15 @@ contains Trees / Skills, with the same explicit talent Add/Remove sheet and true
 
 Desktop shows three trees with hover inspection and click/right-click edits. Mobile uses a readable
 real 7×4 tree per tab, a tap-to-inspect sheet with explicit Add/Remove controls, and
-Trees/Skills/Builds/More navigation. Rank and prerequisite positions must not be rearranged for
-smaller screens. All key information is available without hover. X and Escape return to the previous
-screen when a dialog has a parent, keeping temporary simulator inputs. Closing the outermost dialog
-returns focus to the originating control. Gear changes apply only through Equip; closing the editor
-discards them. Ctrl/Cmd+Z/Y shortcuts do not intercept text editing. Browser saves and native
-SavedVariables are independent until explicitly synced with text; no automatic connection is
-implied.
+Trees/Skills/Builds/More navigation. The phone talent sheet has a stable height and persistent point
+controls. Rank changes preserve the main viewport, the expanded disclosure and its internal scroll
+position; only inspecting a different talent brings a new node into view. Rank and prerequisite
+positions must not be rearranged for smaller screens. All key information is available without
+hover. X and Escape return to the previous screen when a dialog has a parent, keeping temporary
+simulator inputs. Closing the outermost dialog returns focus to the originating control. Gear
+changes apply only through Equip; closing the editor discards them. Ctrl/Cmd+Z/Y shortcuts do not
+intercept text editing. Browser saves and native SavedVariables are independent until explicitly
+synced with text; no automatic connection is implied.
 
 Talent-order entries temporarily highlight their talent on hover (and keyboard focus in the PWA).
 They need no skill name or checkbox identity. Leaving restores the pinned skill/racial colors;
@@ -182,3 +190,9 @@ releases are distributed as ZIPs.
 
 The browser footer and addon guide identify the project as free and unofficial, with game-content
 ownership notices. The PWA footer links to the bundled `NOTICE.txt`, including during offline use.
+
+The PWA exposes the installed version and **Check for updates** in its footer and mobile More menu.
+`updates.js` observes installing and waiting workers; it offers **Update now** only after the atomic
+cache is complete. Manual checks distinguish current, downloading, ready and failed states. The
+existing service-worker activation flow preserves browser saves; no cache or storage clearing is
+required. This browser-specific control has no counterpart in WoW’s addon loader.

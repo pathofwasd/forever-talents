@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.11
+
+- Stabilized phone talent inspection: point controls and panel height stay in place, edits retain
+  the tree’s scroll position, and expanded rank details stay open.
+- Moved desktop checkpoints and talent order into a dedicated workspace. Both graph views have
+  larger readable nodes, compact indentation and selection centering. The addon’s Checkpoints tab
+  opens the full graph; save/share dialogs return to it.
+- Added **Check for updates** and installed-version feedback to the PWA. A ready prompt still waits
+  for the complete offline bundle, and saves stay intact.
+- Explained blocked removals with the dependent talent and the supporting-point count. Actual row
+  gates and prerequisites remain unchanged in the addon and PWA.
+
 ## 1.2.10
 
 - Fixed valid talent removals being rejected by their old leveling sequence. Surviving points keep

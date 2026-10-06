@@ -861,7 +861,7 @@ function UI.GraphDialog()
         UI.SaveDialog(false)
         return
     end
-    local f, first = UI.Dialog("graph", "Build checkpoints", 1000, 618)
+    local f, first = UI.Dialog("graph", "Build checkpoints", 1040, 680)
     if first then
         f.summary = W.Text(f, "", 22, -62, 956, 14, W.colors.gold)
         W.Text(
@@ -873,12 +873,12 @@ function UI.GraphDialog()
             12,
             W.colors.muted
         )
-        f.scroll = W.Scroll(f, 22, -140, 956, 376)
+        f.scroll = W.Scroll(f, 22, -140, 996, 436)
         f.rows = {}
         f.lines = {}
         f.horizontal = CreateFrame("Slider", nil, f)
-        f.horizontal:SetPoint("TOPLEFT", 22, -525)
-        f.horizontal:SetSize(944, 8)
+        f.horizontal:SetPoint("TOPLEFT", 22, -586)
+        f.horizontal:SetSize(984, 8)
         f.horizontal:SetOrientation("HORIZONTAL")
         f.horizontal:SetMinMaxValues(0, 1)
         f.horizontal:SetValueStep(25)
@@ -888,8 +888,16 @@ function UI.GraphDialog()
         f.horizontal:SetScript("OnValueChanged", function(_, value)
             f.scroll:SetHorizontalScroll(value)
         end)
-        f.selected = W.Text(f, "", 22, -550, 700, 13, W.colors.muted)
-        W.Button(f, "+ Checkpoint", 782, -560, 196, function()
+        f.selected = W.Text(f, "", 22, -608, 996, 13, W.colors.muted)
+        f.new = W.Button(f, "Save new build", 22, -640, 240, function()
+            UI.SaveDialog(false)
+        end, false, 30)
+        f.share = W.Button(f, "Share checkpoints", 278, -640, 240, function()
+            local profile = S.ActiveProfile()
+            UI.ShareDialog(nil, profile.name, profile)
+            UI.dialogs.share.profileLink:Click()
+        end, false, 30)
+        f.checkpoint = W.Button(f, "+ Checkpoint", 778, -640, 240, function()
             UI.SaveDialog(true)
         end, true, 30)
     end
@@ -909,16 +917,17 @@ function UI.GraphDialog()
     local maxDepth = 0
     for i, item in ipairs(items) do
         local node = item.node
-        local x, y = 14 + item.depth * 180, 14 + (i - 1) * 70
+        local x, y = 14 + item.depth * 52, 14 + (i - 1) * 96
         positions[node.id] = { x = x, y = y }
         maxDepth = math.max(maxDepth, item.depth)
         local row = f.rows[i]
         if not row then
-            row = W.Button(f.scroll.content, "", 0, 0, 162, nil, false, 54)
-            row.title = W.Text(row, "", 10, -9, 142, 13)
-            row.title:SetWordWrap(false)
-            row.detail = W.Text(row, "", 10, -33, 116, 11, W.colors.muted)
-            row.delete = W.Button(row, "x", 139, -30, 18, nil, false, 18)
+            row = W.Button(f.scroll.content, "", 0, 0, 272, nil, false, 76)
+            row.title = W.Text(row, "", 12, -10, 244, 13)
+            row.title:SetHeight(34)
+            row.title:SetWordWrap(true)
+            row.detail = W.Text(row, "", 12, -54, 210, 12, W.colors.muted)
+            row.delete = W.Button(row, "x", 239, -45, 26, nil, false, 26)
             row.delete.tip = "Delete this checkpoint and all its descendants."
             f.rows[i] = row
         end
@@ -956,10 +965,9 @@ function UI.GraphDialog()
         end)
         if node.parent then
             local parent = positions[node.parent]
-            local mid = x - 9
-            line(parent.x + 162, parent.y + 27, mid, parent.y + 27, { 0.50, 0.56, 0.60 })
-            line(mid, parent.y + 27, mid, y + 27, { 0.50, 0.56, 0.60 })
-            line(mid, y + 27, x, y + 27, { 0.50, 0.56, 0.60 })
+            local mid = parent.x + 16
+            line(mid, parent.y + 76, mid, y + 38, { 0.50, 0.56, 0.60 })
+            line(mid, y + 38, x, y + 38, { 0.50, 0.56, 0.60 })
         end
     end
     f.summary:SetText(
@@ -972,11 +980,21 @@ function UI.GraphDialog()
     f.selected:SetText(
         "Selected: " .. FT.SafeText(selected.title, 48) .. " • new checkpoints branch from here"
     )
-    local contentWidth = math.max(944, (maxDepth + 1) * 180 + 14)
+    local contentWidth = math.max(984, maxDepth * 52 + 286)
     f.scroll.content:SetWidth(contentWidth)
-    f.scroll:SetContentHeight(#items * 70 + 20)
-    f.horizontal:SetMinMaxValues(0, math.max(1, contentWidth - 944))
-    f.horizontal:SetShown(contentWidth > 944)
+    f.scroll:SetContentHeight(#items * 96 + 20)
+    local maxHorizontal = math.max(0, contentWidth - 984)
+    f.horizontal:SetMinMaxValues(0, math.max(1, maxHorizontal))
+    f.horizontal:SetValue(math.min(f.horizontal:GetValue(), maxHorizontal))
+    f.horizontal:SetShown(contentWidth > 984)
+    local focusID = S.Dirty() and 0 or selected.id
+    local position = positions[focusID]
+    if position and (f.profileID ~= p.id or f.focusID ~= focusID) then
+        f.scroll:ScrollTo(math.max(0, position.y - 180))
+        f.horizontal:SetValue(math.min(maxHorizontal, math.max(0, position.x - 300)))
+    end
+    f.profileID, f.focusID = p.id, focusID
+    f.onReturn = UI.GraphDialog
 end
 
 function UI.RaceDialog()

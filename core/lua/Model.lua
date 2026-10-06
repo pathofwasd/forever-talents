@@ -178,6 +178,7 @@ function M.Remove(build, id, all)
     -- point, deferring locked entries without dropping any other ranks.
     local pending, points, trees = result.order, {}, {}
     local index = M.Index(result.classID)
+    local remaining = M.Counts(result)
     result.order = {}
     while #pending > 0 do
         local placed, blocked
@@ -195,6 +196,30 @@ function M.Remove(build, id, all)
             blocked = blocked or reason
         end
         if not placed then
+            for _, talentID in ipairs(pending) do
+                local t = index[talentID]
+                local supporting = 0
+                for otherID, count in pairs(remaining) do
+                    local other = index[otherID]
+                    if other.treeID == t.treeID and other.row < t.row then
+                        supporting = supporting + count
+                    end
+                end
+                if supporting < t.gate then
+                    return nil,
+                        "Cannot remove "
+                            .. index[id].name
+                            .. ": "
+                            .. t.name
+                            .. " (row "
+                            .. (t.row + 1)
+                            .. ") would have "
+                            .. supporting
+                            .. "/"
+                            .. t.gate
+                            .. " supporting points in earlier rows. Move a point into an earlier row first, or remove dependent talents."
+                end
+            end
             return nil, "Remove dependent points first. " .. blocked
         end
     end

@@ -55,6 +55,48 @@ UI.dialogs.talent.remove:Click()
 check(M.Counts(S.Build())[id] == 1, "Details bypassed the remaining tier restriction")
 UI.CloseDialog()
 
+-- The reported Feral allocation has exactly ten supporting points, across rows
+-- one and two. The third row still needs ten after a removal, not five per row.
+local feral = M.New(11)
+for _, spec in ipairs({
+    { 104938, 5 },
+    { 104939, 3 },
+    { 104941, 2 },
+    { 104945, 3 },
+    { 104948, 2 },
+    { 104944, 1 },
+}) do
+    for _ = 1, spec[2] do
+        feral = assert(M.Add(feral, spec[1]))
+    end
+end
+local feralOriginal = C.Encode(feral)
+local blocked, reason = M.Remove(feral, 104939)
+check(
+    not blocked and reason:find("9/10 supporting points", 1, true),
+    "Feral removal did not explain the real tier gate"
+)
+check(reason:find("Shredding Attacks", 1, true) and reason:find("earlier row first", 1, true))
+check(C.Encode(feral) == feralOriginal and M.Validate(feral), "Blocked removal altered the build")
+local supported = assert(M.Add(feral, 104940))
+local moved = assert(M.Remove(supported, 104939))
+check(M.Counts(moved)[104939] == 2 and M.Counts(moved)[104940] == 1)
+check(M.Validate(moved), "Moving a supporting point between earlier rows was incorrectly blocked")
+S.SwitchClass(11)
+check(S.Edit(feral))
+local feralProfile = S.CreateProfile("Feral supporting points")
+local savedFeral = FT.Copy(feralProfile.nodes[1].build)
+check(S.Apply(M.Add, 104940))
+local supportedDraft = FT.Copy(S.Build())
+check(S.Apply(M.Remove, 104939))
+local movedDraft = FT.Copy(S.Build())
+check(S.Undo() and M.Same(S.Build(), supportedDraft))
+check(S.Redo() and M.Same(S.Build(), movedDraft))
+check(
+    M.Same(feralProfile.nodes[1].build, savedFeral),
+    "Moving supporting points changed the checkpoint"
+)
+
 -- A separate rank-to-build path checks whether the remaining allocation can
 -- legally exist, independent of its historical point sequence.
 for _, cid in ipairs(FT.classOrder) do

@@ -352,7 +352,7 @@ h1 span {
 }
 .workspace {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 260px;
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -826,7 +826,11 @@ h1 span {
 }
 .graph-scroll {
   overflow: auto;
-  max-height: 245px;
+  height: clamp(360px, 60vh, 620px);
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0b151e;
   scrollbar-width: thin;
 }
 .graph {
@@ -847,8 +851,8 @@ h1 span {
   position: absolute;
   display: flex;
   align-items: center;
-  width: 190px;
-  min-height: 49px;
+  width: min(252px, calc(100vw - 92px));
+  height: 84px;
   border: 1px solid #3c5060;
   border-radius: 6px;
   background: #172632;
@@ -869,11 +873,11 @@ h1 span {
   padding: 8px 9px;
 }
 .node-main strong {
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.3;
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .node-main small {
   font-size: 10px;
@@ -883,7 +887,9 @@ h1 span {
 }
 .node-delete {
   padding: 2px 6px;
-  min-height: 30px;
+  width: 44px;
+  min-height: 44px;
+  flex: none;
   border: 0;
   background: transparent;
   color: #b5c4ce;
@@ -1032,6 +1038,7 @@ dialog::backdrop {
   display: flex;
   flex-direction: column;
   width: min(720px, 100%);
+  height: 52svh;
   max-height: 52dvh;
   margin: 0 auto;
   border-radius: 14px 14px 0 0;
@@ -1065,13 +1072,14 @@ dialog::backdrop {
   font-size: 24px;
 }
 .talent-sheet-body {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 14px 16px;
 }
-.talent-sheet-body > .eyebrow,
-.talent-sheet-body > .detail-title {
+.talent-sheet-description > .eyebrow,
+.talent-sheet-description > .detail-title {
   display: none;
 }
 .talent-sheet-body p,
@@ -1105,10 +1113,11 @@ dialog::backdrop {
   outline-offset: 4px;
 }
 body.talent-sheet-open {
-  padding-bottom: 54dvh;
+  overflow-anchor: none;
+  padding-bottom: 54svh;
 }
 html:has(.talent-sheet-open) {
-  scroll-padding-bottom: 54dvh;
+  scroll-padding-bottom: 54svh;
 }
 @keyframes talent-sheet-in {
   from {
@@ -1125,6 +1134,7 @@ html:has(.talent-sheet-open) {
 }
 @media (max-height: 450px) and (orientation: landscape) {
   #talent-sheet[open] {
+    height: 58svh;
     max-height: 58dvh;
   }
   .talent-sheet-head {
@@ -1144,7 +1154,7 @@ html:has(.talent-sheet-open) {
     min-height: 44px;
   }
   body.talent-sheet-open {
-    padding-bottom: 60dvh;
+    padding-bottom: 60svh;
   }
 }
 .modal-head {
@@ -1549,32 +1559,6 @@ td button {
   .workspace {
     grid-template-columns: 215px minmax(0, 1fr);
   }
-  .builds-panel {
-    grid-column: 1/-1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .builds-panel > .section-heading,
-  .build-actions {
-    margin: 0;
-    grid-column: 1/-1;
-  }
-  .builds-panel > .order-heading {
-    grid-column: 2;
-    grid-row: 3;
-  }
-  .builds-panel > .order-list {
-    grid-column: 2;
-    grid-row: 4;
-  }
-  .builds-panel > #history-graph {
-    grid-column: 1;
-    grid-row: 3/5;
-  }
-  .builds-panel > .wide {
-    grid-column: 1/-1;
-  }
   .tree-grid {
     height: 480px;
   }
@@ -1711,7 +1695,8 @@ td button {
     max-height: 450px;
   }
   .graph-scroll {
-    max-height: 370px;
+    height: min(60vh, 520px);
+    min-height: 320px;
   }
   .order-step {
     padding: 5px 0;
@@ -2929,4 +2914,111 @@ h1 span,
   margin-top: 12px;
   font-size: 10px;
   color: var(--muted);
+}
+
+/* Checkpoints have a dedicated workspace at every size. */
+.workspace-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  scroll-margin-top: 16px;
+}
+.workspace-quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.workspace-quick-actions[hidden] {
+  display: none;
+}
+.workspace > .builds-panel {
+  scroll-margin-top: 16px;
+  display: none;
+}
+.workspace[data-panel='builds'] {
+  display: block;
+}
+.workspace[data-panel='builds'] > .skills-panel,
+.workspace[data-panel='builds'] > .talents-panel {
+  display: none;
+}
+.workspace[data-panel='builds'] > .builds-panel {
+  display: block;
+}
+.checkpoint-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 320px);
+  gap: 24px;
+  margin-top: 16px;
+}
+.checkpoint-content > * {
+  min-width: 0;
+}
+.build-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.order-panel {
+  border-left: 1px solid var(--line);
+  padding-left: 20px;
+}
+.order-panel .order-heading {
+  border: 0;
+  margin: 0;
+  padding-top: 8px;
+}
+.order-panel .order-list {
+  max-height: clamp(360px, 60vh, 620px);
+}
+.graph-heading {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.graph-heading h3 {
+  font-size: 16px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.graph-heading small {
+  font-size: 12px;
+}
+.graph-hint {
+  font-size: 12px;
+  margin: 4px 0 14px;
+}
+.update-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.update-controls span {
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 1050px) {
+  .workspace-nav {
+    display: none;
+  }
+  .checkpoint-content {
+    display: block;
+  }
+  .order-panel {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    margin-top: 20px;
+    padding: 16px 0 0;
+  }
+  .build-actions button {
+    flex: 1 1 135px;
+    min-height: 44px;
+  }
+}
+
+/* Planner updates keep the user’s chosen viewport rather than re-anchoring replaced nodes. */
+#app {
+  overflow-anchor: none;
 }

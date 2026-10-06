@@ -16,6 +16,9 @@ function UI.CreateHistory(parent)
             UI.historyTab = key
             UI.historyScroll:ScrollTo(0)
             UI.RefreshHistory()
+            if key == "graph" then
+                UI.GraphDialog()
+            end
         end)
     end
     UI.profileName = W.Text(p, "", 12, -48, 228, 13, W.colors.gold)
@@ -25,7 +28,7 @@ function UI.CreateHistory(parent)
     UI.checkpointButton = W.Button(p, "+ Checkpoint", 12, -90, 145, function()
         UI.SaveDialog(UI.historyTab ~= "library")
     end)
-    UI.graphButton = W.Button(p, "Expand", 165, -90, 75, function()
+    UI.graphButton = W.Button(p, "Open", 165, -90, 75, function()
         UI.GraphDialog()
     end)
     UI.historyScroll = W.Scroll(p, 10, -134, 232, 342)
@@ -326,7 +329,9 @@ function UI.RefreshHistory()
         )
     end
     if UI.historyTab ~= "library" then
-        UI.graphButton:SetText("Expand")
+        UI.graphButton:SetText("Open")
+        UI.graphButton.tip =
+            "Open the full checkpoint workspace with readable titles and your selected node in view."
         UI.graphButton:SetScript("OnClick", function()
             UI.GraphDialog()
         end)

@@ -788,3 +788,36 @@ test('skill summary separates first unlock and displayed rank level without a du
   assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Rank 3 Lv. 38');
   h.close();
 });
+
+test('Feral tier restrictions explain supporting points and allow moving them between earlier rows', async () => {
+  const h = await harness();
+  try {
+    h.call('switch', { classID: 11 });
+    h.call('auto', { enabled: false });
+    h.call('level', { level: 60 });
+    for (const [id, count] of [
+      [104938, 5],
+      [104939, 3],
+      [104941, 2],
+      [104945, 3],
+      [104948, 2],
+      [104944, 1],
+    ])
+      for (let n = 0; n < count; n++) h.call('add', { id });
+    const original = h.call('export', { kind: 'build' });
+    const blocked = h.raw('remove', { id: 104939 });
+    assert.equal(blocked.ok, false);
+    assert.match(blocked.error, /Shredding Attacks.*9\/10 supporting points/);
+    assert.equal(h.call('export', { kind: 'build' }), original);
+    h.call('save', { title: 'Feral fixture' });
+    h.call('add', { id: 104940 });
+    h.call('remove', { id: 104939 });
+    assert.equal(h.call('state').counts[104939], 2);
+    h.call('undo');
+    assert.equal(h.call('state').counts[104939], 3);
+    h.call('redo');
+    assert.equal(h.call('state').counts[104939], 2);
+  } finally {
+    h.close();
+  }
+});
