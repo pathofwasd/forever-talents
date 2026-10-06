@@ -571,6 +571,32 @@ check(
     "Root selection retained a deep-node viewport"
 )
 UI.CloseDialog()
+-- Native update controls replace a snapshot without growing its graph.
+local editable = S.CreateProfile("Editable checkpoint controls")
+local t = M.Class(S.Build().classID).trees[1].talents[1].id
+check(S.Apply(M.Reset))
+check(S.UpdateCheckpoint())
+local oldNodes = #editable.order
+check(S.Apply(M.Add, t))
+UI.historyTab = "order"
+UI.RefreshHistory()
+check(UI.checkpointButton:GetText() == "Update checkpoint")
+UI.GraphDialog()
+check(UI.dialogs.graph.update:IsEnabled())
+UI.dialogs.graph.update:Click()
+check(not S.Dirty() and #editable.order == oldNodes)
+check(not UI.dialogs.graph.update:IsEnabled())
+check(S.Apply(M.Add, t))
+UI.RefreshHistory()
+UI.checkpointButton:Click()
+check(not S.Dirty() and #editable.order == oldNodes)
+UI.GraphDialog()
+UI.dialogs.graph.checkpoint:Click()
+UI.dialogs.save.input:SetText("Separate branch")
+UI.dialogs.save.save:Click()
+check(#editable.order == oldNodes + 1)
+check(UI.dialogs.graph:IsShown())
+
 print(
     string.format(
         "UI: %d assertions passed; %d recorded objects; screenshots use actual Lua widget geometry",

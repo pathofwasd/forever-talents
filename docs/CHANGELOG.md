@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.12
+
+- Added **Update checkpoint** to the addon and PWA. Replace the selected node's talents and target
+  level while keeping its title, parent and every branch. **New checkpoint** remains separate.
+- Build + checkpoints links and FP1 strings now contain saved checkpoints only. Update or create a
+  checkpoint before sharing current edits. Full-library exports still preserve class drafts.
+- Existing saves and sharing formats remain compatible. Switching without saving an update still
+  protects working edits as an autosaved child.
+
 ## 1.2.11
 
 - Stabilized phone talent inspection: point controls and panel height stay in place, edits retain

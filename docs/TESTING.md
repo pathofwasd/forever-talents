@@ -320,3 +320,28 @@ Cached updates retained the full test library byte for byte. Manual checks repor
 downloading, ready and network failure accurately. With the preview server stopped, the app reloaded
 offline and exported the identical library. Browser test data and screenshots stayed outside the
 repository; no production browser saves or game SavedVariables were changed.
+
+## Version 1.2.12 validation
+
+Passed the seventeen native suites and twenty browser tests, including exact native Lua 5.1/WASM
+command and sharing parity. Checkpoint updates validate before mutation, replace only the selected
+snapshot, retain metadata and all descendants/siblings, clear stale Redo after an actual update, and
+reject preview, invalid-class/build and read-only saves. Updated nodes survive library export,
+profile transfer, saved-data reload, navigation, undo/edit/update and subtree deletion.
+
+FP1 profile strings and links now exclude unsaved drafts without mutating the source library. Native
+and browser tests verify saved node counts, selected snapshots, stable links while editing, changed
+links after updating, corrupted imports, recovery, deduplication and existing formats. Full-library
+exports still include class drafts.
+
+Production UI checks covered desktop, 320/375 px phones, 844×390 landscape and 1024 px tablet with
+no horizontal page overflow. Phone actions have 44 px targets. Update checkpoint works by keyboard
+and click, keeps all branches, and clean navigation creates no additional nodes. New checkpoint
+still creates a child. The selected checkpoint title is visible above the graph.
+
+The complete cache update retained a byte-identical test library, including an unsaved draft. With
+the local server stopped, offline reload retained an identical library; checkpoint updates, new
+branches and navigation worked offline. A parent update kept both children's distinct saved levels
+and point orders. Browser console checks reported no errors. Native callbacks were checked in the
+API harness; live WoW visual behavior remains unverified. No game installation or player
+SavedVariables were changed.

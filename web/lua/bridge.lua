@@ -177,6 +177,7 @@ local commands = {
     checkpoint = function(p)
         return S.Checkpoint(p.title)
     end,
+    updateCheckpoint = S.UpdateCheckpoint,
     load = function(p)
         return S.LoadNode(p.profileID, p.nodeID)
     end,

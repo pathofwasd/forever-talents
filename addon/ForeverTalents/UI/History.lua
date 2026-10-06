@@ -26,7 +26,11 @@ function UI.CreateHistory(parent)
     UI.profileHint = W.Text(p, "", 12, -68, 228, 11, W.colors.muted)
     UI.profileHint:SetWordWrap(false)
     UI.checkpointButton = W.Button(p, "+ Checkpoint", 12, -90, 145, function()
-        UI.SaveDialog(UI.historyTab ~= "library")
+        if UI.historyTab ~= "library" and FT.Store.ActiveProfile() and FT.Store.Dirty() then
+            W.Result(FT.Store.UpdateCheckpoint())
+        else
+            UI.SaveDialog(UI.historyTab ~= "library")
+        end
     end)
     UI.graphButton = W.Button(p, "Open", 165, -90, 75, function()
         UI.GraphDialog()
@@ -133,11 +137,16 @@ function UI.RefreshHistory()
     local build = FT.Store.Build()
     local p, node = FT.Store.ActiveProfile()
     local dirty = FT.Store.Dirty()
-    UI.checkpointButton:SetText(UI.historyTab == "library" and "+ New build" or "+ Checkpoint")
+    UI.checkpointButton:SetText(
+        UI.historyTab == "library" and "+ New build"
+            or p and dirty and "Update checkpoint"
+            or "+ New checkpoint"
+    )
+    UI.checkpointButton:SetEnabled(not FT.Store.readOnly and not FT.Store.preview)
     UI.profileName:SetText(p and FT.SafeText(p.name, 48) or "Unsaved build")
     UI.profileHint:SetText(
         p
-                and (dirty and "Draft saved before switching nodes" or "Saved • " .. FT.SafeText(
+                and (dirty and "Editing • " .. FT.SafeText(node.title, 48) or "Saved • " .. FT.SafeText(
                     node.title,
                     48
                 ))
@@ -250,7 +259,7 @@ function UI.RefreshHistory()
             end
         end
         UI.historyEmpty:SetText(
-            "Save this build to create your first node.\n\nMake a checkpoint, try an alternate path, and checkpoint again.\n\nClick any older node to branch from it. Each checkpoint stays intact."
+            "Save this build to create your first node.\n\nMake a checkpoint, try an alternate path, and checkpoint again.\n\nLoad a node and use Update checkpoint to save edits in place, or New checkpoint to branch."
         )
     else
         local library = UI.libraryMode or "saved"

@@ -516,26 +516,37 @@ function S.ShareProfile(profileID)
     if not p then
         return nil, "Save a named build first to share its checkpoints."
     end
-    local copy = FT.Copy(p)
     local draft = S.db.drafts[p.nodes[p.order[1]].build.classID]
     local selected = draft and draft.profileID == profileID and draft.nodeID or p.order[#p.order]
-    if
-        draft
-        and draft.profileID == profileID
-        and not FT.Model.Same(draft.build, copy.nodes[selected].build)
-    then
-        local child = matchingChild(copy, copy.nodes[selected], draft)
-        if not child then
-            if #copy.order >= 400 then
-                return nil,
-                    "This profile has 400 checkpoints. Save the working draft as a new build before sharing."
-            end
-            child = checkpointNode(copy, copy.nodes[selected], FT.Copy(draft), "Shared draft")
-            child.created = 0 -- Temporary snapshot: no recorded checkpoint creation time.
-        end
-        selected = child.id
+    return FT.Copy(p), selected
+end
+
+function S.UpdateCheckpoint()
+    if S.readOnly then
+        return nil, "Saving is disabled to preserve newer saved data."
     end
-    return copy, selected
+    if S.preview then
+        return nil, "Return to the full build before updating a checkpoint."
+    end
+    local p, node = S.ActiveProfile()
+    if not p then
+        return nil, "Save a named build first."
+    end
+    local build = S.Build()
+    local ok, why = validBuild(build)
+    if not ok then
+        return nil, why
+    end
+    if build.classID ~= node.build.classID then
+        return nil, "A checkpoint must stay in its saved class."
+    end
+    if FT.Model.Same(build, node.build) then
+        return node
+    end
+    node.build = FT.Copy(build)
+    S.Draft().redo = {}
+    FT.Changed("Updated " .. node.title .. ". Its title and branches are kept.")
+    return node
 end
 
 function S.Checkpoint(title)

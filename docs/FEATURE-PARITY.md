@@ -1,36 +1,37 @@
 # Addon / PWA parity and ownership
 
-| Responsibility                                                            | Single source / platform behavior                                                    |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Captured data, authentic grid positions, ranks, prerequisites             | `data/catalog.json` → `tools/build_data.py` → addon Data.lua → shared browser engine |
-| Budget, gates, allocation, removal and point reordering                   | `core/lua/Model.lua`                                                                 |
-| FT1 build, FS1/FS2 stats and gear, FC1 character formats                  | `core/lua/Codec.lua`, `Snapshot.lua`                                                 |
-| Build links, exact ordered FT1 payload and link validation                | `core/lua/Codec.lua`; native Share / Import and browser URL preview                  |
-| Full FL1 library encoding, validation, merge and duplicate handling       | `core/lua/Library.lua`                                                               |
-| Drafts, Auto level, undo/redo, immutable checkpoints and subtree deletion | `core/lua/Store.lua`                                                                 |
-| Skill ranks, search, unlocks and related talent evidence                  | `core/lua/Skills.lua`                                                                |
-| Classic / Simple view preference and compact skill progression            | `core/lua/Store.lua`, `Skills.lua`; native visibility/layout and browser visibility  |
-| Per-use numerical estimate, applicable inputs, evidence and assumptions   | `core/lua/Simulation.lua`                                                            |
-| Central character, custom gear, stat passives and scoped skill overrides  | `core/lua/Character.lua`, `Simulation.lua`                                           |
-| Native talent API, school stats and equipped-item capture                 | addon `Player.lua`; export portable data for the PWA                                 |
-| Native frames, chat receipts, keybind and minimap                         | addon `UI/`, `Comms.lua`, `Bootstrap.lua`                                            |
-| Responsive layout, keyboard/touch interaction, clipboard/files            | `web/src/main.js`, `simulator.js`, `style.css`                                       |
-| Browser object/table adaptation, whitelisted engine calls                 | `web/lua/bridge.lua`                                                                 |
-| Shared module copies, engine hashes, local WASM/icon assets               | `tools/sync_core.py`                                                                 |
-| Atomic offline cache, update lifecycle and static archive                 | `tools/build_pwa.mjs`, `web/src/updates.js`                                          |
-| GitHub Pages verification, build and manual deployment                    | `.github/workflows/pages.yml`; setup in `docs/HOSTING.md`                            |
-| Code license and content ownership                                        | Root NOTICE/LICENSE copied into addon and PWA                                        |
+| Responsibility                                                           | Single source / platform behavior                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| Captured data, authentic grid positions, ranks, prerequisites            | `data/catalog.json` → `tools/build_data.py` → addon Data.lua → shared browser engine |
+| Budget, gates, allocation, removal and point reordering                  | `core/lua/Model.lua`                                                                 |
+| FT1 build, FS1/FS2 stats and gear, FC1 character formats                 | `core/lua/Codec.lua`, `Snapshot.lua`                                                 |
+| Build links, exact ordered FT1 payload and link validation               | `core/lua/Codec.lua`; native Share / Import and browser URL preview                  |
+| Full FL1 library encoding, validation, merge and duplicate handling      | `core/lua/Library.lua`                                                               |
+| Drafts, Auto level, undo/redo, editable checkpoints and subtree deletion | `core/lua/Store.lua`                                                                 |
+| Skill ranks, search, unlocks and related talent evidence                 | `core/lua/Skills.lua`                                                                |
+| Classic / Simple view preference and compact skill progression           | `core/lua/Store.lua`, `Skills.lua`; native visibility/layout and browser visibility  |
+| Per-use numerical estimate, applicable inputs, evidence and assumptions  | `core/lua/Simulation.lua`                                                            |
+| Central character, custom gear, stat passives and scoped skill overrides | `core/lua/Character.lua`, `Simulation.lua`                                           |
+| Native talent API, school stats and equipped-item capture                | addon `Player.lua`; export portable data for the PWA                                 |
+| Native frames, chat receipts, keybind and minimap                        | addon `UI/`, `Comms.lua`, `Bootstrap.lua`                                            |
+| Responsive layout, keyboard/touch interaction, clipboard/files           | `web/src/main.js`, `simulator.js`, `style.css`                                       |
+| Browser object/table adaptation, whitelisted engine calls                | `web/lua/bridge.lua`                                                                 |
+| Shared module copies, engine hashes, local WASM/icon assets              | `tools/sync_core.py`                                                                 |
+| Atomic offline cache, update lifecycle and static archive                | `tools/build_pwa.mjs`, `web/src/updates.js`                                          |
+| GitHub Pages verification, build and manual deployment                   | `.github/workflows/pages.yml`; setup in `docs/HOSTING.md`                            |
+| Code license and content ownership                                       | Root NOTICE/LICENSE copied into addon and PWA                                        |
 
 ## Features required in both interfaces
 
 Single-profile FP1 strings and `#profile=` links preserve every checkpoint title, branch and exact
-allocation order. `Store.ShareProfile` copies the graph and includes an edited draft as a temporary
-child without changing source saves. `Library` owns compact encoding, validation through the
-existing store, deduplication and import. No other profiles, character stats, equipment or undo
-history are exported in FP1. Both imports preview the checkpoint count; the PWA previews each node.
-Accepted profiles open at the selected snapshot’s saved level, preserving previous edits as child
-checkpoints. Existing FT1 allocation links and all earlier sharing formats remain supported. Large
-profiles can use an FP1 string/file when they exceed the 64 KiB link limit. Addon whispers remain
+allocation order. `Store.ShareProfile` copies only saved nodes. Unsaved drafts are excluded from
+both FP1 strings and profile links; update or create a checkpoint to include those edits. Sharing
+never changes source saves. `Library` owns compact encoding, validation through the existing store,
+deduplication and import. No other profiles, character stats, equipment or undo history are exported
+in FP1. Both imports preview the checkpoint count; the PWA previews each node. Accepted profiles
+open at the selected snapshot’s saved level, preserving previous edits as child checkpoints.
+Existing FT1 allocation links and all earlier sharing formats remain supported. Large profiles can
+use an FP1 string/file when they exceed the 64 KiB link limit. Addon whispers remain
 single-allocation.
 
 Authentic three trees with prerequisites; current/next/all rank descriptions; legal exact point
@@ -51,14 +52,17 @@ branch indentation, scrolling for deep trees and selection centering. Saving, sh
 deletion return to that workspace. Graph layout remains platform presentation; branch mutation stays
 in the shared store.
 
-Checkpoints are immutable snapshots. The shared store saves changed profile drafts as child nodes
-before checkpoint navigation replaces them, including source and destination classes. Identical
-children are reused. Both graphs show a separate **Current draft** while editing and ordinary
-**Autosaved** children after navigation. Loading restores the saved target level and explicitly
-turns off Auto if it conflicts. Undo/Redo preserve each build's level mode. Successful profile and
-checkpoint saves clear stale Redo continuations. Auto-saved nodes use the existing FL1 format and
-subtree deletion rules. Read-only saves or a full profile block navigation rather than discarding
-work.
+Checkpoints can be updated explicitly through `Store.UpdateCheckpoint`. It replaces only the
+selected snapshot, retaining its ID, title, parent, creation time and all child/sibling snapshots.
+Both interfaces expose **Update checkpoint** separately from **New checkpoint**. Updates validate
+the build and respect preview/read-only protection; successful updates clear stale Redo. The shared
+store saves remaining changed profile drafts as child nodes before checkpoint navigation replaces
+them, including source and destination classes. Identical children are reused. Both graphs show a
+separate **Current draft** while editing and ordinary **Autosaved** children after navigation.
+Loading restores the saved target level and explicitly turns off Auto if it conflicts. Undo/Redo
+preserve each build's level mode. Successful profile and checkpoint saves clear stale Redo
+continuations. Auto-saved nodes use the existing FL1 format and subtree deletion rules. Read-only
+saves or a full profile block navigation rather than discarding work.
 
 The addon calls the reduced view **Classic mode** (Settings; `/ftc classic` / `/ftc full`). The PWA
 calls it **Simple view**, with a visible checkbox above the class picker. Both hide race/racials,

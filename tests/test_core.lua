@@ -206,7 +206,7 @@ test("race, level, reset, reorder and class drafts participate in undo/redo", fu
     check(S.preview == nil)
 end)
 
-test("checkpoints are immutable and form genuine branches", function()
+test("checkpoint creation preserves snapshots and forms genuine branches", function()
     _G.ForeverTalentsDB = nil
     S.Init(11, 4)
     local root = S.CreateProfile("Moonkin journey")

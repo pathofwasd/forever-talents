@@ -314,7 +314,7 @@ function UI.ShareDialog(build, title, profile)
     f.profileLink:SetEnabled(profile ~= nil)
     f.profileString:SetEnabled(profile ~= nil)
     f.profileLink.tip =
-        "Share this saved build and every checkpoint, including your current draft. Save a named build first."
+        "Share this build and its saved checkpoints only. Update or create a checkpoint to include current edits."
     f.profileString.tip =
         "Copy the complete checkpoint tree as an FP1 string for Import in the addon or web app."
     local function selectFormat(asLink, asProfile)
@@ -344,7 +344,7 @@ function UI.ShareDialog(build, title, profile)
         f.code:HighlightText()
         f.help:SetText(
             asProfile
-                    and "Copies this build's complete checkpoint tree and current draft.\nOther profiles, character stats and equipment are not included."
+                    and "Copies this build's saved checkpoint tree. Unsaved edits are excluded.\nOther profiles, character stats and equipment are not included."
                 or asLink and "Copy the whole link with Ctrl+C and send it to a friend.\nIt opens the web app with a preview of this build before loading."
                 or "Copy this entire string with Ctrl+C. It includes the race, target level,\nall talent ranks, and the exact leveling order."
         )
@@ -866,7 +866,7 @@ function UI.GraphDialog()
         f.summary = W.Text(f, "", 22, -62, 956, 14, W.colors.gold)
         W.Text(
             f,
-            "Click a node to load it. Your current edits save as a child checkpoint before switching.\nUse + Checkpoint to name a snapshot. The x deletes a node and all its descendants.",
+            "Update checkpoint replaces the selected snapshot and keeps its branches. New checkpoint creates a child.\nUnsaved edits become a child before switching. Sharing includes saved checkpoints only. The x deletes a subtree.",
             22,
             -88,
             956,
@@ -897,10 +897,19 @@ function UI.GraphDialog()
             UI.ShareDialog(nil, profile.name, profile)
             UI.dialogs.share.profileLink:Click()
         end, false, 30)
-        f.checkpoint = W.Button(f, "+ Checkpoint", 778, -640, 240, function()
-            UI.SaveDialog(true)
+        f.update = W.Button(f, "Update checkpoint", 534, -640, 228, function()
+            if W.Result(S.UpdateCheckpoint()) then
+                UI.GraphDialog()
+            end
         end, true, 30)
+        f.checkpoint = W.Button(f, "+ New checkpoint", 778, -640, 240, function()
+            UI.SaveDialog(true)
+        end, false, 30)
     end
+    f.update:SetEnabled(S.Dirty() and not S.readOnly and not S.preview)
+    f.update.tip =
+        "Replace the selected checkpoint with your current talents and level. Keep its title and all branches."
+    f.checkpoint:SetEnabled(not S.readOnly and not S.preview)
     for _, r in ipairs(f.rows) do
         r:Hide()
     end
@@ -978,7 +987,9 @@ function UI.GraphDialog()
             .. (S.Dirty() and " • current draft autosaved" or "")
     )
     f.selected:SetText(
-        "Selected: " .. FT.SafeText(selected.title, 48) .. " • new checkpoints branch from here"
+        "Selected: "
+            .. FT.SafeText(selected.title, 48)
+            .. " • update this node or create a new child"
     )
     local contentWidth = math.max(984, maxDepth * 52 + 286)
     f.scroll.content:SetWidth(contentWidth)
@@ -1095,7 +1106,7 @@ function UI.HelpDialog()
         W.Text(f, "Undo, preview, and branch", 22, -276, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Drafts autosave between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nCheckpoints keep their saved allocation. Edits save as a child before you load another node.",
+            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Drafts autosave between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nUpdate checkpoint replaces the selected snapshot, keeping its branches. New checkpoint creates a child.\nIf you switch without updating, edits save as a child. Checkpoint links include saved nodes only.",
             22,
             -308,
             806,

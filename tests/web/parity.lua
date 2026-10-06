@@ -21,6 +21,10 @@ for _, cid in ipairs(FT.classOrder) do
     end
     output("save", { title = "Parity " .. FT.Model.Class(cid).name })
     output("checkpoint", { title = "Branch fixture" })
+    output("remove", { id = FT.Model.Class(cid).trees[1].talents[1].id })
+    output("export", { kind = "profile" })
+    output("updateCheckpoint")
+    output("export", { kind = "profile" })
     output("state")
     output("export", { kind = "build" })
     output("export", { kind = "link" })

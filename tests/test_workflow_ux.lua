@@ -179,7 +179,7 @@ UI.dialogs.save.save:Click()
 check(#S.db.profileOrder == 2 and #profile.order == 1)
 UI.historyTab = "graph"
 UI.RefreshHistory()
-check(UI.checkpointButton.fontString:GetText() == "+ Checkpoint")
+check(UI.checkpointButton.fontString:GetText() == "+ New checkpoint")
 
 -- Colors remain stable when another selection changes, and overlap shows both.
 UI.ClearSkillHighlights()
