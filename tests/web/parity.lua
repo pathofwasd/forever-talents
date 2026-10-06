@@ -119,3 +119,36 @@ output("switch", { classID = 7 })
 output("skillLevels", { name = "Lava Burst" })
 output("skillLevels", { name = "Riptide" })
 output("simulate", { name = "Riptide", rank = 1, state = { power = 100, crit = 0 } })
+output("switch", { classID = 2 })
+output("auto", { enabled = false })
+for _, level in ipairs({ 49, 50, 53, 54, 60 }) do
+    output("level", { level = level })
+    output("skills", { query = "Holy Light", includeRacials = false })
+end
+output("simulate", { name = "Holy Light", rank = 7, state = { power = 100, crit = 0 } })
+for _, cid in ipairs({ 4, 5, 8, 9 }) do
+    output("switch", { classID = cid })
+    output("level", { level = 60 })
+    output("skills", { filter = "all" })
+end
+output("switch", { classID = 8 })
+output("race", { raceID = 7 })
+output("characterSave", {
+    sheet = {
+        schema = 1,
+        mode = "gear",
+        name = "Alias capture",
+        trainedSkills = { schema = 1, classID = 8, raceID = 7, level = 60, spellIDs = { 28271 } },
+        stats = {},
+        gear = {},
+    },
+})
+output("training", { name = "Polymorph" })
+output("checkTraining", { enabled = true })
+output("trainingReport")
+output("export", { kind = "character" })
+output("export", { kind = "library" })
+output(
+    "simulate",
+    { name = "Fireball", rank = 12, state = { power = 100, crit = 0, cooldowns = true } }
+)

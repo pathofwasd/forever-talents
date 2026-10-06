@@ -52,6 +52,18 @@ Talent-granted first ranks are prepared by the shared Lua skill engine, rather t
 trainer tables. The simulator importer also reads those talent spell IDs when an ability has trainer
 upgrades, so verified first-rank effects remain available to both platforms.
 
+Skill rank `aliasOf` identifies a verified helper or cosmetic spell as the same player-facing cast.
+`referenceOnly` keeps auxiliary records in the catalog without offering them as learned ranks. The
+shared skill engine removes those entries from pickers and resolves aliases for training checks;
+captured spell-ID lists remain unchanged. Legitimate different ranks at the same level are separate
+records, including item/quest upgrades. Compiler checks reject live aliases and invalid targets.
+
+The October 6 rank review retains the talent compatibility tag `7ba43a60`. It corrects player-cast
+selection without claiming a complete migration of every tooltip or numerical effect to a newer
+client build. Canonical pet notes distinguish announced Fox functionality from unverified family IDs
+and tameable entries. Simulator `talentNotes` and `unsupportedFallbacks` retain evidence gaps across
+regular builds and future effect imports.
+
 `data/ui/character.json` owns the original paper-doll vector geometry. The compiler renders an RGBA
 TGA for WoW and an SVG for the browser. The numerical model, sources and current coverage are
 described in [SIMULATOR.md](SIMULATOR.md).

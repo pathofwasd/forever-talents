@@ -78,16 +78,21 @@ function UI.PetDialog()
             13,
             W.colors.muted
         )
+        local notes = {}
+        for _, note in ipairs(FT.Data.pets.notes or {}) do
+            notes[#notes + 1] = note.title .. ": " .. note.text
+        end
+        f.reference = W.Text(f, table.concat(notes, "\n"), 22, -86, 856, 12, W.colors.muted)
         f.mode = "skills"
         f.page = 1
-        f.search = W.Edit(f, "Search pet skills or beasts…", 22, -101, 350, function(text)
+        f.search = W.Edit(f, "Search pet skills or beasts…", 22, -128, 350, function(text)
             f.query = text
             f.page = 1
             if f.refresh then
                 f.refresh()
             end
         end)
-        f.family = W.Button(f, "All pet families  v", 388, -101, 278, function(self)
+        f.family = W.Button(f, "All pet families  v", 388, -128, 278, function(self)
             local options = {
                 {
                     text = "All pet families",
@@ -110,12 +115,12 @@ function UI.PetDialog()
             end
             W.Menu(self, options, 278)
         end)
-        f.switch = W.Button(f, "Show beasts", 682, -101, 196, function()
+        f.switch = W.Button(f, "Show beasts", 682, -128, 196, function()
             f.mode = f.mode == "skills" and "beasts" or "skills"
             f.page = 1
             f.refresh()
         end)
-        f.scroll = W.Scroll(f, 22, -149, 856, 396)
+        f.scroll = W.Scroll(f, 22, -176, 856, 369)
         f.rows = {}
         f.empty = W.Text(
             f.scroll.content,

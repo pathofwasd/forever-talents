@@ -6122,7 +6122,8 @@
               "live": false,
               "spellID": 1313348,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 29
+              "toLevel": 29,
+              "referenceOnly": true
             },
             {
               "fromLevel": 38,
@@ -6140,7 +6141,8 @@
               "live": false,
               "spellID": 1313349,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 37
+              "toLevel": 37,
+              "referenceOnly": true
             },
             {
               "fromLevel": 46,
@@ -6149,7 +6151,7 @@
               "live": true,
               "spellID": 10328,
               "text": "Heals a friendly target for 873 to 971.",
-              "toLevel": 49
+              "toLevel": 53
             },
             {
               "fromLevel": 46,
@@ -6158,16 +6160,18 @@
               "live": false,
               "spellID": 1313350,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 45
+              "toLevel": 45,
+              "referenceOnly": true
             },
             {
               "fromLevel": 50,
               "label": "",
               "level": 50,
-              "live": true,
+              "live": false,
               "spellID": 1313352,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 53
+              "toLevel": 49,
+              "referenceOnly": true
             },
             {
               "fromLevel": 54,
@@ -6185,7 +6189,8 @@
               "live": false,
               "spellID": 1313351,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 53
+              "toLevel": 53,
+              "referenceOnly": true
             },
             {
               "fromLevel": 60,
@@ -6205,19 +6210,20 @@
               "fromLevel": 1,
               "label": "Rank 1",
               "level": 1,
-              "live": false,
+              "live": true,
               "spellID": 20154,
               "text": "Fills the Paladin with holy spirit for 30 sec, granting each melee attack an additional 2 to 9 Holy damage. Slower weapons cause more Holy damage per swing. Only one Seal can be active on the Paladin at any one time.",
-              "toLevel": 0
+              "toLevel": 9
             },
             {
               "fromLevel": 1,
               "label": "Rank 1",
               "level": 1,
-              "live": true,
+              "live": false,
               "spellID": 21084,
               "text": "Fills the Paladin with holy spirit for 30 sec, granting each melee attack an additional 2 to 9 Holy damage. Slower weapons cause more Holy damage per swing. Only one Seal can be active on the Paladin at any one time.\n\nUnleashing this Seal's energy will cause 25 to 26 Holy damage to an enemy.",
-              "toLevel": 9
+              "toLevel": 0,
+              "aliasOf": 20154
             },
             {
               "fromLevel": 10,
@@ -7050,7 +7056,8 @@
               "live": false,
               "spellID": 1313342,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 25
+              "toLevel": 25,
+              "referenceOnly": true
             },
             {
               "fromLevel": 34,
@@ -7068,7 +7075,8 @@
               "live": false,
               "spellID": 1313343,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 33
+              "toLevel": 33,
+              "referenceOnly": true
             },
             {
               "fromLevel": 42,
@@ -7086,7 +7094,8 @@
               "live": false,
               "spellID": 1313344,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 41
+              "toLevel": 41,
+              "referenceOnly": true
             },
             {
               "fromLevel": 50,
@@ -7104,7 +7113,8 @@
               "live": false,
               "spellID": 1313345,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 49
+              "toLevel": 49,
+              "referenceOnly": true
             },
             {
               "fromLevel": 58,
@@ -7121,7 +7131,8 @@
               "live": false,
               "spellID": 1313346,
               "text": "Heals a friendly target for 1.",
-              "toLevel": 57
+              "toLevel": 57,
+              "referenceOnly": true
             }
           ]
         },
@@ -12619,10 +12630,9 @@
               "fromLevel": 60,
               "label": "Rank 8",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 11281,
-              "text": "Backstab the target, causing 150% weapon damage plus 140 to the target. Must be behind the target. Requires a dagger in the main hand. Awards 1 combo point.",
-              "toLevel": 59
+              "text": "Backstab the target, causing 150% weapon damage plus 140 to the target. Must be behind the target. Requires a dagger in the main hand. Awards 1 combo point."
             },
             {
               "fromLevel": 60,
@@ -13244,16 +13254,18 @@
               "live": false,
               "spellID": 1310705,
               "text": "",
-              "toLevel": 29
+              "toLevel": 29,
+              "aliasOf": 1310707
             },
             {
               "fromLevel": 30,
               "label": "Rank 1",
               "level": 30,
-              "live": true,
+              "live": false,
               "spellID": 1310706,
               "text": "",
-              "toLevel": 39
+              "toLevel": 29,
+              "aliasOf": 1310707
             },
             {
               "fromLevel": 40,
@@ -13268,10 +13280,10 @@
               "fromLevel": 50,
               "label": "Rank 3",
               "level": 50,
-              "live": false,
+              "live": true,
               "spellID": 1241582,
               "text": "Instantly attacks with both weapons for 75% weapon damage plus an additional 36 with each weapon. Damage increased by 20% against Poisoned targets. Awards 2 Combo Points.",
-              "toLevel": 49
+              "toLevel": 59
             },
             {
               "fromLevel": 50,
@@ -13280,25 +13292,26 @@
               "live": false,
               "spellID": 1241585,
               "text": "",
-              "toLevel": 49
+              "toLevel": 49,
+              "aliasOf": 1241582
             },
             {
               "fromLevel": 50,
               "label": "Rank 3",
               "level": 50,
-              "live": true,
+              "live": false,
               "spellID": 1241588,
               "text": "",
-              "toLevel": 59
+              "toLevel": 49,
+              "aliasOf": 1241582
             },
             {
               "fromLevel": 60,
               "label": "Rank 4",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 1241584,
-              "text": "Instantly attacks with both weapons for 75% weapon damage plus an additional 50 with each weapon. Damage increased by 20% against Poisoned targets. Awards 2 Combo Points.",
-              "toLevel": 59
+              "text": "Instantly attacks with both weapons for 75% weapon damage plus an additional 50 with each weapon. Damage increased by 20% against Poisoned targets. Awards 2 Combo Points."
             },
             {
               "fromLevel": 60,
@@ -13307,15 +13320,18 @@
               "live": false,
               "spellID": 1241586,
               "text": "",
-              "toLevel": 59
+              "toLevel": 59,
+              "aliasOf": 1241584
             },
             {
               "fromLevel": 60,
               "label": "Rank 4",
               "level": 60,
-              "live": true,
+              "live": false,
               "spellID": 1241590,
-              "text": ""
+              "text": "",
+              "aliasOf": 1241584,
+              "toLevel": 59
             }
           ]
         },
@@ -16658,10 +16674,9 @@
               "fromLevel": 60,
               "label": "Rank 4",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 10961,
-              "text": "A powerful prayer that heals the target and their party for 581 to 612. Party members must be within 40 yards of target.",
-              "toLevel": 59
+              "text": "A powerful prayer that heals the target and their party for 581 to 612. Party members must be within 40 yards of target."
             },
             {
               "fromLevel": 60,
@@ -16914,10 +16929,10 @@
               "fromLevel": 40,
               "label": "Rank 2",
               "level": 40,
-              "live": false,
+              "live": true,
               "spellID": 1240720,
               "text": "Launches a volley of holy light at the target, causing 113 Holy damage to an enemy, or 291 healing to an ally, instantly and every 1 sec for 2 sec.",
-              "toLevel": 39
+              "toLevel": 49
             },
             {
               "fromLevel": 40,
@@ -16926,25 +16941,27 @@
               "live": false,
               "spellID": 1240723,
               "text": "Healing for 291 every 1 sec. for 2 sec.",
-              "toLevel": 39
+              "toLevel": 39,
+              "aliasOf": 1240720
             },
             {
               "fromLevel": 40,
               "label": "Rank 2",
               "level": 40,
-              "live": true,
+              "live": false,
               "spellID": 1240727,
               "text": "Dealing 113 Holy damage every 1 sec.",
-              "toLevel": 49
+              "toLevel": 39,
+              "aliasOf": 1240720
             },
             {
               "fromLevel": 50,
               "label": "Rank 3",
               "level": 50,
-              "live": false,
+              "live": true,
               "spellID": 1240721,
               "text": "Launches a volley of holy light at the target, causing 180 Holy damage to an enemy, or 482 healing to an ally, instantly and every 1 sec for 2 sec.",
-              "toLevel": 49
+              "toLevel": 59
             },
             {
               "fromLevel": 50,
@@ -16953,16 +16970,18 @@
               "live": false,
               "spellID": 1240724,
               "text": "Healing for 482 every 1 sec. for 2 sec.",
-              "toLevel": 49
+              "toLevel": 49,
+              "aliasOf": 1240721
             },
             {
               "fromLevel": 50,
               "label": "Rank 3",
               "level": 50,
-              "live": true,
+              "live": false,
               "spellID": 1240730,
               "text": "Dealing 180 Holy damage every 1 sec.",
-              "toLevel": 59
+              "toLevel": 49,
+              "aliasOf": 1240721
             },
             {
               "fromLevel": 60,
@@ -16971,7 +16990,8 @@
               "live": false,
               "spellID": 1316991,
               "text": "Healing for 673 every 1 sec for 2 sec.",
-              "toLevel": 59
+              "toLevel": 59,
+              "aliasOf": 1316995
             },
             {
               "fromLevel": 60,
@@ -16980,7 +17000,8 @@
               "live": false,
               "spellID": 1316993,
               "text": "Dealing 131 Holy damage every 1 sec.",
-              "toLevel": 59
+              "toLevel": 59,
+              "aliasOf": 1316995
             },
             {
               "fromLevel": 60,
@@ -20233,7 +20254,8 @@
               "live": false,
               "spellID": 1238373,
               "text": "You hurl molten lava at the target, dealing 78 to 100 Fire damage. If your Flame Shock is on the target, Lava Burst deals 20% increased damage.",
-              "toLevel": 49
+              "toLevel": 49,
+              "referenceOnly": true
             },
             {
               "fromLevel": 60,
@@ -20250,7 +20272,8 @@
               "live": false,
               "spellID": 1238376,
               "text": "You hurl molten lava at the target, dealing 96 to 124 Fire damage. If your Flame Shock is on the target, Lava Burst deals 20% increased damage.",
-              "toLevel": 59
+              "toLevel": 59,
+              "referenceOnly": true
             }
           ]
         },
@@ -21747,10 +21770,9 @@
               "fromLevel": 60,
               "label": "Rank 11",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 10151,
-              "text": "Hurls a fiery ball that causes 409 to 517 Fire damage and an additional 56 Fire damage over 8 sec.",
-              "toLevel": 59
+              "text": "Hurls a fiery ball that causes 409 to 517 Fire damage and an additional 56 Fire damage over 8 sec."
             },
             {
               "fromLevel": 60,
@@ -22192,10 +22214,9 @@
               "fromLevel": 56,
               "label": "Rank 7",
               "level": 56,
-              "live": false,
+              "live": true,
               "spellID": 10212,
-              "text": "Launches Arcane Missiles at the enemy, causing 175 Arcane damage each second for 5 sec.",
-              "toLevel": 55
+              "text": "Launches Arcane Missiles at the enemy, causing 175 Arcane damage each second for 5 sec."
             },
             {
               "fromLevel": 56,
@@ -22242,18 +22263,19 @@
               "fromLevel": 60,
               "label": "Rank 4",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 12826,
-              "text": "Transforms the enemy into a sheep, forcing it to wander around for up to 50 sec. While wandering, the sheep cannot attack or cast spells but will regenerate very quickly. Any damage will transform the target back into its normal form. Only one target can be polymorphed at a time. Only works on Beasts, Humanoids and Critters.",
-              "toLevel": 59
+              "text": "Transforms the enemy into a sheep, forcing it to wander around for up to 50 sec. While wandering, the sheep cannot attack or cast spells but will regenerate very quickly. Any damage will transform the target back into its normal form. Only one target can be polymorphed at a time. Only works on Beasts, Humanoids and Critters."
             },
             {
               "fromLevel": 60,
               "label": "Turtle",
               "level": 60,
-              "live": true,
+              "live": false,
               "spellID": 28271,
-              "text": "Transforms the enemy into a turtle, forcing it to wander around for up to 50 sec. While wandering, the turtle cannot attack or cast spells but will regenerate very quickly. Any damage will transform the target back into its normal form. Only one target can be polymorphed at a time. Only works on Beasts, Humanoids and Critters."
+              "text": "Transforms the enemy into a turtle, forcing it to wander around for up to 50 sec. While wandering, the turtle cannot attack or cast spells but will regenerate very quickly. Any damage will transform the target back into its normal form. Only one target can be polymorphed at a time. Only works on Beasts, Humanoids and Critters.",
+              "aliasOf": 12826,
+              "toLevel": 59
             },
             {
               "fromLevel": 60,
@@ -22262,7 +22284,8 @@
               "live": false,
               "spellID": 28272,
               "text": "Transforms the enemy into a pig, forcing it to wander around for up to 50 sec. While wandering, the pig cannot attack or cast spells but will regenerate very quickly. Any damage will transform the target back into its normal form. Only one target can be polymorphed at a time. Only works on Beasts, Humanoids and Critters.",
-              "toLevel": 59
+              "toLevel": 59,
+              "aliasOf": 12826
             }
           ]
         },
@@ -24970,10 +24993,9 @@
               "fromLevel": 60,
               "label": "Rank 7",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 11668,
-              "text": "Burns the enemy for [157.5 * (((1)))] Fire damage and then an additional 260 Fire damage over 15 sec.",
-              "toLevel": 59
+              "text": "Burns the enemy for [157.5 * (((1)))] Fire damage and then an additional 260 Fire damage over 15 sec."
             },
             {
               "fromLevel": 60,
@@ -25073,10 +25095,9 @@
               "fromLevel": 60,
               "label": "Rank 10",
               "level": 60,
-              "live": false,
+              "live": true,
               "spellID": 25307,
-              "text": "Sends a shadowy bolt at the enemy, causing 263 to 292 Shadow damage.",
-              "toLevel": 59
+              "text": "Sends a shadowy bolt at the enemy, causing 263 to 292 Shadow damage."
             }
           ]
         },
@@ -27917,7 +27938,7 @@
     "maxPoints": 51,
     "rowPoints": 5,
     "tag": "7ba43a60",
-    "reviewedAt": "2026-10-05",
+    "reviewedAt": "2026-10-06",
     "patchSource": "https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-1/2360696"
   },
   "perks": [
@@ -40396,7 +40417,15 @@
       "796": "Scarlet Monastery",
       "8": "Swamp of Sorrows",
       "85": "Tirisfal Glades"
-    }
+    },
+    "notes": [
+      {
+        "title": "Fox · announced family",
+        "text": "Trickster's Dance improves dodge and attack speed for 12 seconds. Family ID and tameable entries are not yet verified.",
+        "spellID": 1310612,
+        "source": "https://worldofwarcraft.blizzard.com/news/24301515/world-of-warcraft-forever-class-deep-dives-hunter-and-druid"
+      }
+    ]
   },
   "races": {
     "1": {
@@ -40567,7 +40596,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260189,
-          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -40587,7 +40616,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -40829,7 +40858,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260189,
-          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -40849,7 +40878,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -41091,7 +41120,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260189,
-          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -41111,7 +41140,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -41353,7 +41382,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260189,
-          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -41373,7 +41402,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -41615,7 +41644,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260189,
-          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -41635,7 +41664,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -41877,7 +41906,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260201,
-          "text": "Your spells and attacks have a 10% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 10% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -41897,7 +41926,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -42139,7 +42168,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260189,
-          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 5% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -42159,7 +42188,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -42401,7 +42430,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260201,
-          "text": "Your spells and attacks have a 10% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 10% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -42421,7 +42450,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -42663,7 +42692,7 @@
           "icon": "spell_shadow_fingerofdeath",
           "name": "Touch of the Grave",
           "spellID": 1260201,
-          "text": "Your spells and attacks have a 10% chance to drain Health from the target, up to 5% of your maximum Health."
+          "text": "Your spells and attacks have a 10% chance to drain Health from the target, up to 5% of your maximum Health. Does not break crowd control. Only spells and abilities with a damage component can activate it; periodic damage ticks do not activate it."
         },
         {
           "icon": "spell_shadow_demonbreath",
@@ -42683,7 +42712,7 @@
           "icon": "inv_misc_flower_01",
           "name": "Cultivation",
           "spellID": 20552,
-          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once."
+          "text": "Cultivate a nearby herb, growing a duplicate you can harvest without requiring Herbalism skill. Each herb may only be cultivated once. Requires a player level of at least the herb's Herbalism requirement divided by 5. Herbs requiring more than 300 Herbalism can be cultivated at player level 60."
         },
         {
           "icon": "spell_nature_unyeildingstamina",
@@ -67659,6 +67688,21 @@
           "strength": 0
         }
       }
+    },
+    "talentNotes": {
+      "104932": {
+        "kind": "damage",
+        "text": "Vengeance uses the reviewed Arcane/Nature critical-damage bonus. The broader all-spells announcement is unverified."
+      },
+      "104993": {
+        "kind": "damage",
+        "attack": "melee",
+        "text": "Savage Strikes uses 2/4% melee critical chance from talent rank data. The overview's melee-damage effect is unverified."
+      }
+    },
+    "unsupportedFallbacks": {
+      "Mutilate": "Mutilate's scripted two-weapon cast is not modeled. Use Advanced manual amounts for a measured total; a single helper hit is not its full damage.",
+      "Penance": "Penance's scripted damage and healing volleys are not modeled for this rank. Use Advanced manual amounts; one helper effect is not the full cast."
     }
   }
 }

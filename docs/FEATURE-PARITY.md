@@ -125,6 +125,13 @@ is a dated-by-level snapshot, not a live browser connection.
 
 ## Platform limits
 
+Both interfaces show player-facing rank progression and recognize verified helper/cosmetic aliases
+without rewriting captured spell IDs. Holy Light, Mutilate, Penance, Polymorph and Shadow Bolt use
+the corrected ranks; legitimate same-level upgrades remain visible. Shared simulator warnings cover
+unmodeled Eureka and the Vengeance/Savage Strikes evidence disagreements. Scripted casts without a
+complete model require explicit manual amounts. The pet atlas has an announced Fox reference note;
+unverified family IDs and tameable locations are not invented.
+
 Live spellbook/stats/talents capture, client descriptions/cast times and clickable whisper receipts
 need WoW and stay native. The PWA imports their portable snapshots. Captured school power/crit and
 source talents support recognized crit normalization across skill selections. Reported stats can

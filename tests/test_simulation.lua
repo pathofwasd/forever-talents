@@ -164,7 +164,15 @@ check(manual.duration == 0 and manual.confidence == "Manual estimate")
 local backstab, br = skill(4, "Backstab")
 local mutilate, mr = skill(4, "Mutilate")
 near(Sim.Calculate(selected(4, "Puncturing Wounds"), backstab, br, { crit = 0 }).crit, 30)
-near(Sim.Calculate(selected(4, "Puncturing Wounds"), mutilate, mr, { crit = 0 }).crit, 15)
+near(
+    Sim.Calculate(
+        selected(4, "Puncturing Wounds"),
+        mutilate,
+        mr,
+        { crit = 0, manual = true, baseMin = 100, baseMax = 100 }
+    ).crit,
+    15
+)
 local immolate, ir = skill(9, "Immolate")
 local base = Sim.Calculate(M.New(9), immolate, ir, { crit = 0 })
 local after = Sim.Calculate(selected(9, "Aftermath"), immolate, ir, { crit = 0 })

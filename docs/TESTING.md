@@ -240,3 +240,22 @@ offline, and the full-library export remained identical before edits.
 Installed files match the verified source package, and the recoverable backup matches the previous
 addon. Player SavedVariables and other addons were unchanged. Native callbacks were checked in the
 harness; live WoW loading and native visual behavior still require in-game verification.
+
+## Version 1.2.9 validation
+
+Passed native regression suites, eleven browser-engine tests, exact Lua 5.1/WASM calculations and
+sharing parity, generated-file checks, production build and addon archive validation. New cases
+cover Holy Light at 46/49/50/53/54/60, player/helper rank aliases, cosmetic Polymorph captures,
+Shadow Bolt rank 10, training comparison, preserved captured IDs, Eureka omission warnings and
+explicit manual models for unsupported scripted casts. The compatibility tag remains 7ba43a60.
+
+Production browser checks covered desktop, 320/375 px phones, 768 px tablet and 812×375 landscape.
+Holy Light displays nine player ranks, rank 7 through level 53, and rank 8 unlocking at 54. Gnome
+simulations show the Eureka limitation. Mutilate displays four cast ranks and offers an explicit
+manual model; entered amounts update its labelled result. Fox's announced reference note stays
+readable without horizontal overflow. X and Escape return to the parent skill screen.
+
+Updating from 1.2.8 retained the saved build, allocation order and starting checkpoint. With the
+preview server stopped, 1.2.9 reloaded offline and recovered that build and checkpoint. The browser
+console reported no errors. Native callbacks were verified in the API harness; live WoW loading,
+capture and native visual behavior remain unverified. No installed addon files were changed.

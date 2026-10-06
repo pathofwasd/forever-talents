@@ -25,6 +25,7 @@ for suite in [
     "ui",
     "simple_view",
     "skill_updates",
+    "rank_audit",
     "workflow_ux",
     "client_talents",
     "training",
