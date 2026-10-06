@@ -162,6 +162,45 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
   run('export', { kind: 'character' });
   run('export', { kind: 'library' });
   run('simulate', { name: 'Fireball', rank: 12, state: { power: 100, crit: 0, cooldowns: true } });
+  const fixture = execFileSync('lua5.1', ['tests/fixtures/mage_fire.lua'], {
+    encoding: 'utf8',
+  }).trim();
+  run('import', { code: fixture });
+  run('auto', { enabled: true });
+  run('save', { title: 'Removal parity' });
+  run('checkpoint', { title: 'Frozen allocation' });
+  run('export', { kind: 'build' });
+  run('remove', { id: 105796 });
+  run('state');
+  for (const kind of ['build', 'stats', 'character', 'library']) run('export', { kind });
+  run('undo');
+  run('export', { kind: 'build' });
+  run('redo');
+  run('export', { kind: 'build' });
+  run('remove', { id: 105796 });
+  run('state');
+  run('remove', { id: 105796 });
+  run('export', { kind: 'build' });
+  run('remove', { id: 105790 });
+  run('export', { kind: 'library' });
+  const profileID = h.call('state').activeProfile;
+  run('load', { profileID, nodeID: 1 });
+  run('state');
+  run('export', { kind: 'library' });
+  run('undo');
+  run('export', { kind: 'build' });
+  run('redo');
+  run('load', { profileID, nodeID: 3 });
+  run('export', { kind: 'character' });
+  run('export', { kind: 'library' });
+  run('remove', { id: 105776 });
+  run('export', { kind: 'profile', profileID });
+  run('export', { kind: 'profileLink', profileID });
+  run('decode', { code: h.call('export', { kind: 'profileLink', profileID }), profileOnly: true });
+  run('import', { code: h.call('export', { kind: 'profileLink', profileID }), profileOnly: true });
+  run('state');
+  run('export', { kind: 'build' });
+  run('export', { kind: 'library' });
   assert.deepEqual(results, native);
   h.close();
 });
@@ -331,6 +370,176 @@ test('simple view preserves all portable data, persists locally and follows shar
   h.close();
   restored.close();
   imported.close();
+});
+test('legal talent removal repairs leveling order and preserves checkpoints and exact undo', async () => {
+  const fixture = execFileSync('lua5.1', ['tests/fixtures/mage_fire.lua'], {
+    encoding: 'utf8',
+  }).trim();
+  const h = await harness();
+  h.call('import', { code: fixture });
+  h.call('auto', { enabled: true });
+  h.call('save', { title: 'Fire checkpoint' });
+  h.call('checkpoint', { title: 'Before editing' });
+  const before = h.call('export', { kind: 'build' });
+  const frozenProfiles = h.call('state').profiles;
+  const frozen = JSON.stringify(frozenProfiles);
+  h.call('remove', { id: 105796 });
+  const after = h.call('export', { kind: 'build' });
+  assert.equal(h.call('state').counts[105796], 2);
+  assert.equal(h.call('state').treeCounts[41], 32);
+  assert.equal(h.call('state').treeCounts[61], 8);
+  assert.equal(h.call('state').viewLevel, 49);
+  assert.match(h.call('state').message, /Leveling order adjusted/);
+  assert.equal(JSON.stringify(h.call('state').profiles), frozen);
+  assert.equal(h.call('decode', { code: after }).kind, 'build');
+  h.call('undo');
+  assert.equal(h.call('export', { kind: 'build' }), before);
+  h.call('redo');
+  assert.equal(h.call('export', { kind: 'build' }), after);
+  h.call('remove', { id: 105796 });
+  assert.equal(h.call('state').counts[105796], 1);
+  const intactBuild = h.call('export', { kind: 'build' });
+  const intact = h.call('export', { kind: 'library' });
+  for (const payload of [{ id: 105796 }, { id: 105796, all: true }, { id: 105790 }]) {
+    assert.equal(h.raw('remove', payload).ok, false);
+    assert.equal(h.call('export', { kind: 'library' }), intact);
+  }
+  h.call('remove', { id: 105776 }); // Ordinary Frost removal requires no reordering.
+  assert.equal(h.call('state').message, '');
+  const db = h.call('database');
+  const restored = await harness(JSON.parse(JSON.stringify(db)));
+  const normalized = h.call('decode', { code: h.call('export', { kind: 'library' }) }).database;
+  assert.deepEqual(restored.call('database').drafts, normalized.drafts);
+  assert.deepEqual(restored.call('state').profiles, normalized.profiles);
+  restored.call('undo');
+  assert.equal(restored.call('export', { kind: 'build' }), intactBuild);
+  assert.deepEqual(restored.call('state').profiles, frozenProfiles);
+  h.close();
+  restored.close();
+});
+test('checkpoint navigation saves edited child allocations and restores them after sync or reload', async () => {
+  const h = await harness();
+  const first = list(h.call('catalog').classes[11].trees)[0].talents[1].id;
+  h.call('save', { title: 'Checkpoint navigation' });
+  h.call('add', { id: first });
+  h.call('checkpoint', { title: 'Second checkpoint' });
+  const second = h.call('export', { kind: 'build' });
+  h.call('add', { id: first });
+  const edited = h.call('export', { kind: 'build' });
+  h.call('load', { profileID: 'p1', nodeID: 1 });
+  const p = h.call('state').profiles.p1;
+  assert.equal(list(p.order).length, 3);
+  assert.equal(p.nodes[3].parent, 2);
+  assert.equal(p.nodes[3].title, 'Autosaved · Second checkpoint');
+  assert.deepEqual(p.nodes[3].build, h.call('decode', { code: edited }).build);
+  assert.deepEqual(p.nodes[2].build, h.call('decode', { code: second }).build);
+  assert.match(h.call('state').message, /Changes saved/);
+  h.call('undo');
+  assert.equal(h.call('export', { kind: 'build' }), edited);
+  assert.equal(h.call('state').activeNode, 3);
+  h.call('redo');
+  assert.equal(h.call('state').activeNode, 1);
+  h.call('load', { profileID: 'p1', nodeID: 2 });
+  h.call('add', { id: first });
+  h.call('load', { profileID: 'p1', nodeID: 1 });
+  assert.equal(list(h.call('state').profiles.p1.order).length, 3, 'duplicate draft checkpoint');
+  const library = h.call('export', { kind: 'library' });
+  const synced = await harness();
+  synced.call('import', { code: library, includeDrafts: true });
+  assert.deepEqual(synced.call('state').profiles, h.call('state').profiles);
+  synced.call('load', { profileID: 'p1', nodeID: 3 });
+  assert.equal(synced.call('export', { kind: 'build' }), edited);
+  const restored = await harness(JSON.parse(JSON.stringify(synced.call('database'))));
+  assert.equal(restored.call('export', { kind: 'build' }), edited);
+  const saved = restored.call('export', { kind: 'library' });
+  assert.equal(restored.raw('load', { profileID: 'p1', nodeID: 999 }).ok, false);
+  assert.equal(restored.call('export', { kind: 'library' }), saved);
+  restored.call('deleteNode', { profileID: 'p1', nodeID: 2 });
+  assert.equal(restored.call('state').profiles.p1.nodes[3], undefined);
+  assert.equal(restored.call('export', { kind: 'build' }), edited);
+  h.close();
+  synced.close();
+  restored.close();
+});
+test('profile links share all checkpoint branches and a stable working draft without other private data', async () => {
+  const source = await harness();
+  source.call('import', {
+    code: execFileSync('lua5.1', ['tests/fixtures/mage_fire.lua'], { encoding: 'utf8' }).trim(),
+  });
+  source.call('save', { title: 'Shared Fire' });
+  source.call('checkpoint', { title: 'Route A' });
+  source.call('remove', { id: 105796 });
+  source.call('checkpoint', { title: 'Fire variation' });
+  source.call('load', { profileID: 'p1', nodeID: 1 });
+  source.call('remove', { id: 105776 });
+  source.call('checkpoint', { title: 'Frost variation' });
+  source.call('add', { id: 105776 });
+  const draft = source.call('export', { kind: 'build' });
+  source.call('switch', { classID: 9 });
+  source.call('save', { title: 'Private other profile' });
+  source.call('characterSave', {
+    sheet: { mode: 'manual', name: 'Private stats', stats: { power: 987 } },
+  });
+  const original = source.call('export', { kind: 'library' });
+  const code = source.call('export', { kind: 'profile', profileID: 'p1' });
+  const link = source.call('export', { kind: 'profileLink', profileID: 'p1' });
+  assert.equal(link, source.call('catalog').buildURL + '#profile=' + code);
+  assert.equal(source.call('export', { kind: 'library' }), original);
+  assert.equal(source.call('export', { kind: 'profile', profileID: 'p1' }), code);
+  const preview = source.call('decode', { code: link, profileOnly: true });
+  assert.equal(preview.kind, 'profile');
+  assert.equal(preview.nodes, 5);
+  assert.equal(preview.selected, 5);
+  assert.equal(preview.profile.nodes[3].parent, 2);
+  assert.equal(preview.profile.nodes[4].parent, 1);
+  assert.equal(preview.profile.nodes[5].parent, 4);
+  assert.equal(preview.profile.nodes[5].title, 'Shared draft');
+  assert.deepEqual(preview.build, source.call('decode', { code: draft }).build);
+  assert.equal(JSON.stringify(preview).includes('Private'), false);
+  assert.equal(source.call('state').profiles.p1.nodes[5], undefined);
+  const dest = await harness();
+  assert.equal(dest.raw('export', { kind: 'profileLink' }).ok, false);
+  dest.call('switch', { classID: 8 });
+  dest.call('save', { title: 'Keep my build' });
+  dest.call('auto', { enabled: true });
+  dest.call('add', { id: list(list(dest.call('catalog').classes[8].trees)[0].talents)[0].id });
+  const previous = dest.call('export', { kind: 'build' });
+  dest.call('characterSave', {
+    sheet: { mode: 'manual', name: 'Keep stats', stats: { power: 123 } },
+  });
+  const character = dest.call('database').settings.characters;
+  const intact = dest.call('export', { kind: 'library' });
+  for (const bad of [
+    link + '!',
+    link + '%zz',
+    code.slice(0, -1),
+    source.call('export', { kind: 'link' }),
+  ]) {
+    assert.equal(dest.raw('import', { code: bad, profileOnly: true }).ok, false);
+    assert.equal(dest.call('export', { kind: 'library' }), intact);
+  }
+  dest.call('import', { code: link, profileOnly: true });
+  assert.equal(dest.call('state').activeProfile, 'p2');
+  assert.equal(dest.call('state').activeNode, 5);
+  assert.equal(dest.call('export', { kind: 'build' }), draft);
+  assert.equal(dest.call('state').auto, false);
+  assert.deepEqual(dest.call('database').settings.characters, character);
+  assert.equal(list(dest.call('state').profiles.p2.order).length, 5);
+  assert.equal(dest.call('export', { kind: 'profileLink', profileID: 'p2' }), link);
+  assert.deepEqual(dest.call('state').profiles.p2.nodes, preview.profile.nodes);
+  dest.call('undo');
+  assert.equal(dest.call('export', { kind: 'build' }), previous);
+  assert.equal(dest.call('state').auto, true);
+  dest.call('redo');
+  assert.equal(dest.call('export', { kind: 'build' }), draft);
+  dest.call('import', { code: link, profileOnly: true });
+  assert.equal(list(dest.call('state').profileOrder).length, 2);
+  const restored = await harness(JSON.parse(JSON.stringify(dest.call('database'))));
+  assert.equal(restored.call('export', { kind: 'build' }), draft);
+  assert.equal(restored.call('state').profiles.p2.nodes[3].parent, 2);
+  source.close();
+  dest.close();
+  restored.close();
 });
 test('all classes enforce budgets, row gates, prerequisites and legal ordered edits in the browser engine', async () => {
   const h = await harness(),
@@ -513,6 +722,56 @@ test('build links preview safely, preserve point order, reject non-build payload
   assert.equal(list(preview.build.order).length, 3);
   source.close();
   restored.close();
+  h.close();
+});
+test('checkpoint levels override conflicting Auto and successful saves discard stale Redo', async () => {
+  const h = await harness();
+  h.call('switch', { classID: 8 });
+  h.call('level', { level: 60 });
+  const id = list(list(h.call('catalog').classes[8].trees)[1].talents)[2].id;
+  for (let i = 0; i < 5; i++) h.call('add', { id });
+  const profile = h.call('save', { title: 'Level 60, five points' });
+  const code = h.call('export', { kind: 'build' });
+  h.call('auto', { enabled: true });
+  assert.equal(h.call('state').build.level, 14);
+  h.call('load', { profileID: profile.id, nodeID: 1 });
+  assert.equal(h.call('export', { kind: 'build' }), code);
+  assert.equal(h.call('state').auto, false);
+  assert.equal(h.call('state').dirty, false);
+  assert.match(h.call('state').message, /Auto turned off to restore saved level 60/);
+  const skill = list(h.call('skills', { query: 'Fireball' })).find(
+    (e) => e.skill.name === 'Fireball'
+  );
+  assert.match(skill.progression.summary, /Max rank 12 Lv. 60/);
+  h.call('undo');
+  assert.equal(h.call('state').build.level, 14);
+  assert.equal(h.call('state').auto, true);
+  h.call('redo');
+  assert.equal(h.call('state').build.level, 60);
+  assert.equal(h.call('state').auto, false);
+  const empty = await harness();
+  const first = list(list(empty.call('catalog').classes[11].trees)[0].talents)[0].id;
+  empty.call('add', { id: first });
+  empty.call('undo');
+  assert.equal(empty.call('state').redo, 1);
+  assert.equal(empty.raw('save', { title: '' }).ok, false);
+  assert.equal(empty.call('state').redo, 1);
+  const saved = empty.call('save', { title: 'New saved profile' });
+  assert.equal(empty.call('state').redo, 0);
+  assert.equal(empty.raw('redo').ok, false);
+  assert.equal(empty.call('state').activeProfile, saved.id);
+  assert.equal(empty.call('state').build.name, 'New saved profile');
+  assert.equal(list(empty.call('state').build.order).length, 0);
+  empty.call('add', { id: first });
+  empty.call('undo');
+  const node = empty.call('checkpoint', { title: 'Empty branch' });
+  assert.equal(empty.call('state').redo, 0);
+  assert.equal(empty.call('state').activeNode, node.id);
+  const restored = await harness(empty.call('database'));
+  assert.equal(restored.call('state').redo, 0);
+  assert.equal(restored.call('state').activeProfile, saved.id);
+  restored.close();
+  empty.close();
   h.close();
 });
 test('skill summary separates first unlock and displayed rank level without a duplicate maximum line', async () => {

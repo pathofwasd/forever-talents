@@ -23,12 +23,36 @@
 
 ## Features required in both interfaces
 
+Single-profile FP1 strings and `#profile=` links preserve every checkpoint title, branch and exact
+allocation order. `Store.ShareProfile` copies the graph and includes an edited draft as a temporary
+child without changing source saves. `Library` owns compact encoding, validation through the
+existing store, deduplication and import. No other profiles, character stats, equipment or undo
+history are exported in FP1. Both imports preview the checkpoint count; the PWA previews each node.
+Accepted profiles open at the selected snapshot’s saved level, preserving previous edits as child
+checkpoints. Existing FT1 allocation links and all earlier sharing formats remain supported. Large
+profiles can use an FP1 string/file when they exceed the 64 KiB link limit. Addon whispers remain
+single-allocation.
+
 Authentic three trees with prerequisites; current/next/all rank descriptions; legal exact point
 order; class/race choice; skill/racial search and persistent checkbox highlights with six matching
 colors and overlap markers; Auto/manual level; Undo/Redo; saved builds/checkpoint branches;
 delete-parent-and-descendants; leveling preview and branching; text sharing; character and
 stats-only import/export; full-library merge; simple and Advanced one-use estimates; race atlas, pet
 atlas and perk reference.
+
+Talent removal preserves the surviving order whenever it is already legal. If a historical row gate
+blocks an otherwise legal allocation, `Model.Remove` replays the earliest eligible surviving points
+without removing any other ranks. Both interfaces display the adjustment notice. Real prerequisites
+and tier gates remain enforced, and Undo restores the exact previous order.
+
+Checkpoints are immutable snapshots. The shared store saves changed profile drafts as child nodes
+before checkpoint navigation replaces them, including source and destination classes. Identical
+children are reused. Both graphs show a separate **Current draft** while editing and ordinary
+**Autosaved** children after navigation. Loading restores the saved target level and explicitly
+turns off Auto if it conflicts. Undo/Redo preserve each build's level mode. Successful profile and
+checkpoint saves clear stale Redo continuations. Auto-saved nodes use the existing FL1 format and
+subtree deletion rules. Read-only saves or a full profile block navigation rather than discarding
+work.
 
 The addon calls the reduced view **Classic mode** (Settings; `/ftc classic` / `/ftc full`). The PWA
 calls it **Simple view**, with a visible checkbox above the class picker. Both hide race/racials,

@@ -89,10 +89,23 @@ function UI.ProfileNodes(profile)
         children[parent] = children[parent] or {}
         children[parent][#children[parent] + 1] = node
     end
+    local active, parent = FT.Store.ActiveProfile()
+    if active and active.id == profile.id and FT.Store.Dirty() then
+        children[parent.id] = children[parent.id] or {}
+        children[parent.id][#children[parent.id] + 1] = {
+            id = 0,
+            parent = parent.id,
+            title = "Current draft",
+            build = FT.Store.Build(),
+            working = true,
+        }
+    end
     local function walk(parent, depth)
         for _, node in ipairs(children[parent] or {}) do
             result[#result + 1] = { node = node, depth = depth }
-            walk(node.id, depth + 1)
+            if not node.working then
+                walk(node.id, depth + 1)
+            end
         end
     end
     walk(0, 0)
@@ -121,7 +134,7 @@ function UI.RefreshHistory()
     UI.profileName:SetText(p and FT.SafeText(p.name, 48) or "Unsaved build")
     UI.profileHint:SetText(
         p
-                and (dirty and "Draft changes • checkpoint to keep" or "Saved • " .. FT.SafeText(
+                and (dirty and "Draft saved before switching nodes" or "Saved • " .. FT.SafeText(
                     node.title,
                     48
                 ))
@@ -190,17 +203,21 @@ function UI.RefreshHistory()
                 r.title:SetText(FT.SafeText(n.title, 48))
                 r.detail:SetText(
                     "Lv. "
-                        .. M.RequiredLevel(n.build)
+                        .. n.build.level
                         .. " • "
                         .. #n.build.order
                         .. " pts"
                         .. (item.depth > 4 and " • branch " .. item.depth or "")
                 )
-                r:SetActive(node and node.id == n.id)
+                r:SetActive(n.working or (not dirty and node and node.id == n.id))
                 r:SetScript("OnClick", function()
-                    W.Result(FT.Store.LoadNode(p.id, n.id))
+                    if n.working then
+                        FT.Store.Preview(nil)
+                    else
+                        W.Result(FT.Store.LoadNode(p.id, n.id))
+                    end
                 end)
-                r.delete:Show()
+                r.delete:SetShown(not n.working)
                 r.delete:SetEnabled(not FT.Store.readOnly)
                 r.delete:SetScript("OnClick", function()
                     UI.DeleteNodeDialog(p.id, n.id)
@@ -208,9 +225,12 @@ function UI.RefreshHistory()
                 r:SetScript("OnEnter", function(self)
                     self:Paint(true)
                     W.Tooltip(self, FT.SafeText(n.title, 48), {
-                        "Click to load this checkpoint. Undo restores your draft.",
-                        "Save a new checkpoint after editing to branch from here.",
-                        "The x deletes this node and all its descendants.",
+                        n.working
+                                and "Your latest edits are shown here, separate from the saved checkpoint."
+                            or "Click to load this saved checkpoint.",
+                        "Working changes save as a new child checkpoint before you switch nodes.",
+                        n.working and "Use + Checkpoint to give these edits a title now."
+                            or "The x deletes this node and all its descendants.",
                     })
                 end)
                 r:SetScript("OnLeave", function(self)
@@ -251,7 +271,7 @@ function UI.RefreshHistory()
                 r:SetActive(p and p.id == profile.id)
                 r:SetScript("OnClick", function(_, button)
                     if IsControlKeyDown and IsControlKeyDown() then
-                        UI.ShareDialog(last.build, profile.name)
+                        UI.ShareDialog(last.build, profile.name, profile)
                     elseif button == "RightButton" then
                         UI.ProfileMenu(r, profile)
                     else

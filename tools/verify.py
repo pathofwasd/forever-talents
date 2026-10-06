@@ -18,6 +18,8 @@ run("python3", "tools/sync_core.py")
 for suite in [
     "core",
     "regressions",
+    "removal",
+    "checkpoints",
     "auto_level",
     "nodes",
     "portability",
@@ -30,6 +32,7 @@ for suite in [
     "client_talents",
     "training",
     "build_links",
+    "profile_links",
 ]:
     run("lua5.1", f"tests/test_{suite}.lua")
 run("python3", "tools/check_package.py", "--source-only")

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.10
+
+- Fixed valid talent removals being rejected by their old leveling sequence. Surviving points keep
+  their order when possible; locked steps move only as needed to preserve a legal allocation. Real
+  tier and prerequisite restrictions still apply, and Undo restores the exact previous order.
+- Working edits now save as a child checkpoint before loading another node. The graph distinguishes
+  the current draft from saved snapshots; earlier checkpoints stay intact. Identical saved children
+  are reused, and navigation at the checkpoint limit keeps the draft in place.
+- Both fixes share the addon/PWA engine and retain existing saves and sharing formats.
+- Added **Build + checkpoints** links and FP1 strings. Share one profile's full branch tree and
+  current draft, preview every checkpoint before opening it, and keep other builds/stats private.
+- Loading a checkpoint restores its saved target level. Auto turns off explicitly when it would
+  change that level; Undo restores the previous level mode.
+- Saving a profile or checkpoint clears stale Redo entries so they cannot restore an earlier name or
+  detach the new save.
+
 ## 1.2.9
 
 - Corrected player-rank selection and imported helper/cosmetic aliases, including Holy Light at

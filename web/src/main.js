@@ -67,6 +67,7 @@ function act(name, payload = {}) {
   try {
     const value = engine.call(name, payload);
     update();
+    if ((name === 'remove' || name === 'load') && state.message) toast(state.message);
     return value;
   } catch (e) {
     toast(e.message, true);
@@ -326,6 +327,17 @@ function renderHistory() {
       depth[id] = n.parent ? depth[n.parent] + 1 : 0;
       return { ...n, x: depth[id] * 28, y: i * 64 };
     });
+  if (state.dirty) {
+    nodes.push({
+      id: 0,
+      parent: state.activeNode,
+      title: 'Current draft',
+      build: state.build,
+      working: true,
+      x: (depth[state.activeNode] + 1) * 28,
+      y: nodes.length * 64,
+    });
+  }
   const links = nodes
     .filter((n) => n.parent)
     .map((n) => {
@@ -334,7 +346,7 @@ function renderHistory() {
     })
     .join('');
   $('#history-graph').innerHTML =
-    `<div class="graph-heading"><h3>${esc(p.name)}</h3><small>${state.dirty ? 'Draft changes' : 'At checkpoint'}</small></div><div class="graph-scroll"><div class="graph" style="height:${nodes.length * 64}px;min-width:${Math.max(...nodes.map((n) => n.x)) + 204}px"><svg aria-hidden="true" width="100%" height="100%">${links}</svg>${nodes.map((n) => `<div class="graph-node ${state.activeNode === n.id ? 'active' : ''}" style="left:${n.x}px;top:${n.y}px">${btn(`<strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} ${list(n.build.order).length === 1 ? 'point' : 'points'}</small>`, 'load', `data-profile="${p.id}" data-node="${n.id}" title="${esc(n.title)}"`, 'node-main')}${btn('×', 'delete-node', `data-profile="${p.id}" data-node="${n.id}" aria-label="Delete ${esc(n.title)} and descendants"`, 'node-delete')}</div>`).join('')}</div></div>`;
+    `<div class="graph-heading"><h3>${esc(p.name)}</h3><small>${state.dirty ? 'Draft autosaved' : 'At checkpoint'}</small></div><p class="graph-hint">Checkpoints keep their saved allocation. Current edits save as a new child before you switch.</p><div class="graph-scroll"><div class="graph" style="height:${nodes.length * 64}px;min-width:${Math.max(...nodes.map((n) => n.x)) + 204}px"><svg aria-hidden="true" width="100%" height="100%">${links}</svg>${nodes.map((n) => `<div class="graph-node ${n.working || (!state.dirty && state.activeNode === n.id) ? 'active' : ''} ${n.working ? 'working' : ''}" style="left:${n.x}px;top:${n.y}px">${btn(`<strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} ${list(n.build.order).length === 1 ? 'point' : 'points'}</small>`, n.working ? 'full' : 'load', `data-profile="${p.id}" data-node="${n.id}" title="${esc(n.title)}"`, 'node-main')}${n.working ? '' : btn('×', 'delete-node', `data-profile="${p.id}" data-node="${n.id}" aria-label="Delete ${esc(n.title)} and descendants"`, 'node-delete')}</div>`).join('')}</div></div>`;
 }
 const dialogStack = [];
 function openDialog(title, html, wide = false, onReturn = null) {
@@ -521,9 +533,14 @@ function showSkill(name) {
   }
 }
 function showImport(code = '', buildLink = false) {
+  const profileLink = buildLink === 'profile';
   openDialog(
-    buildLink ? 'Open shared build' : 'Import from addon or another device',
-    `<p class="muted">${buildLink ? 'Review this build before loading. Your saved builds stay here, and Undo can restore your draft.' : 'Build link or <b>FT1</b> · character <b>FC1</b> · stats & gear <b>FS2</b> (FS1 supported) · full library <b>FL1</b>. Your draft stays here until you load.'}</p><label class="field-label" for="import-code">${buildLink ? 'Shared build link' : 'Paste a complete build link or sharing string'}</label><textarea id="import-code" rows="${buildLink ? 3 : 5}" maxlength="3145728" spellcheck="false" autocapitalize="off" autocomplete="off" ${buildLink ? `data-build-only="true" data-link-hash="${esc(location.hash)}"` : ''}>${esc(code)}</textarea><div id="import-preview" class="callout">Paste a link or string to preview it.</div><label class="pin" id="import-drafts-label" hidden><input id="import-drafts" type="checkbox">Also replace class drafts when merging the library</label><p class="muted" id="import-note"></p><div class="dialog-actions">${btn(buildLink ? 'Load build' : 'Load snapshot', 'import-load', '', 'primary', true)}${btn('Cancel', 'close')}</div>`
+    profileLink
+      ? 'Open build + checkpoints'
+      : buildLink
+        ? 'Open shared build'
+        : 'Import from addon or another device',
+    `<p class="muted">${buildLink ? 'Review this build before loading. Your saved builds stay here, and Undo can restore your draft.' : 'Build/profile link or <b>FT1 / FP1</b> · character <b>FC1</b> · stats & gear <b>FS2</b> (FS1 supported) · full library <b>FL1</b>. Your draft stays here until you load.'}</p><label class="field-label" for="import-code">${buildLink ? 'Shared build link' : 'Paste a complete build link or sharing string'}</label><textarea id="import-code" rows="${buildLink ? 3 : 5}" maxlength="3145728" spellcheck="false" autocapitalize="off" autocomplete="off" ${buildLink ? `data-${profileLink ? 'profile' : 'build'}-only="true" data-link-hash="${esc(location.hash)}"` : ''}>${esc(code)}</textarea><div id="import-preview" class="callout">Paste a link or string to preview it.</div><div id="profile-preview" class="import-checkpoints" hidden></div><label class="pin" id="import-drafts-label" hidden><input id="import-drafts" type="checkbox">Also replace class drafts when merging the library</label><p class="muted" id="import-note"></p><div class="dialog-actions">${btn(buildLink ? 'Load build' : 'Load snapshot', 'import-load', '', 'primary', true)}${btn('Cancel', 'close')}</div>`
   );
   if (code) previewImport();
   $('#import-code').focus();
@@ -535,49 +552,73 @@ function previewImport() {
     const snap = engine.call('decode', {
       code: input,
       buildOnly: $('#import-code').dataset.buildOnly === 'true',
+      profileOnly: $('#import-code').dataset.profileOnly === 'true',
     });
     load.disabled = false;
     $('#import-drafts-label').hidden = snap.kind !== 'library';
     load.textContent =
-      snap.kind === 'library'
-        ? 'Merge library'
-        : snap.kind === 'build'
-          ? 'Load build'
-          : 'Load snapshot';
-    $('#import-preview').textContent =
-      snap.kind === 'library'
-        ? `${snap.profiles} profiles · ${snap.nodes} checkpoints · ${snap.drafts} class drafts`
-        : `${snap.build ? snap.build.name + ' · ' : ''}${catalog.classes[(snap.build || snap.stats).classID].name} · ${catalog.races[(snap.build || snap.stats).raceID].name} · level ${(snap.build || snap.stats).level} · ${snap.kind}${snap.build ? ` · ${list(snap.build.order).length} points` : ''}`;
-    $('#import-note').textContent =
-      snap.kind === 'library'
-        ? 'Profiles merge without replacing existing profiles; exact duplicates are skipped. Character workspaces and simulation settings also sync. Checked above: incoming class drafts replace drafts for those classes. Export your library first for a backup.'
-        : snap.kind === 'stats'
-          ? 'Loads simulation stats only. Your talents, race and level stay as they are.'
+      snap.kind === 'profile'
+        ? 'Open build + checkpoints'
+        : snap.kind === 'library'
+          ? 'Merge library'
           : snap.kind === 'build'
-            ? 'Loads class, race, level, talents and exact point order into a draft. Saved profiles and character stats stay here. Save it as a new build to keep a named copy.'
-            : 'Loads the shared class, race, level and talent order. Character snapshots also load the central stat/equipment workspace. Undo restores talents; character stats stay separate.';
+            ? 'Load build'
+            : 'Load snapshot';
+    $('#import-preview').textContent =
+      snap.kind === 'profile'
+        ? `${snap.profile.name} · ${catalog.classes[snap.build.classID].name} · ${snap.nodes} checkpoints`
+        : snap.kind === 'library'
+          ? `${snap.profiles} profiles · ${snap.nodes} checkpoints · ${snap.drafts} class drafts`
+          : `${snap.build ? snap.build.name + ' · ' : ''}${catalog.classes[(snap.build || snap.stats).classID].name} · ${catalog.races[(snap.build || snap.stats).raceID].name} · level ${(snap.build || snap.stats).level} · ${snap.kind}${snap.build ? ` · ${list(snap.build.order).length} points` : ''}`;
+    $('#import-note').textContent =
+      snap.kind === 'profile'
+        ? 'Opens the complete checkpoint tree with titles, branches and exact talent orders. Your other builds and character stats stay here. Identical profiles are reused.'
+        : snap.kind === 'library'
+          ? 'Profiles merge without replacing existing profiles; exact duplicates are skipped. Character workspaces and simulation settings also sync. Checked above: incoming class drafts replace drafts for those classes. Export your library first for a backup.'
+          : snap.kind === 'stats'
+            ? 'Loads simulation stats only. Your talents, race and level stay as they are.'
+            : snap.kind === 'build'
+              ? 'Loads class, race, level, talents and exact point order into a draft. Saved profiles and character stats stay here. Save it as a new build to keep a named copy.'
+              : 'Loads the shared class, race, level and talent order. Character snapshots also load the central stat/equipment workspace. Undo restores talents; character stats stay separate.';
+    $('#profile-preview').hidden = snap.kind !== 'profile';
+    if (snap.kind === 'profile') {
+      const depths = {};
+      $('#profile-preview').innerHTML = list(snap.profile.order)
+        .map((id) => {
+          const n = snap.profile.nodes[id];
+          depths[id] = n.parent ? depths[n.parent] + 1 : 0;
+          return `<div style="padding-left:${Math.min(depths[id], 8) * 12}px"><strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} points${id === snap.selected ? ' · opens here' : ''}</small></div>`;
+        })
+        .join('');
+    }
   } catch (e) {
     load.disabled = true;
     $('#import-drafts-label').hidden = true;
+    $('#profile-preview').hidden = true;
     $('#import-preview').textContent = input ? e.message : 'Paste a string to preview it.';
     $('#import-note').textContent = '';
   }
 }
 function openBuildLink() {
   if (location.hash.startsWith('#build=')) showImport(catalog.buildURL + location.hash, true);
+  else if (location.hash.startsWith('#profile='))
+    showImport(catalog.buildURL + location.hash, 'profile');
 }
 function showShare(kind = 'link', context = {}) {
   openDialog(
     'Copy & share',
     `<p class="muted">Send a build link for a friend to open in their browser, or copy a sharing string for the addon and PWA. Friends need the same data version for talent builds.</p><label class="field-label" for="share-kind">What to copy</label><select id="share-kind">${[
       ['link', 'Web link to this build'],
+      ['profileLink', 'Build + checkpoints link'],
+      ['profile', 'Build + checkpoints string'],
       ['build', 'Talent build + ordered points'],
       ['character', 'Character: level + talents + stats + gear'],
       ['stats', 'Character stats + gear (or temporary skill inputs)'],
       ['library', 'Whole library: builds + branches + drafts'],
     ]
       .map(
-        ([id, title]) => `<option value="${id}" ${id === kind ? 'selected' : ''}>${title}</option>`
+        ([id, title]) =>
+          `<option value="${id}" ${id === kind ? 'selected' : ''} ${(id === 'profileLink' || id === 'profile') && !(context.profileID || state.activeProfile) ? 'disabled' : ''}>${title}</option>`
       )
       .join(
         ''
@@ -590,20 +631,33 @@ function refreshShare() {
   try {
     const kind = $('#share-kind').value;
     const code = engine.call('export', { kind, ...modal.shareContext });
+    const isLink = kind === 'link' || kind === 'profileLink';
+    $('[data-action="copy-code"]').disabled = false;
+    $('[data-action="download-code"]').disabled = false;
     $('#share-code').value = code;
-    $('#share-code').rows = kind === 'link' ? 3 : 5;
-    $('#share-label').textContent = kind === 'link' ? 'Build link' : 'Sharing string';
-    $('[data-action="copy-code"]').textContent =
-      kind === 'link' ? 'Copy build link' : 'Copy string';
+    $('#share-code').rows = isLink ? 3 : 5;
+    $('#share-label').textContent =
+      kind === 'profileLink'
+        ? 'Build + checkpoints link'
+        : isLink
+          ? 'Build link'
+          : 'Sharing string';
+    $('[data-action="copy-code"]').textContent = isLink ? 'Copy build link' : 'Copy string';
     $('#share-note').textContent =
-      kind === 'link'
-        ? 'Includes class, race, displayed level, talents and exact point order. Your friend can review before loading; no account needed. Character stats, gear and your library are shared separately.'
-        : kind === 'library'
-          ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
-          : kind === 'stats'
-            ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
-            : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
+      kind === 'profileLink' || kind === 'profile'
+        ? 'Includes this saved build, all its checkpoint branches and your current draft. Your friend can preview the tree before opening it. Other profiles, character stats and equipment are not included. Very large trees can use a profile string or file.'
+        : kind === 'link'
+          ? 'Includes class, race, displayed level, talents and exact point order. Your friend can review before loading; no account needed. Character stats, gear and your library are shared separately.'
+          : kind === 'library'
+            ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
+            : kind === 'stats'
+              ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
+              : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
   } catch (e) {
+    $('#share-code').value = '';
+    $('[data-action="copy-code"]').disabled = true;
+    $('[data-action="download-code"]').disabled = true;
+    $('#share-note').textContent = e.message;
     toast(e.message, true);
   }
 }
@@ -612,7 +666,7 @@ async function copyCode() {
   try {
     await navigator.clipboard.writeText(field.value);
     toast(
-      $('#share-kind').value === 'link'
+      ['link', 'profileLink'].includes($('#share-kind').value)
         ? 'Build link copied. Send it to a friend to open in the web app.'
         : 'Copied. Paste into the addon or another device.'
     );
@@ -634,7 +688,7 @@ function showLibrary() {
   const profiles = list(state.profileOrder).map((id) => state.profiles[id]);
   openDialog(
     'Library & sync',
-    `<p class="muted">Saved builds, immutable checkpoints and alternate branches. Your class drafts autosave separately.</p><div class="dialog-actions">${btn('New build', 'save', '', 'primary')}${btn('Export whole library', 'export-library')}${btn('Import / merge library', 'import')}${btn('Open sharing file', 'open-file')}</div><input id="sharing-file" type="file" accept=".txt,.ftc,text/plain" hidden><div class="library-list">${profiles.length ? profiles.map((p) => `<article class="library-card"><div><h3>${esc(p.name)}</h3><p class="muted">${esc(catalog.classes[p.nodes[list(p.order)[0]].build.classID].name)} · ${list(p.order).length} checkpoints</p></div><div>${btn('Open', 'load', `data-profile="${p.id}" data-node="${list(p.order).at(-1)}"`, 'primary')}${btn('Rename', 'rename', `data-profile="${p.id}"`)}${btn('Delete', 'delete-profile', `data-profile="${p.id}"`, 'danger')}</div></article>`).join('') : '<p class="empty">No saved profiles yet. Choose Save build to start one.</p>'}</div><p class="callout">To sync everything: Export whole library → copy the string or save a file → open Character in the addon or Import in this app → merge. Profiles with identical contents are skipped. Export before replacing class drafts.</p>`,
+    `<p class="muted">Saved builds, immutable checkpoints and alternate branches. Your class drafts autosave separately.</p><div class="dialog-actions">${btn('New build', 'save', '', 'primary')}${btn('Export whole library', 'export-library')}${btn('Import / merge library', 'import')}${btn('Open sharing file', 'open-file')}</div><input id="sharing-file" type="file" accept=".txt,.ftc,text/plain" hidden><div class="library-list">${profiles.length ? profiles.map((p) => `<article class="library-card"><div><h3>${esc(p.name)}</h3><p class="muted">${esc(catalog.classes[p.nodes[list(p.order)[0]].build.classID].name)} · ${list(p.order).length} checkpoints</p></div><div>${btn('Open', 'load', `data-profile="${p.id}" data-node="${list(p.order).at(-1)}"`, 'primary')}${btn('Share checkpoints', 'share-profile', `data-profile="${p.id}"`)}${btn('Rename', 'rename', `data-profile="${p.id}"`)}${btn('Delete', 'delete-profile', `data-profile="${p.id}"`, 'danger')}</div></article>`).join('') : '<p class="empty">No saved profiles yet. Choose Save build to start one.</p>'}</div><p class="callout">To sync everything: Export whole library → copy the string or save a file → open Character in the addon or Import in this app → merge. Profiles with identical contents are skipped. Export before replacing class drafts.</p>`,
     true,
     showLibrary
   );
@@ -685,7 +739,7 @@ function showHelp() {
   }
   openDialog(
     'A quick guide',
-    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Alt-click opens the full talent details and affected skills. Shift fills or clears its ranks. On phones, tap a talent to open the bottom panel, then use + / −. The tree stays scrollable and interactive; tap another talent to inspect it without closing. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links. Each class-skill row shows its first unlock level and the displayed rank’s own level. Trained marks imported spellbook ranks. A second line shows the next rank with a lock until its required level; the line disappears at maximum rank. Talent requirements still apply. This works with comparison off.</p><p>Enable Compare imported character to check your last imported spellbook against the displayed level and talents. Gold rows need a new skill or higher rank; Needs training filters them. ↑3 means three more levels until the next rank or first unlock, and ↑0 means that level is reached. Talent requirements still apply. Re-import after learning skills; the comparison is a snapshot.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>Share → Copy build link sends a browser link with the displayed class, race, level, talents and exact point order. Friends review it before loading; no account is needed. Addon Share → Web link makes the same link, and either interface accepts it through Import.</p><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
+    `<div class="guide-grid"><article><h3>Plan the journey</h3><p>On desktop, click a talent to add a point; right-click removes one. Alt-click opens the full talent details and affected skills. Shift fills or clears its ranks. On phones, tap a talent to open the bottom panel, then use + / −. The tree stays scrollable and interactive; tap another talent to inspect it without closing. Keyboard users can focus a talent and press Enter to inspect it.</p><p>Rows need five points per tier in the same tree. Prerequisites, maximum ranks and level budgets come from the same engine as the addon. Auto raises and lowers your level as you spend or remove points. If a removal needs a different legal leveling order, the calculator adjusts only the necessary steps and tells you. Undo restores the original order.</p></article><article><h3>Find the interactions</h3><p>Search skills and talents by name or description. Hover a skill for temporary highlights, or check boxes to keep several highlights. Clear highlights unchecks every selection. Open a skill for all ranks, unlock levels and talent links. Each class-skill row shows its first unlock level and the displayed rank’s own level. Trained marks imported spellbook ranks. A second line shows the next rank with a lock until its required level; the line disappears at maximum rank. Talent requirements still apply. This works with comparison off.</p><p>Enable Compare imported character to check your last imported spellbook against the displayed level and talents. Gold rows need a new skill or higher rank; Needs training filters them. ↑3 means three more levels until the next rank or first unlock, and ↑0 means that level is reached. Talent requirements still apply. Re-import after learning skills; the comparison is a snapshot.</p><p>Character keeps a central stat and equipment plan per class. Simulator inherits it, shows only applicable inputs, and keeps experiments temporary. Expected totals average crits and failed casts. Open the calculation and accuracy details for formulas, sources and missing mechanics.</p></article><article><h3>Checkpoint and branch</h3><p>Save a build, then save titled checkpoints. Each checkpoint holds its saved allocation; later edits appear as Current draft. Before you load another node, those edits save as an Autosaved child checkpoint. Click that child to return to them, or use Checkpoint to give your current edits a title. Open an old node to grow a new branch. Deleting a node deletes its descendants; your current allocation stays here. Undo / Redo keep 100 edits per class.</p><p>Hover or keyboard-focus a talent-order step to highlight its talent. Click or tap it to preview that level. Full build exits preview. Branch here turns that prefix into a draft you can checkpoint.</p></article><article><h3>Share & sync</h3><p>Share → Copy build link sends a browser link with the displayed class, race, level, talents and exact point order. Friends review it before loading; no account is needed. Addon Share → Web link makes the same link, and either interface accepts it through Import.</p><p>For the full branch tree, choose Share → Build + checkpoints link, or Share checkpoints in Library. It includes every saved node and your current draft; other builds and character stats stay private. FP1 strings provide the same profile transfer, with files available for large trees.</p><p>FT1 shares talents and their order. FC1 adds level, character stats and equipment. FS2 shares character stats and gear, or temporary skill inputs; FS1 is still supported. FL1 transfers your full build library, branches and class drafts. In the addon, open Import or Character → Import my talents & skills to capture the logged-in character. The Trained filter shows captured spellbook ranks rather than the highest rank available to the plan.</p><p>A browser cannot read a running WoW client. Copy the capture in the addon and paste it here. Apply or cancel pending changes in the game’s Talents window before capturing. If client data is still loading, open Talents and Spellbook and retry; a failed import keeps the current build. Original live spending order is unavailable; live imports derive a legal order.</p></article><article><h3>Offline & install</h3><p>After the offline status says Ready, the calculator works without a connection. Install from the app button or your browser menu. iPhone/iPad: Safari → Share → Add to Home Screen. Windows/Linux/Android: an install-capable browser can create an app shortcut.</p><p>Browser saves stay on this device. Export your library before clearing website data or switching browsers. Update prompts preserve your local library.</p></article><article><h3>Data notes</h3><p>Captured Forever ${esc(catalog.meta.build)} / ${esc(catalog.meta.buildNumber)}, ${esc(catalog.meta.generatedAt.slice(0, 10))}. Missing descriptions are marked. Simulator uses a separately dated client-effect snapshot and reviewed developer corrections. Unknown scaling is marked as unverified and contributes no power until you supply a coefficient. Reference base stats are estimates; native live captures retain reported totals.</p><p>Class talents, legacy perks and pet reference tables have separate systems. Perks are a read-only atlas, not part of the 51 talent points.</p></article></div>`,
     true
   );
 }
@@ -975,6 +1029,7 @@ document.addEventListener('click', async (event) => {
           act('import', {
             code: $('#import-code').value,
             buildOnly: $('#import-code').dataset.buildOnly === 'true',
+            profileOnly: $('#import-code').dataset.profileOnly === 'true',
             includeDrafts: $('#import-drafts').checked,
           }) !== null
         ) {
@@ -1001,6 +1056,9 @@ document.addEventListener('click', async (event) => {
         break;
       case 'export-library':
         showShare('library');
+        break;
+      case 'share-profile':
+        showShare('profileLink', { profileID });
         break;
       case 'open-file':
         $('#sharing-file').click();

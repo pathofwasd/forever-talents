@@ -259,3 +259,38 @@ Updating from 1.2.8 retained the saved build, allocation order and starting chec
 preview server stopped, 1.2.9 reloaded offline and recovered that build and checkpoint. The browser
 console reported no errors. Native callbacks were verified in the API harness; live WoW loading,
 capture and native visual behavior remain unverified. No installed addon files were changed.
+
+## Version 1.2.10 validation
+
+Passed the native regression suites, fifteen browser-engine tests, exact Lua 5.1/WASM sharing
+parity, generated-file checks, production build, formatting and archive validation. Removal tests
+cover every talent in full builds across all nine classes: legal surviving allocations retain all
+other ranks, every leveling prefix validates, and genuine prerequisite/tier failures stay blocked.
+The reported Mage Fire sequence now allows the first two Incineration removals. Undo restores the
+original order and immutable checkpoints.
+
+Checkpoint tests cover automatic child snapshots, identical-child reuse, cross-class navigation,
+read-only/capacity failures, subtree deletion, saved-data recovery and visible working drafts. The
+exact level-60/five-point reproduction restores level 60, explicitly disables conflicting Auto,
+shows skills for level 60 and remains clean. Undo/Redo restore their respective level modes. Saving
+after Undo clears stale Redo without changing the new profile's name or association; failed saves
+preserve history. Native sidebar and expanded graph labels show saved target levels.
+
+FP1 tests cover full checkpoint trees and working drafts, exact addon/PWA exports, malformed or
+corrupted payloads, wrong versions/data tags, invalid graphs, deduplication, library recovery and
+large trees that require a string/file. Single-profile exports contain no other profiles, character
+stats or equipment. Existing FT1/FS2/FC1/FL1 formats retain exact native/WASM parity.
+
+Production browser checks covered 1280 px desktop, 320/375 px phones, 844×390 landscape and 1024 px
+tablet without horizontal page overflow. Desktop right-click removal, keyboard inspection, phone
+point controls, visible current drafts, checkpoint switching and full-profile link previews worked.
+An incoming four-node tree opened at its selected draft without removing the recipient's existing
+build. Damaged links disabled Open; Cancel kept the current build. The copy button produced the
+exact complete-profile link.
+
+Updating the previous cached release preserved the test library and checkpoints. With both preview
+servers stopped, reload recovered every profile, node, point order and character setting; checkpoint
+navigation, Undo/Redo and incoming link previews worked offline. The first reload normalized
+optional saved flags, and the second reload produced an identical full-library export. Browser
+console checks reported no errors. Native callbacks were verified in the API harness; live WoW
+loading and native visual behavior remain unverified. No installed addon files were changed.

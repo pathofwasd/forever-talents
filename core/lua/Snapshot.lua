@@ -360,6 +360,9 @@ function P.Decode(code)
         return nil, "Paste a sharing string."
     end
     code = code:match("^%s*(.-)%s*$")
+    if FT.Library.IsProfileShare(code) then
+        return FT.Library.DecodeProfile(code)
+    end
     if code:sub(1, 4) == "FT1:" or code:match("^https?://") then
         local b, why = C.Decode(code)
         return b and { kind = "build", build = b } or nil, why
@@ -455,6 +458,9 @@ function P.ForSkill(profile, skill, rank, build, effectMode)
     return state, note
 end
 function P.Apply(snapshot)
+    if snapshot and snapshot.kind == "profile" then
+        return FT.Library.ImportProfile(snapshot)
+    end
     if snapshot.build then
         local ok, why = FT.Store.Import(snapshot.build)
         if not ok then

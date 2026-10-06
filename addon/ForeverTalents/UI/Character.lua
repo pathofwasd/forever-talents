@@ -99,6 +99,10 @@ function UI.CharacterDialog(code)
             end
             f.snapshot = snap
             f.load:SetEnabled(snap ~= nil)
+            f.load:SetText(
+                snap and snap.kind == "profile" and "Open build + checkpoints"
+                    or "Load snapshot / merge library"
+            )
             f.drafts:SetShown(snap and snap.kind == "library" or false)
             f.draftLabel:SetShown(snap and snap.kind == "library" or false)
             if not snap then
@@ -108,7 +112,14 @@ function UI.CharacterDialog(code)
                 f.details:SetText("")
                 return
             end
-            if snap.kind == "library" then
+            if snap.kind == "profile" then
+                f.summary:SetText(
+                    FT.SafeText(snap.profile.name, 48) .. " • " .. snap.nodes .. " checkpoints"
+                )
+                f.details:SetText(
+                    "Opens this build with its checkpoint titles, branches and exact point orders.\nYour other profiles and character stats are kept. Identical profiles are reused."
+                )
+            elseif snap.kind == "library" then
                 f.summary:SetText(
                     snap.profiles
                         .. " saved profiles • "

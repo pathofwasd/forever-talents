@@ -132,7 +132,7 @@ test("invalid imports cannot bypass rules", function()
     check(not C.Decode(string.rep("x", 513)))
 end)
 
-test("removal keeps the precise surviving order and refuses broken dependencies", function()
+test("removal preserves legal order and refuses broken dependencies", function()
     local build = greedy(M.New(11))
     local points = M.Counts(build)
     local refused = 0
@@ -148,8 +148,16 @@ test("removal keeps the precise surviving order and refuses broken dependencies"
                     break
                 end
             end
-            for i, value in ipairs(expected) do
-                check(result.order[i] == value)
+            local surviving = FT.Copy(build)
+            surviving.order = expected
+            if M.Validate(surviving) then
+                for i, value in ipairs(expected) do
+                    check(result.order[i] == value)
+                end
+            end
+            local remaining = M.Counts(result)
+            for talentID, rank in pairs(points) do
+                check((remaining[talentID] or 0) == rank - (talentID == id and 1 or 0))
             end
         else
             refused = refused + 1
@@ -224,7 +232,8 @@ test("checkpoints are immutable and form genuine branches", function()
     local persisted = FT.Copy(S.db)
     _G.ForeverTalentsDB = persisted
     S.Init(11, 4)
-    check(#S.db.profiles[root.id].order == 4)
+    check(#S.db.profiles[root.id].order == 5)
+    check(#S.db.profiles[root.id].nodes[5].build.order == 2, "navigation lost the draft")
     check(M.Same(S.Build(), branch.build))
     check(S.RenameProfile(root.id, "Another title"))
     check(S.DeleteProfile(root.id))

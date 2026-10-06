@@ -331,7 +331,7 @@ function S.SetAutoLevel(enabled)
     return true
 end
 
-function S.Edit(build, message, profileID, nodeID, changeContext)
+function S.Edit(build, message, profileID, nodeID, changeContext, savedLevel)
     if S.preview then
         return false, "Return to the full build before editing talents."
     end
@@ -339,7 +339,7 @@ function S.Edit(build, message, profileID, nodeID, changeContext)
     if not ok then
         return false, why
     end
-    if S.AutoLevel() then
+    if S.AutoLevel() and not savedLevel then
         build = FT.Copy(build)
         build.level = FT.Model.RequiredLevel(build)
     end
@@ -354,6 +354,9 @@ function S.Edit(build, message, profileID, nodeID, changeContext)
     d.build, d.redo = FT.Copy(build), {}
     if changeContext then
         d.profileID, d.nodeID = profileID, nodeID
+    end
+    if savedLevel and d.autoLevel and build.level ~= FT.Model.RequiredLevel(build) then
+        d.autoLevel, d.manualLevel = false, nil
     end
     FT.Changed(message)
     return true
@@ -372,7 +375,7 @@ function S.Apply(action, ...)
     if not build then
         return false, why
     end
-    return S.Edit(build)
+    return S.Edit(build, why or "")
 end
 
 function S.Undo()
@@ -462,6 +465,7 @@ function S.CreateProfile(title)
     S.db.profileOrder[#S.db.profileOrder + 1] = id
     local d = S.Draft()
     d.build, d.profileID, d.nodeID = build, id, 1
+    d.redo = {}
     S.preview = nil
     FT.Changed("Saved " .. title .. ". Checkpoint any alternate path from here.")
     return p
@@ -480,6 +484,60 @@ function S.Dirty()
     return not p or not FT.Model.Same(S.Build(), node.build)
 end
 
+local function checkpointNode(p, parent, draft, title)
+    local id = p.nextNode or (#p.order + 1)
+    while p.nodes[id] do
+        id = id + 1
+    end
+    p.nextNode = id + 1
+    p.nodes[id] = {
+        id = id,
+        parent = parent.id,
+        title = title,
+        build = FT.Copy(draft.build),
+        created = FT.Now(),
+    }
+    p.order[#p.order + 1] = id
+    draft.nodeID = id
+    return p.nodes[id]
+end
+
+local function matchingChild(p, parent, draft)
+    for _, id in ipairs(p.order) do
+        local child = p.nodes[id]
+        if child.parent == parent.id and FT.Model.Same(child.build, draft.build) then
+            return child
+        end
+    end
+end
+
+function S.ShareProfile(profileID)
+    local p = S.db.profiles[profileID]
+    if not p then
+        return nil, "Save a named build first to share its checkpoints."
+    end
+    local copy = FT.Copy(p)
+    local draft = S.db.drafts[p.nodes[p.order[1]].build.classID]
+    local selected = draft and draft.profileID == profileID and draft.nodeID or p.order[#p.order]
+    if
+        draft
+        and draft.profileID == profileID
+        and not FT.Model.Same(draft.build, copy.nodes[selected].build)
+    then
+        local child = matchingChild(copy, copy.nodes[selected], draft)
+        if not child then
+            if #copy.order >= 400 then
+                return nil,
+                    "This profile has 400 checkpoints. Save the working draft as a new build before sharing."
+            end
+            child = checkpointNode(copy, copy.nodes[selected], FT.Copy(draft), "Shared draft")
+            child.created = 0 -- Temporary snapshot: no recorded checkpoint creation time.
+        end
+        selected = child.id
+    end
+    return copy, selected
+end
+
 function S.Checkpoint(title)
     if S.readOnly then
         return nil, "Saving is disabled to preserve newer saved data."
@@ -495,23 +553,11 @@ function S.Checkpoint(title)
     if title == "" then
         return nil, "Give this checkpoint a title."
     end
-    local id = p.nextNode or (#p.order + 1)
-    while p.nodes[id] do
-        id = id + 1
-    end
-    p.nextNode = id + 1
-    p.nodes[id] = {
-        id = id,
-        parent = parent.id,
-        title = title,
-        build = FT.Copy(S.Build()),
-        created = FT.Now(),
-    }
-    p.order[#p.order + 1] = id
-    S.Draft().nodeID = id
+    local node = checkpointNode(p, parent, S.Draft(), title)
+    S.Draft().redo = {}
     S.preview = nil
     FT.Changed("Checkpoint saved: " .. title .. ".")
-    return p.nodes[id]
+    return node
 end
 
 function S.LoadNode(profileID, nodeID)
@@ -520,16 +566,61 @@ function S.LoadNode(profileID, nodeID)
     if not node then
         return false, "Checkpoint not found."
     end
+    -- Navigation must not replace a profile's working changes with an older
+    -- snapshot. Save a child before leaving, including a destination class's
+    -- draft when switching classes. Preflight both before changing either.
+    local pending = {}
+    local classes = { S.classID }
+    if node.build.classID ~= S.classID then
+        classes[#classes + 1] = node.build.classID
+    end
+    for _, classID in ipairs(classes) do
+        local draft = S.db.drafts[classID]
+        local profile = draft and S.db.profiles[draft.profileID]
+        local parent = profile and profile.nodes[draft.nodeID]
+        if parent and not FT.Model.Same(draft.build, parent.build) then
+            if S.readOnly then
+                return false,
+                    "Saving is disabled. Your working changes are kept; use Undo to return."
+            end
+            local existing = matchingChild(profile, parent, draft)
+            if not existing and #profile.order >= 400 then
+                return false,
+                    "This profile has 400 checkpoints. Save your draft as a new build before switching."
+            end
+            local ok, why = validBuild(draft.build)
+            if not ok then
+                return false, why
+            end
+            pending[#pending + 1] =
+                { profile = profile, parent = parent, draft = draft, existing = existing }
+        end
+    end
+    local saved
+    for _, item in ipairs(pending) do
+        local title =
+            FT.SafeText("Autosaved · " .. item.parent.title:gsub("^Autosaved · ", ""), 48)
+        saved = item.existing or checkpointNode(item.profile, item.parent, item.draft, title)
+        item.draft.nodeID = saved.id
+    end
     S.SwitchClass(node.build.classID)
-    return S.Edit(
-        node.build,
-        "Loaded "
-            .. node.title
-            .. ". New checkpoints branch from this node; Undo returns to your previous work.",
-        profileID,
-        nodeID,
-        true
-    )
+    local autoDisabled = S.AutoLevel() and node.build.level ~= FT.Model.RequiredLevel(node.build)
+    local notice = "Loaded "
+        .. node.title
+        .. ". New checkpoints branch from this node; Undo returns to your previous work."
+    if saved then
+        notice = #pending == 1
+                and ("Changes saved as " .. saved.title .. ". Loaded " .. node.title .. ".")
+            or "Both working drafts saved as child checkpoints before switching."
+    end
+    if autoDisabled then
+        notice = notice .. " Auto turned off to restore saved level " .. node.build.level .. "."
+    end
+    local ok, why = S.Edit(node.build, notice, profileID, nodeID, true, true)
+    if ok then
+        FT.Changed(notice)
+    end
+    return ok, why
 end
 
 function S.RenameProfile(id, title)

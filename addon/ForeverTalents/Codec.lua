@@ -87,8 +87,8 @@ function C.BuildLink(build)
     return code and (C.WebURL .. "#build=" .. code) or nil, why
 end
 
-local function linkCode(input)
-    local prefix = C.WebURL .. "#build="
+function C.LinkCode(input, kind)
+    local prefix = C.WebURL .. "#" .. (kind or "build") .. "="
     if input:sub(1, #prefix) ~= prefix then
         return nil, "Paste a Forever Talents build link or build string."
     end
@@ -115,7 +115,7 @@ function C.Decode(input)
             return nil, "Build links must be at most 2048 characters."
         end
         local why
-        input, why = linkCode(input:match("^%s*(.-)%s*$"))
+        input, why = C.LinkCode(input:match("^%s*(.-)%s*$"))
         if not input then
             return nil, why
         end

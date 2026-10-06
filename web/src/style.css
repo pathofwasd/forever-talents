@@ -798,6 +798,32 @@ h1 span {
   white-space: nowrap;
   font-size: 9px;
 }
+.graph-hint {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+.import-checkpoints {
+  max-height: 220px;
+  overflow: auto;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.import-checkpoints > div {
+  margin: 8px 0;
+}
+.import-checkpoints strong,
+.import-checkpoints small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.import-checkpoints small {
+  margin-top: 4px;
+  color: var(--muted);
+}
 .graph-scroll {
   overflow: auto;
   max-height: 245px;
@@ -830,6 +856,9 @@ h1 span {
 .graph-node.active {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px #edbb7033;
+}
+.graph-node.working {
+  border-style: dashed;
 }
 .node-main {
   border: 0;

@@ -2,7 +2,7 @@
 ## Title: Forever Talents
 ## Notes: Talent planner, complete skill atlas, leveling order and branching build checkpoints for WoW Forever.
 ## Author: Forever Talents contributors
-## Version: 1.2.9
+## Version: 1.2.10
 ## SavedVariables: ForeverTalentsDB
 ## IconTexture: Interface\AddOns\ForeverTalents\Media\Icons\class_druid.tga
 Namespace.lua

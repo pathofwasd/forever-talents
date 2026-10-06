@@ -1,6 +1,6 @@
 local name, FT = ...
 _G.ForeverTalents = FT
-FT.name, FT.version = name, "1.2.9"
+FT.name, FT.version = name, "1.2.10"
 FT.UI = {}
 FT.classOrder = { 11, 3, 8, 2, 5, 4, 7, 9, 1 }
 

@@ -104,6 +104,9 @@ local function catalog()
     }
 end
 local function decode(p)
+    if p.profileOnly then
+        return FT.Library.DecodeProfile(p.code)
+    end
     if p.buildOnly then
         local build, why = C.Decode(p.code)
         return build and { kind = "build", build = build } or nil, why
@@ -205,6 +208,13 @@ local commands = {
         return FT.Snapshot.Apply(snap)
     end,
     export = function(p)
+        if p.kind == "profileLink" or p.kind == "profile" then
+            local id = p.profileID or (S.ActiveProfile() and S.ActiveProfile().id)
+            if p.kind == "profileLink" then
+                return FT.Library.ProfileLink(id)
+            end
+            return FT.Library.EncodeProfile(id)
+        end
         if p.kind == "link" then
             return C.BuildLink(S.ExportView())
         end

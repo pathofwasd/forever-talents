@@ -169,12 +169,40 @@ function M.Remove(build, id, all)
     if not found then
         return nil, "No points are spent in this talent."
     end
-    -- Validate every leveling step after removing the selected point.
     local ok, why = M.Validate(result)
-    if not ok then
-        return nil, "Remove dependent points first. " .. why
+    if ok then
+        return result
     end
-    return result
+    -- A surviving early talent can become temporarily locked even when later
+    -- supporting points make the allocation legal. Replay the earliest eligible
+    -- point, deferring locked entries without dropping any other ranks.
+    local pending, points, trees = result.order, {}, {}
+    local index = M.Index(result.classID)
+    result.order = {}
+    while #pending > 0 do
+        local placed, blocked
+        for i, talentID in ipairs(pending) do
+            local available, reason = canAdd(result, talentID, points, trees, #result.order)
+            if available then
+                local talent = index[talentID]
+                result.order[#result.order + 1] = talentID
+                points[talentID] = (points[talentID] or 0) + 1
+                trees[talent.treeID] = (trees[talent.treeID] or 0) + 1
+                table.remove(pending, i)
+                placed = true
+                break
+            end
+            blocked = blocked or reason
+        end
+        if not placed then
+            return nil, "Remove dependent points first. " .. blocked
+        end
+    end
+    ok, why = M.Validate(result)
+    if not ok then
+        return nil, why
+    end
+    return result, "Point removed. Leveling order adjusted to keep every step legal."
 end
 
 function M.Reset(build, treeID)

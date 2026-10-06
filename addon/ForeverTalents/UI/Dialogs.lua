@@ -266,8 +266,8 @@ function UI.SaveDialog(checkpoint)
     f.input:HighlightText()
 end
 
-function UI.ShareDialog(build, title)
-    local profile = not build and S.ActiveProfile()
+function UI.ShareDialog(build, title, profile)
+    profile = profile or (not build and S.ActiveProfile())
     build = FT.Copy(build or S.ExportView())
     if title or profile then
         build.name = FT.SafeText(title or profile.name, 48)
@@ -289,9 +289,11 @@ function UI.ShareDialog(build, title)
             13,
             W.colors.muted
         )
-        f.string = W.Button(f, "Build string", 22, -130, 170, nil, false, 28)
-        f.link = W.Button(f, "Web link", 202, -130, 170, nil, false, 28)
-        f.code = W.Edit(f, "", 22, -166, 676, nil, 2048)
+        f.string = W.Button(f, "Build string", 22, -130, 150, nil, false, 28)
+        f.link = W.Button(f, "Web link", 182, -130, 150, nil, false, 28)
+        f.profileLink = W.Button(f, "Checkpoints link", 342, -130, 166, nil, false, 28)
+        f.profileString = W.Button(f, "Profile string", 518, -130, 180, nil, false, 28)
+        f.code = W.Edit(f, "", 22, -166, 676, nil, 3 * 1024 * 1024)
         f.code:SetHeight(48)
         f.code:SetMultiLine(true)
         f.code:SetTextInsets(10, 10, 8, 8)
@@ -309,21 +311,47 @@ function UI.ShareDialog(build, title)
             .. #build.order
             .. " points"
     )
-    local function selectFormat(asLink)
-        f.string:SetActive(not asLink)
-        f.link:SetActive(asLink)
-        f.code:SetText(asLink and FT.Codec.BuildLink(build) or code)
+    f.profileLink:SetEnabled(profile ~= nil)
+    f.profileString:SetEnabled(profile ~= nil)
+    f.profileLink.tip =
+        "Share this saved build and every checkpoint, including your current draft. Save a named build first."
+    f.profileString.tip =
+        "Copy the complete checkpoint tree as an FP1 string for Import in the addon or web app."
+    local function selectFormat(asLink, asProfile)
+        local output, error
+        if asProfile then
+            if asLink then
+                output, error = FT.Library.ProfileLink(profile.id)
+            else
+                output, error = FT.Library.EncodeProfile(profile.id)
+            end
+        else
+            output, error = asLink and FT.Codec.BuildLink(build) or code
+        end
+        if not output then
+            f.message:SetText(error or "Sharing failed.")
+            return
+        end
+        f.string:SetActive(not asLink and not asProfile)
+        f.link:SetActive(asLink and not asProfile)
+        f.profileLink:SetActive(asLink and asProfile)
+        f.profileString:SetActive(not asLink and asProfile)
+        f.send:SetEnabled(not asProfile)
+        f.text:SetEnabled(not asProfile)
+        f.code:SetText(output)
         f.code.clear:Hide()
         f.code:SetFocus()
         f.code:HighlightText()
         f.help:SetText(
-            asLink
-                    and "Copy the whole link with Ctrl+C and send it to a friend.\nIt opens the web app with a preview of this build before loading."
+            asProfile
+                    and "Copies this build's complete checkpoint tree and current draft.\nOther profiles, character stats and equipment are not included."
+                or asLink and "Copy the whole link with Ctrl+C and send it to a friend.\nIt opens the web app with a preview of this build before loading."
                 or "Copy this entire string with Ctrl+C. It includes the race, target level,\nall talent ranks, and the exact leveling order."
         )
         f.message:SetText(
-            asLink
-                    and "Web links share talents and their order. In-game whispers below still use build strings."
+            asProfile
+                    and "Paste into Import in either version. In-game addon whispers support a single allocation."
+                or asLink and "Web links share talents and their order. In-game whispers below still use build strings."
                 or "Both players need Forever Talents for clickable addon whispers. Text strings work anywhere."
         )
         f.message:SetTextColor(unpack(W.colors.muted))
@@ -333,6 +361,12 @@ function UI.ShareDialog(build, title)
     end)
     f.link:SetScript("OnClick", function()
         selectFormat(true)
+    end)
+    f.profileLink:SetScript("OnClick", function()
+        selectFormat(true, true)
+    end)
+    f.profileString:SetScript("OnClick", function()
+        selectFormat(false, true)
     end)
     selectFormat(false)
     f.send:SetScript("OnClick", function()
@@ -356,7 +390,7 @@ function UI.ShareDialog(build, title)
 end
 
 function UI.ImportDialog(code)
-    if code and code:match("^%s*F[CSL]1:") then
+    if code and (code:match("^%s*F[CSL]%d+:") or FT.Library.IsProfileShare(code)) then
         return UI.CharacterDialog(code)
     end
     if not UI.frame then
@@ -384,7 +418,7 @@ function UI.ImportDialog(code)
         end, true, 30)
         f.input = W.Edit(
             f,
-            "Build link or FT1 / FC1 / FS2 / FL1:…",
+            "Build/profile link or FT1 / FP1 / FC1 / FS2 / FL1:…",
             22,
             -160,
             636,
@@ -400,7 +434,10 @@ function UI.ImportDialog(code)
         f.load = W.Button(f, "Load into draft", 22, -363, 300, nil, true, 30)
         f.save = W.Button(f, "Load & save a copy", 336, -363, 322, nil, false, 30)
         local function update()
-            if f.input:GetText():match("^%s*F[CSL]1:") then
+            if
+                f.input:GetText():match("^%s*F[CSL]%d+:")
+                or FT.Library.IsProfileShare(f.input:GetText())
+            then
                 UI.CharacterDialog(f.input:GetText())
                 return
             end
@@ -461,7 +498,7 @@ function UI.ProfileMenu(anchor, p)
         {
             text = "Share this profile",
             action = function()
-                UI.ShareDialog(last.build, p.name)
+                UI.ShareDialog(last.build, p.name, p)
             end,
         },
         {
@@ -829,7 +866,7 @@ function UI.GraphDialog()
         f.summary = W.Text(f, "", 22, -62, 956, 14, W.colors.gold)
         W.Text(
             f,
-            "Click a node to load it. Edit talents, then save a checkpoint to grow a new branch.\nThe x deletes a node and all its descendants. Undo restores draft edits, not deleted nodes.",
+            "Click a node to load it. Your current edits save as a child checkpoint before switching.\nUse + Checkpoint to name a snapshot. The x deletes a node and all its descendants.",
             22,
             -88,
             956,
@@ -888,15 +925,18 @@ function UI.GraphDialog()
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", x, -y)
         row:Show()
-        row:SetActive(selected.id == node.id)
+        row:SetActive(node.working or (not S.Dirty() and selected.id == node.id))
         row.title:SetText(FT.SafeText(node.title, 48))
-        row.detail:SetText(
-            "Lv. " .. M.RequiredLevel(node.build) .. " • " .. #node.build.order .. " pts"
-        )
+        row.detail:SetText("Lv. " .. node.build.level .. " • " .. #node.build.order .. " pts")
         row:SetScript("OnClick", function()
-            S.LoadNode(p.id, node.id)
+            if node.working then
+                S.Preview(nil)
+            else
+                W.Result(S.LoadNode(p.id, node.id))
+            end
             UI.GraphDialog()
         end)
+        row.delete:SetShown(not node.working)
         row.delete:SetEnabled(not S.readOnly)
         row.delete:SetScript("OnClick", function()
             UI.DeleteNodeDialog(p.id, node.id, true)
@@ -904,7 +944,9 @@ function UI.GraphDialog()
         row:SetScript("OnEnter", function(self)
             self:Paint(true)
             W.Tooltip(self, FT.SafeText(node.title, 48), {
-                "Click to load this checkpoint.",
+                node.working
+                        and "Current edits. They save as a child checkpoint before you switch."
+                    or "Click to load this checkpoint. Your current edits are saved first.",
                 #node.build.order .. " points • target " .. node.build.level,
             })
         end)
@@ -923,9 +965,9 @@ function UI.GraphDialog()
     f.summary:SetText(
         FT.SafeText(p.name, 48)
             .. " • "
-            .. #items
+            .. #p.order
             .. " checkpoints"
-            .. (S.Dirty() and " • unsaved draft changes" or "")
+            .. (S.Dirty() and " • current draft autosaved" or "")
     )
     f.selected:SetText(
         "Selected: " .. FT.SafeText(selected.title, 48) .. " • new checkpoints branch from here"
@@ -1035,7 +1077,7 @@ function UI.HelpDialog()
         W.Text(f, "Undo, preview, and branch", 22, -276, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Drafts autosave between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nSave a named build, then add checkpoints. Click an older node to grow an alternate branch.",
+            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Drafts autosave between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nCheckpoints keep their saved allocation. Edits save as a child before you load another node.",
             22,
             -308,
             806,
