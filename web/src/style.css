@@ -536,6 +536,10 @@ h1 span {
   border: 1px solid var(--line);
   border-radius: 4px;
 }
+.skill-details .rank-progression {
+  color: var(--muted);
+  line-height: 1.4;
+}
 .skill-row.needs-training {
   border-color: #876b39;
 }

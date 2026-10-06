@@ -339,6 +339,46 @@ local function unlockLevel(skill, rank)
     )
 end
 
+-- Progression follows the rank actually displayed, independently of training comparison.
+function A.Progression(skill, shownRank)
+    if skill.kind == "racial" then
+        return nil
+    end
+    local ranks, shown = {}, nil
+    for _, rank in ipairs(skill.ranks) do
+        local level = unlockLevel(skill, rank)
+        if rank.live and (not rank.toLevel or rank.toLevel >= level) then
+            ranks[#ranks + 1] = { rank = rank, level = level }
+            if shownRank and rank.spellID == shownRank.spellID then
+                shown = #ranks
+            end
+        end
+    end
+    if #ranks == 0 then
+        return nil
+    end
+    if shownRank and not shown then
+        return { label = "No current rank match" }
+    end
+    local upcoming = ranks[(shown or 0) + 1]
+    if upcoming then
+        local number = rankNumber(upcoming.rank)
+        local prefix = shown and (number and "Next rank " .. number or "Next upgrade")
+            or skill.unlock and "Talent unlock"
+            or (number and "Unlock rank " .. number or "Unlock")
+        return {
+            next = upcoming.rank,
+            nextLevel = upcoming.level,
+            label = prefix .. " · level " .. upcoming.level,
+        }
+    end
+    local number = rankNumber(shownRank)
+    return {
+        max = true,
+        label = number and "Max rank " .. number or "No rank upgrades",
+    }
+end
+
 local function grantedRank(skill, rank)
     return rank.talentGranted or rank.talentRank or (skill.unlock and rank == firstLiveRank(skill))
 end
@@ -529,8 +569,21 @@ function A.List(build, level, query, filter, includeRacials)
                 or (filter == "needsTraining" and comparison and comparison.needsTraining)
             )
         then
-            list[#list + 1] =
-                { skill = skill, current = rank, trained = trained, comparison = comparison }
+            local shownRank = trained or rank
+            if comparison then
+                if comparison.status == "talent" or comparison.status == "future" then
+                    shownRank = nil
+                elseif comparison.needsTraining then
+                    shownRank = rank
+                end
+            end
+            list[#list + 1] = {
+                skill = skill,
+                current = rank,
+                trained = trained,
+                comparison = comparison,
+                progression = A.Progression(skill, shownRank),
+            }
         end
     end
     if

@@ -110,4 +110,84 @@ FT.Store.SetSimpleView(true)
 FT.UI.SkillDialog(blood)
 check(FT.UI.dialogs.skillLevels.levelRows[1]:GetText():find("Level 40–47", 1, true))
 check(FT.UI.dialogs.skillLevels.levelRows[1]:GetText():find("talent unlock", 1, true))
+-- Inline progression follows the displayed rank, even without a captured character.
+local S, C, UI = FT.Store, FT.Character, FT.UI
+S.SetSimpleView(false)
+S.SwitchClass(3)
+S.SetCheckTraining(false)
+check(S.Edit(M.New(3, nil, 8)))
+local function entry(name, level)
+    for _, item in ipairs(A.List(S.Build(), level, name, "all", false)) do
+        if item.skill.name == name then
+            return item
+        end
+    end
+    error("Missing skill " .. name)
+end
+check(entry("Arcane Shot", 8).progression.label == "Next rank 2 · level 12")
+check(entry("Arcane Shot", 12).progression.label == "Next rank 3 · level 20")
+check(entry("Hunter's Mark", 58).progression.label == "Max rank 4")
+check(entry("Arcane Shot", 60).progression.label == "Max rank 8")
+check(entry("Call Pet", 8).progression.label == "Unlock · level 10")
+check(entry("Concussive Shot", 8).progression.label == "No rank upgrades")
+check(entry("Aspect of the Hawk", 8).progression.label == "Unlock rank 1 · level 10")
+check(entry("Counterattack", 60).progression.label == "Talent unlock · level 25")
+local sheet = C.Get(S.Build())
+sheet.trainedSkills = {
+    schema = 1,
+    classID = 3,
+    raceID = S.Build().raceID,
+    level = 8,
+    spellIDs = { 3044 },
+}
+check(C.Save(S.Build(), sheet))
+check(S.Edit(M.New(3, nil, 20)))
+local portable = assert(FT.Library.Encode())
+check(entry("Arcane Shot", 20).progression.label == "Next rank 2 · level 12")
+S.SetCheckTraining(true)
+local upgrade = entry("Arcane Shot", 20)
+check(upgrade.comparison.needsTraining)
+check(
+    upgrade.progression.label == "Next rank 4 · level 28",
+    "Next rank does not follow the training target"
+)
+check(FT.Library.Encode() == portable)
+S.SetCheckTraining(false)
+UI.skillQuery = "Arcane Shot"
+UI.RefreshBrowser()
+check(UI.skillRows[1].nextRank:GetText() == "Next rank 2 · level 12")
+check(UI.skillRows[1].nextRank:IsShown())
+check(UI.skillRows[1].nextRank:GetStringWidth() <= UI.skillRows[1].nextRank:GetWidth())
+S.SetSimpleView(true)
+check(UI.skillRows[1].nextRank:GetText() == "Next rank 2 · level 12")
+S.SetSimpleView(false)
+UI.skillQuery = ""
+local archived = {
+    ranks = {
+        { spellID = 1, label = "Rank 1", level = 1, live = true },
+        { spellID = 2, label = "Rank 2", level = 10, live = false },
+        { spellID = 3, label = "Rank 2", level = 15, toLevel = 14, live = true },
+        { spellID = 4, label = "Rank 2", level = 20, live = true },
+    },
+}
+check(A.Progression(archived, archived.ranks[1]).nextLevel == 20)
+check(A.Progression(archived, archived.ranks[2]).label == "No current rank match")
+check(not A.Progression({ kind = "racial", ranks = {} }))
+for _, cid in ipairs(FT.classOrder) do
+    for _, skill in ipairs(A.Prepare(cid).list) do
+        local levels = A.Levels(skill)
+        local last
+        for _, rank in ipairs(skill.ranks) do
+            local progression = A.Progression(skill, rank)
+            if progression and progression.label ~= "No current rank match" then
+                last = rank
+                if progression.next then
+                    check(progression.next.live and progression.nextLevel >= rank.level)
+                end
+            end
+        end
+        check(A.Progression(skill).nextLevel == levels[1].level)
+        check(A.Progression(skill, last).max, "Final live rank was not marked maximum")
+    end
+end
 print("Skill update regressions: " .. checks .. " assertions passed")

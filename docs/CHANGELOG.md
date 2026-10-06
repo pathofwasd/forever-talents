@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.7
+
+Skill rows show the next rank and its unlock level, or the maximum rank when no further upgrade
+exists. Unlearned skills show their first unlock; abilities without upgrades are labeled
+accordingly. The extra line follows the rank shown in the row, including imported ranks and training
+targets, and works without enabling comparison in both the addon and PWA, including Classic / Simple
+view. Game data and sharing formats are unchanged. See [release notes](RELEASE-1.2.7.md).
+
 ## 1.2.6
 
 Added optional imported-character comparison in Skills & ranks: a training count, new/upgrade

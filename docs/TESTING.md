@@ -187,3 +187,24 @@ the comparison and filter functional and exported the identical full library. In
 matched the source package, the recoverable backup matched the previous addon, and player saves and
 other addons were unchanged. Native callbacks were verified in the harness; live WoW loading,
 spellbook captures and visual behavior still require in-game verification.
+
+## Version 1.2.7 validation
+
+Passed 55,231 native assertions, nine browser-engine tests, exact Lua 5.1/WASM parity,
+generated-file checks, formatting, production build and archive validation. Progression regressions
+cover every class's live skill ranks, skipped archived records, first unlocks, maximum ranks, talent
+unlocks, unranked abilities and captured ranks that no longer match. They distinguish the displayed
+imported rank from a newer training target and exercise the actual native row and Classic view
+without changing portable library strings.
+
+Production browser checks covered 320/375 px phones, 844×390 landscape, 1024 px tablet and 1280 px
+desktop. Arcane Shot showed its next rank at level 12; Hunter's Mark showed Max rank 4 at level 58;
+Call Pet and talent skills showed their first unlock. Simple view retained the same labels, and
+keyboard activation opened the rank-level sheet. The next-rank line remained readable alongside the
+imported-character countdown without horizontal overflow. The console reported no errors.
+
+Updating from 1.2.6 preserved the entire test library and comparison preference. With the preview
+server stopped, the new progression labels reloaded offline and the full-library export remained
+identical. Installed files matched source, the recoverable backup matched the previous addon, and
+player saves and other addons were unchanged. Native behavior was checked in the callback harness;
+live WoW loading and native visual behavior still require in-game verification.

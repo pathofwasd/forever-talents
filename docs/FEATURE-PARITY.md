@@ -72,6 +72,14 @@ after learning skills; this is a dated comparison, not a live trainer listing. T
 not alter allocations, undo history, character records or shared strings, and library imports retain
 the recipient’s choice. It also works in Classic / Simple view with existing captured data.
 
+Every class-skill row also shows **Next rank N · level X**, **Max rank N**, or the first unlock
+level. Abilities without upgrades say **No rank upgrades**. This line works with comparison off and
+follows the displayed rank: the imported rank when shown, the available rank in an uncaptured plan,
+or the rank marked as the current training target. Shared `Skills.Progression` selects only valid
+live records and retains talent unlock levels. Archived captures without a current rank match are
+identified rather than labeled maximum. The native row has a dedicated third line; the PWA wraps it
+on narrow screens. Classic / Simple view uses the same progression.
+
 Library's **New build** creates an independent profile; the checkpoint action creates a child in its
 existing profile. Both reuse shared Store operations.
 

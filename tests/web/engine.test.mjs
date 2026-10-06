@@ -177,6 +177,38 @@ test('training comparison is opt-in, respects rank boundaries and keeps portable
   restored.close();
   h.close();
 });
+test('inline skill progression shows the next displayed rank or maximum independently of comparison', async () => {
+  const h = await harness();
+  h.call('switch', { classID: 3 });
+  h.call('level', { level: 8 });
+  const skill = (name) =>
+    list(h.call('skills', { query: name })).find((e) => e.skill.name === name);
+  assert.equal(skill('Arcane Shot').progression.label, 'Next rank 2 · level 12');
+  assert.equal(skill('Call Pet').progression.label, 'Unlock · level 10');
+  assert.equal(skill('Concussive Shot').progression.label, 'No rank upgrades');
+  assert.equal(skill('Aspect of the Hawk').progression.label, 'Unlock rank 1 · level 10');
+  h.call('level', { level: 58 });
+  assert.equal(skill("Hunter's Mark").progression.label, 'Max rank 4');
+  h.call('simpleView', { enabled: true });
+  assert.equal(skill("Hunter's Mark").progression.label, 'Max rank 4');
+  h.call('level', { level: 20 });
+  const sheet = h.call('character').sheet;
+  sheet.trainedSkills = {
+    schema: 1,
+    classID: 3,
+    raceID: h.call('state').build.raceID,
+    level: 8,
+    spellIDs: [3044],
+  };
+  h.call('characterSave', { sheet });
+  const code = h.call('export', { kind: 'library' });
+  assert.equal(skill('Arcane Shot').progression.label, 'Next rank 2 · level 12');
+  h.call('checkTraining', { enabled: true });
+  assert.equal(skill('Arcane Shot').progression.label, 'Next rank 4 · level 28');
+  assert.equal(skill('Arcane Shot').comparison.progress, '↑0');
+  assert.equal(h.call('export', { kind: 'library' }), code);
+  h.close();
+});
 test('talent first ranks, live progression and removed abilities reach the browser engine', async () => {
   const h = await harness();
   const catalog = h.call('catalog');
