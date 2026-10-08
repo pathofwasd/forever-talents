@@ -222,3 +222,16 @@ The PWA exposes the installed version and **Check for updates** in its footer an
 cache is complete. Manual checks distinguish current, downloading, ready and failed states. The
 existing service-worker activation flow preserves browser saves; no cache or storage clearing is
 required. This browser-specific control has no counterpart in WoW’s addon loader.
+
+Native button labels use `GetFontString()`; the UI mock exposes the same API without inventing a
+public label field. This native-only fix does not change PWA behavior or shared data.
+
+Skill details show base cast/channel time, ability cooldown, global cooldown and range in both
+interfaces. Native hover and rank details use the same formatter as web rank cards. Simple view
+retains its levels-only dialog; native hover still includes the full reference description.
+
+Demonic Brand uses the same reviewed pet-specific threat description and proc-count limitation in
+addon hover/details, compact view and PWA desktop/mobile talent details. Simulator warnings come
+from shared Lua: the Brand omission applies to Searing Pain, while Demonic Knowledge's unmodeled
+conditional spell power is disclosed for spell damage. These notes do not change estimates or
+portable build identity.

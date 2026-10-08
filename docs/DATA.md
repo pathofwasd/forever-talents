@@ -67,3 +67,32 @@ regular builds and future effect imports.
 `data/ui/character.json` owns the original paper-doll vector geometry. The compiler renders an RGBA
 TGA for WoW and an SVG for the browser. The numerical model, sources and current coverage are
 described in [SIMULATOR.md](SIMULATOR.md).
+
+## Base ability tooltips
+
+`spellDetails` stores passive/instant/cast/channel labels, ability and global cooldowns, and range
+from client build 1.60.1.70009. `tools/import_spell_details.py` imports reviewed SpellMisc,
+SpellCastTimes, SpellDuration, SpellCooldowns and SpellRange CSVs. Missing records stay explicit.
+These are base reference values, not active cooldown timers or talent/haste-adjusted predictions.
+Descriptions continue to come from each rank record, with a native client fallback when missing.
+
+## October 8 review
+
+The nine current talent grids match all 466 stored positions, rank maxima and first spell IDs. The
+October 7
+[Rogue/Warlock overview](https://worldofwarcraft.blizzard.com/en-us/news/24310968/world-of-warcraft-forever-class-deep-dives-rogue-and-warlock)
+confirms that Demonic Brand's extra threat applies to the Shadow effect of a tanking pet, not the
+Imp. Descriptions reflect that distinction without presenting an unevaluated level-60 formula as
+character damage. Proc counts remain marked unverified: captured trait ranks are 2/4/6, while the
+rendered talent, base buff and overview disagree. No pet damage or threat estimate is invented.
+
+Demonic Knowledge retains captured trait values 33/67/100% of character level; the overview's
+maximum 33% is a source disagreement. Its conditional spell-power bonus is not modeled; captured
+live totals can already contain it. Call of the Ancestors (66843) remains level 30 and Call of the
+Spirits (66844) remains level 40, matching exact spell records; the
+[Mage/Shaman overview](https://worldofwarcraft.blizzard.com/en-us/news/24302097/world-of-warcraft-forever-class-deep-dives-mage-and-shaman)
+reverses their names. Overview text alone does not change exact ranks or unlock levels.
+
+[October 8 maintenance](https://us.forums.blizzard.com/en/wow/t/beta-realm-maintenance-october-8/2375900)
+was announced during this review. Its gameplay notes were still pending; this review date does not
+claim that unpublished changes are implemented. Catalog layout/share identity remains unchanged.

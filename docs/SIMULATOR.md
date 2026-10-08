@@ -116,3 +116,10 @@ simulator's paste control for a temporary experiment and Character's import cont
 central workspace. **FL1** transfers all builds, branches, class drafts and character workspaces.
 The addon and PWA generate identical strings through the same Lua code. No account or connection
 between the game and browser is required.
+
+Demonic Brand's pet proc damage and threat are omitted from Searing Pain estimates. Its extra threat
+belongs to the Shadow/tanking-pet effect; Imp does not receive it. Conflicting beta charge counts
+are not resolved by the simulator. Demonic Knowledge's conditional spell-power bonus is not added to
+reference totals. Live captured totals may already include that bonus. Both limits appear in the
+shared calculation warnings; overview disagreements do not override exact trait ranks or introduce
+speculative pet calculations.

@@ -134,6 +134,14 @@ function UI.SkillTooltip(owner, skill)
         0.75
     )
     local description, source = FT.Description(rank)
+    GameTooltip:AddLine(FT.Skills.AbilityDetails(rank), 0.36, 0.79, 0.80, true)
+    GameTooltip:AddLine(
+        "Base values; talents and temporary effects may change them.",
+        0.6,
+        0.7,
+        0.75,
+        true
+    )
     GameTooltip:AddLine("\n" .. description, 0.86, 0.90, 0.92, true)
     local comparison = FT.Skills.TrainingReport(view, level).skills[skill.name]
     if comparison then
@@ -268,7 +276,7 @@ function UI.CreateBrowser(parent)
         UI.skillScroll:ScrollTo(0)
         UI.RefreshBrowser()
     end, false, 20)
-    UI.trainingInfo.fontString:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
+    UI.trainingInfo:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     UI.skillScroll = W.Scroll(p, 8, -158, 210, 324)
     UI.skillRows = {}
     for i = 1, 110 do

@@ -2,6 +2,47 @@ local _, FT = ...
 local A = { cache = {} }
 FT.Skills = A
 
+-- Client base values are reference tooltips, not a live cooldown timer or a
+-- prediction after talents, haste, gear and temporary effects.
+function A.AbilityDetails(rank)
+    local snapshot = FT.Data.spellDetails
+    local detail = snapshot and snapshot.spells[rank.spellID]
+    if not detail then
+        return "Base cast time and cooldown are not recorded for this spell."
+    end
+    if detail.passive then
+        return "Passive"
+    end
+    local function seconds(value)
+        return string.format("%g", value) .. " sec"
+    end
+    local lines = {}
+    if detail.channel then
+        lines[#lines + 1] = detail.channelDuration
+                and ("Channeled • " .. seconds(detail.channelDuration))
+            or "Channeled"
+    elseif detail.cast then
+        lines[#lines + 1] = detail.cast == 0 and "Instant" or (seconds(detail.cast) .. " cast")
+    else
+        lines[#lines + 1] = "Cast time not recorded"
+    end
+    if detail.cooldown and detail.cooldown > 0 then
+        lines[#lines + 1] = "Cooldown: " .. seconds(detail.cooldown)
+    else
+        lines[#lines + 1] = "No ability cooldown recorded"
+    end
+    if detail.globalCooldown and detail.globalCooldown > 0 then
+        lines[#lines + 1] = "Global cooldown: " .. seconds(detail.globalCooldown)
+    end
+    if detail.rangeMax and detail.rangeMax > 0 then
+        lines[#lines + 1] = detail.range == "Combat Range" and "Melee range"
+            or (string.format("%g", detail.rangeMax) .. " yd range")
+    elseif detail.range == "Self Only" then
+        lines[#lines + 1] = "Self"
+    end
+    return table.concat(lines, " • ")
+end
+
 local function normalize(text)
     return (text or "")
         :lower()
@@ -206,6 +247,9 @@ function A.Prepare(classID)
         end
     end
     for _, skill in ipairs(list) do
+        for _, rank in ipairs(skill.ranks) do
+            rank.abilityDetails = A.AbilityDetails(rank)
+        end
         for _, tree in ipairs(c.trees) do
             for _, t in ipairs(tree.talents) do
                 local why, kind = relation(skill, t)
@@ -650,6 +694,7 @@ function A.List(build, level, query, filter, includeRacials)
                             {
                                 spellID = r.spellID,
                                 label = "Racial",
+                                abilityDetails = A.AbilityDetails(r),
                                 level = 1,
                                 live = true,
                                 text = r.text,

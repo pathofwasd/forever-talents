@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.15
+
+- Correct Demonic Brand pet-threat context and replace its raw damage formula with a readable
+  description. Mark conflicting beta proc counts and conditional pet bonuses explicitly.
+- Recheck all nine talent grids and retain existing rank/unlock values where overview text conflicts
+  with exact spell records. Talent order, saved builds and share formats remain compatible.
+
+- Show base ability cast/channel time, cooldown, global cooldown and range alongside full rank
+  descriptions in the addon and PWA. Missing values stay explicit; talents and haste can change base
+  values.
+
+- Fix opening the skills browser and compact tree tabs in the game client. Use the native button
+  label API rather than a mock-only field.
+
 ## 1.2.14
 
 - Added a separate addon Compact view: a 420×680 movable window with one authentic talent tree at a

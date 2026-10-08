@@ -11,8 +11,8 @@ local function click(text)
         if
             o.kind == "Button"
             and o:IsVisible()
-            and o.fontString
-            and o.fontString:GetText() == text
+            and o:GetFontString()
+            and o:GetFontString():GetText() == text
         then
             o:Click()
             return o
@@ -171,7 +171,7 @@ check(C.Get(S.View()).trainedSkills.spellIDs[1] == 5177)
 -- Library creates an independent build; checkpoint mode alone creates a child.
 UI.historyTab = "library"
 UI.RefreshHistory()
-check(UI.checkpointButton.fontString:GetText() == "+ New build")
+check(UI.checkpointButton:GetFontString():GetText() == "+ New build")
 UI.checkpointButton:Click()
 check(UI.dialogs.save.heading:GetText() == "Save your build")
 UI.dialogs.save.input:SetText("Independent")
@@ -179,7 +179,7 @@ UI.dialogs.save.save:Click()
 check(#S.db.profileOrder == 2 and #profile.order == 1)
 UI.historyTab = "graph"
 UI.RefreshHistory()
-check(UI.checkpointButton.fontString:GetText() == "Save as new checkpoint")
+check(UI.checkpointButton:GetFontString():GetText() == "Save as new checkpoint")
 
 -- Colors remain stable when another selection changes, and overlap shows both.
 UI.ClearSkillHighlights()

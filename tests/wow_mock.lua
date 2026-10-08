@@ -294,7 +294,10 @@ function methods:SetFontObject(font)
     self.fontSize = 13
 end
 function methods:SetFontString(f)
-    self.fontString = f
+    self.mockFontString = f
+end
+function methods:GetFontString()
+    return self.mockFontString
 end
 function methods:SetNormalFontObject() end
 function methods:SetDisabledFontObject() end
@@ -304,8 +307,8 @@ function methods:SetText(text)
         "SetText expects text, not a UI object"
     )
     self.mockText = tostring(text or "")
-    if self.fontString then
-        self.fontString:SetText(self.mockText)
+    if self.mockFontString then
+        self.mockFontString:SetText(self.mockText)
     end
     self:Trigger("OnTextChanged", false)
 end

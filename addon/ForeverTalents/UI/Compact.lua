@@ -184,7 +184,7 @@ function UI.CreateCompactControls(parent)
             UI.compactTreeScroll:ScrollTo(0)
             UI.RefreshCompactControls()
         end, false, 28)
-        UI.compactTreeTabs[i].fontString:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
+        UI.compactTreeTabs[i]:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     end
     UI.compactTreeScroll = W.Scroll(parent, 12, -316, 396, 322)
     UI.compactTreeScroll:SetContentHeight(482)

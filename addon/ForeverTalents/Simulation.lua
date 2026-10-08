@@ -879,6 +879,7 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
                 note
                 and note.kind == parsed.kind
                 and (not note.attack or note.attack == parsed.attack)
+                and (not note.skill or note.skill == skill.name)
             then
                 warning(warnings, note.text)
             end

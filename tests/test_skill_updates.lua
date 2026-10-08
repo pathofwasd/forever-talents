@@ -191,3 +191,62 @@ for _, cid in ipairs(FT.classOrder) do
     end
 end
 print("Skill update regressions: " .. checks .. " assertions passed")
+
+-- Base tooltip metadata is independent of simulation support and portable saves.
+local function details(cid, name, rank)
+    return A.AbilityDetails(assert(A.Prepare(cid).byName[name]).ranks[rank or 1])
+end
+check(details(8, "Blink"):find("Instant", 1, true))
+check(details(8, "Blink"):find("Cooldown: 15 sec", 1, true))
+check(details(8, "Fireball"):find("1.5 sec cast", 1, true))
+check(details(8, "Arcane Missiles"):find("Channeled", 1, true))
+check(details(3, "Arcane Shot"):find("Instant", 1, true))
+check(not details(3, "Arcane Shot"):find("-1000", 1, true))
+check(details(11, "Shred"):find("Melee range", 1, true))
+check(A.AbilityDetails({ spellID = -1 }):find("not recorded", 1, true))
+for _, cid in ipairs(FT.classOrder) do
+    for _, skill in ipairs(A.Prepare(cid).list) do
+        for _, rank in ipairs(skill.ranks) do
+            check(rank.abilityDetails == A.AbilityDetails(rank))
+        end
+    end
+end
+print("Base ability details: " .. checks .. " total assertions passed")
+
+-- Beta overview prose must not silently replace exact trait ranks or spell IDs.
+local warlockClass = M.Class(9)
+for _, tree in ipairs(warlockClass.trees) do
+    for _, node in ipairs(tree.talents) do
+        if node.id == 105896 then
+            for i, rank in ipairs(node.ranks) do
+                check(rank.text:find("next " .. (i * 2) .. " attacks", 1, true))
+                check(rank.text:find("Imp does not gain extra threat", 1, true))
+                check(rank.text:find("sources disagree", 1, true))
+                check(not rank.text:find("(((", 1, true))
+            end
+        elseif node.id == 105893 then
+            for i, value in ipairs({ 33, 67, 100 }) do
+                check(node.ranks[i].text:find(value .. "% of your level", 1, true))
+            end
+        end
+    end
+end
+check(A.Prepare(7).byName["Call of the Ancestors"].firstLevel == 30)
+check(A.Prepare(7).byName["Call of the Spirits"].firstLevel == 40)
+local brandBuild = M.New(9, nil, 60)
+brandBuild.order = { 105896 }
+local searing = A.Prepare(9).byName["Searing Pain"]
+local bolt = A.Prepare(9).byName["Shadow Bolt"]
+local function calc(build, skill)
+    return assert(Sim.Calculate(build, skill, skill.ranks[1], { power = 100, crit = 0 }))
+end
+local branded, plain = calc(brandBuild, searing), calc(M.New(9, nil, 60), searing)
+near(branded.expected, plain.expected)
+check(table.concat(branded.warnings, " "):find("pet proc damage and threat", 1, true))
+check(not table.concat(calc(brandBuild, bolt).warnings, " "):find("Demonic Brand:", 1, true))
+local knowledgeBuild = M.New(9, nil, 60)
+knowledgeBuild.order = { 105893, 105893, 105893 }
+local learned, unlearned = calc(knowledgeBuild, bolt), calc(M.New(9, nil, 60), bolt)
+near(learned.expected, unlearned.expected)
+check(table.concat(learned.warnings, " "):find("conditional spell%-power bonus"))
+print("October 8 source review: " .. checks .. " total assertions passed")

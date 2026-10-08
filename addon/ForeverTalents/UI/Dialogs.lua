@@ -739,6 +739,8 @@ function UI.SkillDialog(skill)
         local comparison = FT.Skills.TrainingReport(view, level).skills[skill.name]
         f.description:SetText(
             (comparison and (comparison.label .. " • " .. comparison.hint .. "\n\n") or "")
+                .. FT.Skills.AbilityDetails(r)
+                .. "\nBase values; talents and temporary effects may change them.\n\n"
                 .. description
         )
         f.descScroll:SetContentHeight(f.description:GetStringHeight() + 4)
@@ -783,6 +785,7 @@ function UI.SkillDialog(skill)
         row:SetScript("OnEnter", function(self)
             self:Paint(true)
             W.Tooltip(self, skill.name .. " • " .. (r.label or ""), {
+                FT.Skills.AbilityDetails(r),
                 FT.Description(r),
                 not r.live
                         and "The source never marks this spell ID as the highest trainable rank. It is kept for reference."
