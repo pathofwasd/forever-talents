@@ -67,7 +67,7 @@ function M.Counts(build, count)
     return points, trees
 end
 
-local function canAdd(build, id, points, trees, spent)
+local function canAdd(build, id, points, trees, spent, legacy)
     local index = M.Index(build.classID)
     local t = index and index[id]
     if not t then
@@ -86,7 +86,7 @@ local function canAdd(build, id, points, trees, spent)
         return false, "Spend " .. t.gate .. " points in " .. t.treeName .. " to unlock this row."
     end
     for _, req in ipairs(t.requires) do
-        if (points[req.id] or 0) < req.points then
+        if not (legacy and legacy[t.id] == req.id) and (points[req.id] or 0) < req.points then
             return false,
                 "Requires " .. req.points .. " / " .. index[req.id].max .. " " .. req.name .. "."
         end
@@ -99,7 +99,7 @@ function M.CanAdd(build, id)
     return canAdd(build, id, points, trees, #build.order)
 end
 
-function M.Validate(build)
+local function validate(build, legacy)
     if type(build) ~= "table" or not M.Class(build.classID) then
         return false, "Unknown class."
     end
@@ -129,12 +129,63 @@ function M.Validate(build)
     end
     local points, trees, index = {}, {}, M.Index(build.classID)
     for i, id in ipairs(build.order) do
-        local ok, why = canAdd(build, id, points, trees, i - 1)
+        local ok, why = canAdd(build, id, points, trees, i - 1, legacy)
         if not ok then
             return false, "Point " .. i .. ": " .. why
         end
         local t = index[id]
         points[id], trees[t.treeID] = (points[id] or 0) + 1, (trees[t.treeID] or 0) + 1
+    end
+    return true
+end
+
+-- Only this reviewed prerequisite changed between these catalog identities.
+-- Legacy validation preserves old records; spending points always uses current rules.
+function M.AcceptTag(tag)
+    return tag == FT.Data.meta.tag or FT.Data.meta.legacyTags[tag] ~= nil
+end
+function M.Validate(build)
+    return validate(build)
+end
+function M.ValidateLegacy(build, tag)
+    local rules = tag and FT.Data.meta.legacyTags[tag]
+    if not rules then
+        return false, "Unknown legacy talent dataset."
+    end
+    return validate(build, rules)
+end
+function M.RepairStatus(build)
+    local ok, why = M.Validate(build)
+    if not ok and build and M.ValidateLegacy(build, build.legacyTag) then
+        return "Needs repair: " .. why
+    end
+end
+function M.Preserve(build, sourceTag)
+    if type(build) ~= "table" then
+        return false, "Invalid build."
+    end
+    if build.recovery then
+        local original = build.recovery
+        if
+            type(original) ~= "table"
+            or original.recovery
+            or not M.ValidateLegacy(original, original.legacyTag)
+        then
+            return false, "Invalid original build backup."
+        end
+    end
+    local ok, why = M.Validate(build)
+    if ok then
+        build.legacyTag = nil
+        return true
+    end
+    local tag = sourceTag or build.legacyTag
+    if not M.ValidateLegacy(build, tag) then
+        return false, why
+    end
+    build.legacyTag = tag
+    if not build.recovery then
+        build.recovery = FT.Copy(build)
     end
     return true
 end
@@ -170,7 +221,7 @@ function M.Remove(build, id, all)
         return nil, "No points are spent in this talent."
     end
     local ok, why = M.Validate(result)
-    if ok then
+    if ok or (build.legacyTag and M.Preserve(result)) then
         return result
     end
     -- A surviving early talent can become temporarily locked even when later
@@ -278,7 +329,7 @@ function M.Reorder(build, from, to)
     local result = FT.Copy(build)
     local id = table.remove(result.order, from)
     table.insert(result.order, to, id)
-    local ok, why = M.Validate(result)
+    local ok, why = M.Preserve(result)
     if not ok then
         return nil, "That move breaks the leveling order. " .. why
     end

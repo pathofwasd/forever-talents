@@ -521,6 +521,9 @@ local function captured(build, sheet, inputs, withTalents)
     )
     -- Only differences in recognized talent passives are applied to reported totals.
     -- The original capture is preserved so later builds never compound these deltas.
+    local sourceTag = source.learnedCode:match("^FT1:([^:]+):")
+    local uncertainHealing = sourceTag == "7ba43a60"
+        and ((M.Counts(learned)[104950] or 0) > 0 or (M.Counts(build)[104950] or 0) > 0)
     local target = FT.Copy(build)
     target.raceID, target.level = learned.raceID, learned.level
     local old, new = C.Compute(learned, template), C.Compute(target, template, withTalents)
@@ -552,6 +555,11 @@ local function captured(build, sheet, inputs, withTalents)
             { form = sheet.form }
         ).statsCrit
         totals[key] = totals[key] + generalCrit(learned, attack, true, sheet.form) - reported
+    end
+    if uncertainHealing then
+        totals.healing = inputs.healing
+        warnings[#warnings + 1] =
+            "This capture uses the previous catalog. Re-capture after the October 8 update to confirm Natural Instinct's healing contribution. The reported healing total is kept until then."
     end
     local meleeDelta, rangedDelta =
         totals.attackPower - inputs.attackPower, totals.rangedAP - inputs.rangedAP
@@ -728,6 +736,9 @@ function C.Compute(build, sheet, withTalents)
                 if talent.name == "Mental Quickness" then
                     totals.healing = totals.healing + intellect * (percent or 0) / 100
                 end
+                applied = true
+            elseif talent.name == "Natural Instinct" then
+                totals.healing = totals.healing + intellect * (percent or 0) / 100
                 applied = true
             elseif talent.name == "Spiritual Guidance" then
                 totals.healing = totals.healing

@@ -68,9 +68,21 @@ def main():
             row['range'] = distance['DisplayName_lang']
             row['rangeMax'] = max(float(distance['RangeMax_0']), float(distance['RangeMax_1']))
         details[str(sid)] = row
+    # Scripted parent channels and proc intervals are not ordinary spell cooldowns.
+    power = {int(r['SpellID']): r for r in rows('SpellPower')}
+    for sid in [402174, 1240720, 1240721, 1316995]:
+        if str(sid) in details:
+            details[str(sid)]['channelDuration'] = 2
+            if sid in power:
+                details[str(sid)]['manaCost'] = int(power[sid]['ManaCost'])
+    for sid, interval in [(20177, 1.5), (408510, 3.5)]:
+        if str(sid) in details:
+            details[str(sid)]['procCooldown'] = interval
+    if '408510' in details:
+        details['408510']['cooldown'] = 0
     catalog['spellDetails'] = {'build': args.build,
         'sources': [f'https://wago.tools/db2/{name}/csv?build={args.build}' for name in
-                    ['SpellMisc', 'SpellCastTimes', 'SpellDuration', 'SpellCooldowns', 'SpellRange']],
+                    ['SpellMisc', 'SpellCastTimes', 'SpellDuration', 'SpellCooldowns', 'SpellRange', 'SpellPower']],
         'spells': details}
     path.write_text(json.dumps(catalog, indent=2, ensure_ascii=True) + '\n')
     print(f'Imported base ability details for {len(details)} spell IDs; {len(ids) - len(details)} missing.')

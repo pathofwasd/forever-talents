@@ -364,6 +364,7 @@ function UI.ShareDialog(build, title, profile)
         f.send = W.Button(f, "Send addon whisper", 354, -258, 192, nil, true)
         f.text = W.Button(f, "Text whisper", 558, -258, 140, nil)
         f.message = W.Text(f, "", 22, -310, 676, 12, W.colors.muted)
+        f.original = W.Button(f, "Original build", 22, -350, 150, nil, false, 28)
     end
     f.summary:SetText(
         FT.SafeText(build.name, 48)
@@ -373,6 +374,29 @@ function UI.ShareDialog(build, title, profile)
             .. #build.order
             .. " points"
     )
+    f.original:SetShown(build.recovery ~= nil)
+    f.original:SetScript("OnClick", function()
+        local original, error = FT.Codec.EncodeOriginal(build)
+        if not original then
+            f.message:SetText(error or "Original unavailable.")
+            return
+        end
+        for _, button in ipairs({ f.string, f.link, f.profileLink, f.profileString }) do
+            button:SetActive(false)
+        end
+        f.original:SetActive(true)
+        f.send:SetEnabled(false)
+        f.text:SetEnabled(false)
+        f.code:SetText(original)
+        f.message:SetText(
+            "Copy this original with Ctrl+C; select Build string to share the current build."
+        )
+        f.code:SetFocus()
+        f.code:HighlightText()
+        f.help:SetText(
+            "Original allocation before the rule change. Its exact point order is kept.\nImporting it shows the repair notice again; it does not overwrite checkpoints."
+        )
+    end)
     f.profileLink:SetEnabled(profile ~= nil)
     f.profileString:SetEnabled(profile ~= nil)
     f.profileLink.tip =
@@ -394,6 +418,7 @@ function UI.ShareDialog(build, title, profile)
             f.message:SetText(error or "Sharing failed.")
             return
         end
+        f.original:SetActive(false)
         f.string:SetActive(not asLink and not asProfile)
         f.link:SetActive(asLink and not asProfile)
         f.profileLink:SetActive(asLink and asProfile)
@@ -1176,7 +1201,7 @@ function UI.HelpDialog()
         W.Text(f, "Undo, preview, and branch", 22, -276, 806, 16, W.colors.gold)
         W.Text(
             f,
-            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Edits stay local between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nUpdate checkpoint replaces the selected snapshot, keeping its branches. Save as new checkpoint creates a child.\nLoading another node leaves edits unsaved; Undo brings them back. Checkpoint links include saved nodes only.\nCopy talents / Paste talents beside search moves points without changing the destination checkpoint.",
+            "Undo / Redo (Ctrl+Z / Ctrl+Y) keep up to 100 edits per class. Edits stay local between sessions.\nClick an Order step to preview that level. Full build returns; Branch here starts from that step.\nUpdate checkpoint replaces the selected snapshot, keeping its branches.\nOlder Warrior builds: Impale requires 3 Deep Wounds points before it. Add/reorder those points or remove Impale. Share → Original build retains the original allocation. Save as new checkpoint creates a child.\nLoading another node leaves edits unsaved; Undo brings them back. Checkpoint links include saved nodes only.\nCopy talents / Paste talents beside search moves points without changing the destination checkpoint.",
             22,
             -308,
             806,

@@ -125,7 +125,7 @@ test("invalid imports cannot bypass rules", function()
     local code = C.Encode(greedy(M.New(11)))
     check(not C.Decode(code:sub(1, -2)))
     check(not C.Decode(code:gsub("FT1", "FT2")))
-    local corrupt = code:gsub("7ba43a60", "aaaaaaaa")
+    local corrupt = code:gsub(FT.Data.meta.tag, "aaaaaaaa")
     check(not C.Decode(corrupt))
     local body = "FT1:" .. FT.Data.meta.tag .. ":11:4:60:_:"
     check(not C.Decode(body .. ":" .. C.Checksum(body)))
@@ -347,7 +347,7 @@ test("skill estimates respect source ranges, states, crit, power and mitigation"
     local rank = skill.ranks[1]
     local result = Sim.Calculate(b, skill, rank, { power = 100, crit = 0, reduction = 0 })
     -- Rank-one client values grow through level five before bonus scaling.
-    local minimum = 15 * (1 - 0.153846 / 2) + (5 - 1) * 0.4 + 100 * 0.429
+    local minimum = 15 * (1 - 0.153846 / 2) + (5 - 1) * 0.2 + 100 * 0.429
     check(math.abs(result.min - minimum) < 0.01)
     local crit = Sim.Calculate(b, skill, rank, { power = 100, crit = 100 })
     check(math.abs(crit.expected - result.average * 1.5) < 0.01)

@@ -230,7 +230,9 @@ function Sim.Parse(rank, skill, level, effectMode)
     level = math.max(rank.level or model.level, level or rank.level or model.level)
     parsed.effectiveLevel = model.maxLevel > 0 and math.min(level, model.maxLevel) or level
     for _, c in ipairs(parsed.components) do
-        local growth = math.max(0, parsed.effectiveLevel - model.level) * (c.growth or 0)
+        local cap = c.maxLevel or model.maxLevel
+        local effective = cap > 0 and math.min(level, cap) or level
+        local growth = math.max(0, effective - (c.level or model.level)) * (c.growth or 0)
         c.levelBonus = growth
         c.low, c.high = math.max(0, c.low + growth), math.max(0, c.high + growth)
         local ticks = c.ticks or 1
@@ -333,7 +335,7 @@ local modifierRules = {
     ["Feral Instinct"] = { damage = true, names = { "Swipe" } },
     ["Savage Fury"] = { damage = true, names = { "Claw", "Rake", "Shred", "Maul", "Swipe" } },
     ["Sharpened Claws"] = { crit = true, attack = "melee", form = true, statsCrit = true },
-    ["Predatory Instincts"] = { critBonus = true, attack = "melee" },
+    ["Natural Instinct"] = { critBonus = true, attack = "melee" },
     ["Rend and Tear"] = { damage = true, attack = "melee", condition = "bleeding" },
     ["Gift of Nature"] = { damage = true, kind = "healing" },
     ["Improved Regrowth"] = { crit = true, kind = "healing", names = { "Regrowth" } },
@@ -923,7 +925,7 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
             .. source.build
             .. " · reviewed "
             .. source.checked
-            .. " · October 1 corrections"
+            .. " · reviewed developer corrections"
     result.sources = {
         { label = "Client effects, coefficients and tick intervals", url = source.sources[1].url },
         { label = "Forever developer notes and corrections", url = source.patchSource },
