@@ -150,5 +150,5 @@ for _, cid in ipairs(FT.classOrder) do
         end
     end
 end
-check(FT.Data.meta.tag == "7ba43a60")
+check(FT.Data.meta.tag == "759c22c2" and FT.Model.AcceptTag("7ba43a60"))
 print("Talent removal: " .. checks .. " assertions passed")

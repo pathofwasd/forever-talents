@@ -3137,3 +3137,16 @@ body[data-simulation-enabled='false'] [data-simulation-feature] {
     min-height: 44px;
   }
 }
+
+.repair-notice {
+  grid-column: 1 / -1;
+  padding: 16px;
+  border: 1px solid var(--gold, #efbd70);
+  border-radius: 8px;
+  background: #293026;
+  color: #f3dfb5;
+}
+.repair-notice p {
+  max-width: 90ch;
+  margin: 8px 0 12px;
+}

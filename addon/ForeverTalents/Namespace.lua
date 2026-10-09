@@ -1,6 +1,6 @@
 local name, FT = ...
 _G.ForeverTalents = FT
-FT.name, FT.version = name, "1.2.15"
+FT.name, FT.version = name, "1.2.16"
 FT.UI = {}
 FT.classOrder = { 11, 3, 8, 2, 5, 4, 7, 9, 1 }
 
@@ -39,7 +39,13 @@ end
 
 function FT.Description(record)
     if type(record.text) == "string" and record.text ~= "" then
-        return record.text, "snapshot"
+        return record.text
+            .. (
+                record.textLevel
+                    and ("\n\nBase reference at level " .. record.textLevel .. "; amounts can grow with level. The simulator uses the displayed level.")
+                or ""
+            ),
+            "snapshot"
     end
     local read = C_Spell and C_Spell.GetSpellDescription or GetSpellDescription
     if read and record.spellID then

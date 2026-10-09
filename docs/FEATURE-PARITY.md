@@ -235,3 +235,13 @@ addon hover/details, compact view and PWA desktop/mobile talent details. Simulat
 from shared Lua: the Brand omission applies to Searing Pain, while Demonic Knowledge's unmodeled
 conditional spell power is disclosed for spell damage. These notes do not change estimates or
 portable build identity.
+
+Both interfaces show the Impale migration repair state and retain original-build export in Share.
+All branches remain navigable, including those requiring point-order repair. Repair state is shared
+Lua; new checkpoint saves require current rules. Original allocations also survive FL1 and FP1
+sharing. The browser uses a full-width notice and node labels; native header/history and Help expose
+the same recovery steps, including compact view. Simple view remains usable for repairing talents.
+
+Natural Instinct character contributions, early-rank growth, per-effect caps and Penance's separate
+three-bolt modes use the same engine. Base channel/cost and proc-interval labels use the same shared
+formatter. Experimental unsupported retaliation behavior is disclosed in both simulators.

@@ -89,7 +89,7 @@ check(off.expected == on.expected and #on.racials == 0, "Unverified Eureka bonus
 check(table.concat(on.warnings, " "):find("Eureka! is not modeled", 1, true))
 check(on.confidence == "Partial estimate")
 check(table.concat(off.warnings, " "):find("Eureka! is not modeled", 1, true))
-for _, case in ipairs({ { 4, "Mutilate", 30 }, { 5, "Penance", 40 } }) do
+for _, case in ipairs({ { 4, "Mutilate", 30 } }) do
     local skill = A.Prepare(case[1]).byName[case[2]]
     local rank = A.CurrentRank(skill, case[3], { [skill.unlock.id] = 1 })
     local result, why = Sim.Calculate(M.New(case[1], nil, case[3]), skill, rank, {})
@@ -109,5 +109,5 @@ end
 FT.UI.Toggle()
 FT.UI.PetDialog()
 check(FT.UI.dialogs.pets.reference:GetText():find("Fox", 1, true))
-check(FT.Data.meta.tag == "7ba43a60")
+check(FT.Data.meta.tag == "759c22c2" and FT.Model.AcceptTag("7ba43a60"))
 print("Rank audit regressions: " .. checks .. " assertions passed")

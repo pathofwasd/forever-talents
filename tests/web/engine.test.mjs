@@ -982,3 +982,37 @@ test('experimental tool visibility persists locally without altering portable sa
   );
   for (const testHarness of [h, restored, recipient]) testHarness.close();
 });
+
+test('October prerequisite migration preserves legacy branches and exact native/PWA sharing', async () => {
+  const native = execFileSync('lua5.1', ['tests/web/october-parity.lua'], {
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  })
+    .trim()
+    .split('\n')
+    .map(JSON.parse);
+  const h = await harness(native[0].value);
+  assert.deepEqual(h.init, native[1]);
+  assert.match(h.init.repair, /Deep Wounds/);
+  assert.equal(list(h.call('database').profiles.p1.order).length, 3);
+  let i = 2;
+  for (const kind of ['original', 'build', 'profile', 'library', 'character', 'stats']) {
+    const result = h.raw('export', { kind });
+    assert.deepEqual(result, native[i++], kind);
+    const decoded = h.raw('decode', { code: result.value });
+    assert.equal(decoded.ok, true, decoded.error);
+  }
+  assert.deepEqual(h.raw('copyTalents'), native[i++]);
+  assert.deepEqual(h.raw('updateCheckpoint'), native[i++]);
+  const original = h.call('export', { kind: 'original' });
+  assert.equal(h.raw('decode', { code: original.slice(0, -1) }).ok, false);
+  const profile = h.call('export', { kind: 'profile' });
+  const recipient = await harness();
+  recipient.call('import', { code: profile });
+  assert.match(recipient.call('state').repair, /Deep Wounds/);
+  assert.equal(recipient.call('export', { kind: 'original' }), original);
+  const reloaded = await harness(JSON.parse(JSON.stringify(h.call('database'))));
+  assert.deepEqual(reloaded.call('state'), h.call('state'));
+  assert.equal(reloaded.call('export', { kind: 'profile' }), profile);
+  for (const target of [h, recipient, reloaded]) target.close();
+});

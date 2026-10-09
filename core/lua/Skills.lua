@@ -11,7 +11,9 @@ function A.AbilityDetails(rank)
         return "Base cast time and cooldown are not recorded for this spell."
     end
     if detail.passive then
-        return "Passive"
+        return detail.procCooldown
+                and ("Passive • Proc interval: " .. string.format("%g", detail.procCooldown) .. " sec")
+            or "Passive"
     end
     local function seconds(value)
         return string.format("%g", value) .. " sec"
@@ -30,6 +32,12 @@ function A.AbilityDetails(rank)
         lines[#lines + 1] = "Cooldown: " .. seconds(detail.cooldown)
     else
         lines[#lines + 1] = "No ability cooldown recorded"
+    end
+    if detail.procCooldown then
+        lines[#lines + 1] = "Proc interval: " .. seconds(detail.procCooldown)
+    end
+    if detail.manaCost then
+        lines[#lines + 1] = string.format("%g", detail.manaCost) .. " Mana"
     end
     if detail.globalCooldown and detail.globalCooldown > 0 then
         lines[#lines + 1] = "Global cooldown: " .. seconds(detail.globalCooldown)
@@ -93,6 +101,7 @@ local function relation(skill, talent)
     -- spells. Label this contextual evidence separately from explicit links.
     local low, tlow = text:lower(), ttext:lower()
     local healing = low:find("heals", 1, true)
+        or low:find("healing to an ally", 1, true)
         or (low:find("restores", 1, true) and low:find("health", 1, true))
     local damage = low:find("damage", 1, true)
         and not low:find("absorbs", 1, true)
@@ -116,7 +125,12 @@ local function relation(skill, talent)
         return
     end
     if
-        healing and (tlow:find("healing spells", 1, true) or tlow:find("healing done by", 1, true))
+        healing
+        and (
+            tlow:find("healing spells", 1, true)
+            or tlow:find("healing done by", 1, true)
+            or tlow:find("spell healing", 1, true)
+        )
     then
         return "General healing spell modifier described by this talent.", "general"
     end
@@ -222,6 +236,7 @@ function A.Prepare(classID)
                         live = true,
                         talentGranted = true,
                         text = t.ranks[1].text,
+                        textLevel = t.ranks[1].textLevel,
                     })
                 end
             elseif t.max == 1 then
@@ -239,6 +254,7 @@ function A.Prepare(classID)
                             live = true,
                             talentGranted = true,
                             text = t.ranks[1].text,
+                            textLevel = t.ranks[1].textLevel,
                         },
                     },
                 }

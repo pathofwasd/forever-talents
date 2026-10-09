@@ -56,6 +56,7 @@ local function state()
     local p, node = S.ActiveProfile()
     return {
         build = S.Build(),
+        repair = M.RepairStatus(S.Build()),
         view = S.View(),
         viewLevel = S.ViewLevel(),
         counts = M.Counts(S.View()),
@@ -232,6 +233,9 @@ local commands = {
         end
         if p.kind == "library" then
             return FT.Library.Encode()
+        end
+        if p.kind == "original" then
+            return C.EncodeOriginal(S.Build())
         end
         if p.kind == "build" then
             return C.Encode(S.ExportView())

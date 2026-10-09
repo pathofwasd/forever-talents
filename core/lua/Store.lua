@@ -17,7 +17,7 @@ local function fresh()
 end
 
 local function validBuild(build)
-    return FT.Model.Validate(build)
+    return FT.Model.Preserve(build, S.loadingTag)
 end
 local function snapshot(draft)
     return {
@@ -73,6 +73,15 @@ function S.Init(classID, raceID, level)
         _G.ForeverTalentsDB = S.db
     end
     local db = S.db
+    S.loadingTag = db.tag ~= FT.Data.meta.tag and db.tag or nil
+    if not FT.Model.AcceptTag(db.tag) then
+        S.db, S.readOnly = fresh(), true
+        FT.Print(
+            "Your saved library uses an unknown talent dataset. It is preserved; saving is disabled."
+        )
+        S.loadingTag = nil
+        db = S.db
+    end
     for _, key in ipairs({ "drafts", "profiles", "profileOrder", "inbox", "settings" }) do
         if type(db[key]) ~= "table" then
             db[key] = {}
@@ -239,6 +248,8 @@ function S.Init(classID, raceID, level)
         db.drafts[S.classID] =
             { build = FT.Model.New(S.classID, raceID, level or 60), undo = {}, redo = {} }
     end
+    db.tag = FT.Data.meta.tag
+    S.loadingTag = nil
     S.preview = nil
 end
 
@@ -449,6 +460,8 @@ function S.PrepareTalents(input)
                 .. ". Select that class before pasting."
     end
     build.order = FT.Copy(allocation.order)
+    build.legacyTag = allocation.legacyTag
+    build.recovery = FT.Copy(allocation.recovery)
     local required = FT.Model.RequiredLevel(build)
     if S.AutoLevel() then
         build.level = required
@@ -506,6 +519,10 @@ function S.CreateProfile(title)
     title = FT.SafeText(title, 48)
     if title == "" then
         return nil, "Give this build a name."
+    end
+    local ok, why = FT.Model.Validate(S.Build())
+    if not ok then
+        return nil, "Repair the talent order before saving: " .. why
     end
     local build = FT.Copy(S.Build())
     build.name = title
@@ -582,7 +599,7 @@ function S.UpdateCheckpoint()
         return nil, "Save a named build first."
     end
     local build = S.Build()
-    local ok, why = validBuild(build)
+    local ok, why = FT.Model.Validate(build)
     if not ok then
         return nil, why
     end
@@ -605,6 +622,10 @@ function S.Checkpoint(title)
     local p, parent = S.ActiveProfile()
     if not p then
         return S.CreateProfile(title)
+    end
+    local ok, why = FT.Model.Validate(S.Build())
+    if not ok then
+        return nil, "Repair the talent order before saving: " .. why
     end
     if #p.order >= 400 then
         return nil, "This profile has 400 checkpoints. Save a new profile to continue branching."

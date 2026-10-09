@@ -427,9 +427,10 @@ function UI.Refresh()
         summary[#summary + 1] = tree.name .. " " .. (trees[tree.id] or 0)
     end
     UI.heroTrees:SetText(table.concat(summary, "  /  "))
+    UI.heroHint:SetTextColor(unpack(M.RepairStatus(build) and W.colors.gold or W.colors.muted))
     UI.heroHint:SetText(
-        S.SimpleView()
-                and "Check skills to highlight talents • Click for unlock and upgrade levels"
+        M.RepairStatus(build)
+            or S.SimpleView() and "Check skills to highlight talents • Click for unlock and upgrade levels"
             or S.preview and "Level preview • Full build returns to your talents"
             or "Plan your path • Every point keeps its place in the leveling order"
     )

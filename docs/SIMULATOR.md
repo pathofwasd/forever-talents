@@ -123,3 +123,22 @@ are not resolved by the simulator. Demonic Knowledge's conditional spell-power b
 reference totals. Live captured totals may already include that bonus. Both limits appear in the
 shared calculation warnings; overview disagreements do not override exact trait ranks or introduce
 speculative pet calculations.
+
+## October 8 effects and captures
+
+Current spell effects/timing are build **1.60.1.70291**. Early-rank descriptions are level-60 base
+references; the numerical engine applies growth only through each effect's client scaling cap.
+Penance has three independent eligible bolts over two seconds; choose damage or healing. A full
+volley's power coefficient is 0.57, with damage and healing caps kept separate. No healing is added
+to damage. Cast Mana costs appear in ability details; they are not resource-efficiency simulations.
+
+Natural Instinct uses final Intellect for 12/25% bonus healing, retaining its melee critical bonus.
+Manual/equipment totals apply it once. New live captures normalize recognized source-to-target
+passive differences. Captures whose learned string uses the pre-update catalog keep their reported
+healing and request re-capture: the addon cannot prove whether those totals contained the new
+passive.
+
+Thorns and Retribution Aura now expose correct rank bases and 6% caster spell-power scaling in
+reference descriptions. Their trigger frequency, caster context and critical eligibility have not
+been validated. The simulator blocks generic normal-cast fallback rather than guessing those
+mechanics. Rolling Deep Wounds, Rage/Energy flow, proc uptime and threat remain outside this tool.

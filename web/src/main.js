@@ -175,6 +175,7 @@ function render() {
   <section class="hero"><div>${img(c.icon, 'hero-icon')}<div><p class="eyebrow" data-full-view>${esc(race.name)} · ${esc(race.faction)}</p><h1>${esc(c.name)} <span data-full-view>${esc(state.build.name)}</span></h1><p class="spec-counts">${allTrees.map((t) => `<span class="spec-item">${esc(t.name)} <b>${state.treeCounts[t.id] || 0}</b></span>`).join('<span class="spec-divider">/</span>')}</p></div></div><div class="hero-level"><strong>Level ${state.viewLevel}</strong><span>${points} / ${state.budget} points · ${Math.max(0, state.budget - points)} left</span><small>${state.preview !== undefined ? 'Leveling preview · editing paused' : state.auto ? 'Auto follows spent talents' : `Spent talents require level ${state.requiredLevel}`}</small></div></section>
   ${state.preview !== undefined ? `<aside class="preview-banner">Previewing point ${state.preview} of ${list(state.build.order).length}. ${btn('Full build', 'full')}${btn('Branch here', 'branch', '', 'primary')}</aside>` : ''}
   ${activeCheckpointBar(panel === 'builds')}<nav class="workspace-nav" data-full-view aria-label="Planner workspace">${btn('Talent trees', 'panel', `data-panel="trees" aria-pressed="${panel !== 'builds'}"`, panel !== 'builds' ? 'active' : '')}${btn('Checkpoints & order', 'panel', `data-panel="builds" aria-pressed="${panel === 'builds'}"`, panel === 'builds' ? 'active' : '')}</nav>
+  ${state.repair ? `<aside class="repair-notice" role="status"><strong>Older build needs repair</strong><p>${esc(state.repair)} Impale now requires 3/3 Deep Wounds before it in the point order. Add the missing points, move them before Impale in Checkpoints & order, or remove Impale. Existing checkpoints and the original allocation are kept.</p>${btn('Copy original build', 'share-original')}</aside>` : ''}
   <div class="workspace" data-panel="${panel}"><aside class="panel skills-panel" aria-label="Skills and ranks"><div class="section-heading"><h2>Skills & ranks</h2><span>${state.viewLevel} LV</span></div><p class="muted">${state.simpleView ? 'Check to keep colored talent highlights. Click a skill for unlock and upgrade levels.' : 'Check to keep talent highlights.'}</p><input id="skill-search" type="search" placeholder="Search skills or effects…" value="${esc(skillQuery)}" aria-label="Search skills"><select id="skill-filter" aria-label="Skill category">${(state.simpleView
     ? [
         ['all', 'All class skills'],
@@ -361,7 +362,7 @@ function renderHistory() {
     })
     .join('');
   $('#history-graph').innerHTML =
-    `<div class="graph-heading"><h3>${esc(p.name)}</h3><small>${state.dirty ? 'Unsaved changes' : 'Saved'}</small></div><p class="graph-hint">Update saves into the active checkpoint. Save as new checkpoint creates a child. Loading another node leaves edits unsaved; Undo brings them back.</p><div class="graph-scroll" tabindex="0" role="region" aria-label="Checkpoint tree"><div class="graph" style="height:${nodes.length * 104}px;min-width:${Math.max(...nodes.map((n) => n.x)) + 268}px"><svg aria-hidden="true" width="100%" height="100%">${links}</svg>${nodes.map((n) => `<div class="graph-node ${state.activeNode === n.id ? 'active' : ''}" style="left:${n.x}px;top:${n.y}px">${btn(`${state.activeNode === n.id ? '<span class="active-node-badge">ACTIVE</span>' : ''}<strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} ${list(n.build.order).length === 1 ? 'point' : 'points'}</small>`, 'load', `data-profile="${p.id}" data-node="${n.id}" title="${esc(n.title)}" ${state.activeNode === n.id ? 'aria-current="true"' : ''}`, 'node-main')}${btn('×', 'delete-node', `data-profile="${p.id}" data-node="${n.id}" aria-label="Delete ${esc(n.title)} and descendants"`, 'node-delete')}</div>`).join('')}</div></div>`;
+    `<div class="graph-heading"><h3>${esc(p.name)}</h3><small>${state.dirty ? 'Unsaved changes' : 'Saved'}</small></div><p class="graph-hint">Update saves into the active checkpoint. Save as new checkpoint creates a child. Loading another node leaves edits unsaved; Undo brings them back.</p><div class="graph-scroll" tabindex="0" role="region" aria-label="Checkpoint tree"><div class="graph" style="height:${nodes.length * 104}px;min-width:${Math.max(...nodes.map((n) => n.x)) + 268}px"><svg aria-hidden="true" width="100%" height="100%">${links}</svg>${nodes.map((n) => `<div class="graph-node ${state.activeNode === n.id ? 'active' : ''}" style="left:${n.x}px;top:${n.y}px">${btn(`${state.activeNode === n.id ? '<span class="active-node-badge">ACTIVE</span>' : ''}<strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} ${list(n.build.order).length === 1 ? 'point' : 'points'}${n.build.legacyTag ? ' · Needs repair' : ''}</small>`, 'load', `data-profile="${p.id}" data-node="${n.id}" title="${esc(n.title)}" ${state.activeNode === n.id ? 'aria-current="true"' : ''}`, 'node-main')}${btn('×', 'delete-node', `data-profile="${p.id}" data-node="${n.id}" aria-label="Delete ${esc(n.title)} and descendants"`, 'node-delete')}</div>`).join('')}</div></div>`;
   const scroll = $('.graph-scroll');
   if (!scroll.clientHeight) return;
   const activeID = state.activeNode;
@@ -636,7 +637,7 @@ function previewImport() {
         .map((id) => {
           const n = snap.profile.nodes[id];
           depths[id] = n.parent ? depths[n.parent] + 1 : 0;
-          return `<div style="padding-left:${Math.min(depths[id], 8) * 12}px"><strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} points${id === snap.selected ? ' · opens here' : ''}</small></div>`;
+          return `<div style="padding-left:${Math.min(depths[id], 8) * 12}px"><strong>${esc(n.title)}</strong><small>Lv. ${n.build.level} · ${list(n.build.order).length} points${n.build.legacyTag ? ' · needs repair' : ''}${id === snap.selected ? ' · opens here' : ''}</small></div>`;
         })
         .join('');
     }
@@ -661,6 +662,7 @@ function showShare(kind = 'link', context = {}) {
       ['profileLink', 'Build + checkpoints link'],
       ['profile', 'Build + checkpoints string'],
       ['build', 'Talent build + ordered points'],
+      ...(state.build.recovery ? [['original', 'Original build before migration']] : []),
       ['character', 'Character: level + talents + stats + gear'],
       ['stats', 'Character stats + gear (or temporary skill inputs)'],
       ['library', 'Whole library: builds + branches + drafts'],
@@ -697,11 +699,13 @@ function refreshShare() {
         ? 'Includes this saved build and all its saved checkpoint branches. Unsaved edits are excluded; use Update checkpoint or New checkpoint first to share them. Your friend can preview the tree before opening it. Other profiles, character stats and equipment are not included. Very large trees can use a profile string or file.'
         : kind === 'link'
           ? 'Includes class, race, displayed level, talents and exact point order. Your friend can review before loading; no account needed. Character stats, gear and your library are shared separately.'
-          : kind === 'library'
-            ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
-            : kind === 'stats'
-              ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
-              : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
+          : kind === 'original'
+            ? 'Recoverable original allocation and exact order from before the rule change. Importing it shows the repair notice again; it never replaces your saved branches automatically.'
+            : kind === 'library'
+              ? `Full library export · ${code.length.toLocaleString()} characters. Includes checkpoints, all class drafts, undo/redo and simulation stats. Native window settings and received whispers stay on their own device.`
+              : kind === 'stats'
+                ? 'Character exports include the central workspace and equipment. Temporary skill inputs can be pasted inside Simulator without changing Character. Live captures retain reported power/crit by school.'
+                : 'The exported level is the displayed level. Preview mode exports only the displayed talent prefix.';
   } catch (e) {
     $('#share-code').value = '';
     $('[data-action="copy-code"]').disabled = true;
@@ -1144,6 +1148,9 @@ document.addEventListener('click', async (event) => {
           render();
           toast(state.message || 'Imported.');
         }
+        break;
+      case 'share-original':
+        showShare('original');
         break;
       case 'share':
         showShare();

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.16
+
+October 8 client update (1.60.1.70291): Impale prerequisite and explicit legacy-save repair; Natural
+Instinct healing; refreshed early-rank effects and Penance; corrected proc/cast descriptions and Fox
+reference. Original allocations and all saved branches survive migration, repair and sharing. See
+[release notes](RELEASE-1.2.16.md) for compatibility and simulation limits.
+
 ## 1.2.15
 
 - Correct Demonic Brand pet-threat context and replace its raw damage formula with a readable

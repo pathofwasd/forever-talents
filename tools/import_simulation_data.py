@@ -22,7 +22,9 @@ SCHOOLS = {
     32: "Shadow",
     64: "Arcane",
 }
-PATCH = "https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-1/2360696"
+PATCH = "https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-8/2360696/5"
+PENANCE = {402174: (402284, 402289), 1240720: (1240727, 1240723),
+           1240721: (1240730, 1240724), 1316995: (1316993, 1316991)}
 
 
 def compile_spells(directory, build, catalog):
@@ -57,6 +59,10 @@ def compile_spells(directory, build, catalog):
         for racials in races.values():
             for skill in racials:
                 roots.setdefault(skill["spellID"], (int(cid), skill["name"], skill["icon"]))
+
+    for children in PENANCE.values():
+        for child in children:
+            roots.setdefault(child, (5, "Penance bolt", "spell_holy_penance"))
 
     def value(row, key):
         return round(float(row.get(key) or 0), 6)
@@ -302,6 +308,20 @@ def compile_spells(directory, build, catalog):
             "components": components,
             "notes": list(dict.fromkeys(notes)),
         }
+    for parent, children in PENANCE.items():
+        bolts = [spells.get(str(child)) for child in children]
+        if not all(bolts):
+            continue
+        model = dict(bolts[0], duration=2, channel=True, maxLevel=0, cast=0)
+        model["components"] = []
+        for bolt in bolts:
+            for component in bolt["components"]:
+                component = dict(component, part="periodic", ticks=3, interval=1,
+                                 level=bolt["level"], maxLevel=bolt["maxLevel"])
+                model["components"].append(component)
+        model["notes"] = ["Three bolts at 0, 1 and 2 seconds. Select damage or healing; they are not added together.",
+                          "Each bolt uses 19% bonus power. Damage and healing retain their own client level caps."]
+        spells[str(parent)] = model
     stats_crit = {}
     for cls in catalog["classes"].values():
         for tree in cls["trees"]:
@@ -320,6 +340,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
     parser.add_argument("--build", required=True)
+    parser.add_argument("--checked", required=True, help="Date the snapshot was reviewed (YYYY-MM-DD)")
     args = parser.parse_args()
     path = ROOT / "data/catalog.json"
     catalog = json.loads(path.read_text())
@@ -344,7 +365,7 @@ def main():
     catalog["simulation"] = {
         "schema": 1,
         "build": args.build,
-        "checked": "2026-10-05",
+        "checked": args.checked,
         "sources": sources,
         "patchSource": PATCH,
         "spells": spells,

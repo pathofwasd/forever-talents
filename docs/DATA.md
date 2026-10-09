@@ -71,10 +71,11 @@ described in [SIMULATOR.md](SIMULATOR.md).
 ## Base ability tooltips
 
 `spellDetails` stores passive/instant/cast/channel labels, ability and global cooldowns, and range
-from client build 1.60.1.70009. `tools/import_spell_details.py` imports reviewed SpellMisc,
-SpellCastTimes, SpellDuration, SpellCooldowns and SpellRange CSVs. Missing records stay explicit.
-These are base reference values, not active cooldown timers or talent/haste-adjusted predictions.
-Descriptions continue to come from each rank record, with a native client fallback when missing.
+from client build 1.60.1.70291. `tools/import_spell_details.py` imports reviewed SpellMisc,
+SpellCastTimes, SpellDuration, SpellCooldowns, SpellRange and SpellPower CSVs. Missing records stay
+explicit. These are base reference values, not active cooldown timers or talent/haste-adjusted
+predictions. Descriptions continue to come from each rank record, with a native client fallback when
+missing.
 
 ## October 8 review
 
@@ -96,3 +97,31 @@ reverses their names. Overview text alone does not change exact ranks or unlock 
 [October 8 maintenance](https://us.forums.blizzard.com/en/wow/t/beta-realm-maintenance-october-8/2375900)
 was announced during this review. Its gameplay notes were still pending; this review date does not
 claim that unpublished changes are implemented. Catalog layout/share identity remains unchanged.
+
+## October 8 client update
+
+The structural tag is now `759c22c2`: Impale requires 3/3 Deep Wounds. Every ordinal, talent ID,
+position and rank maximum is retained. `meta.legacyTags` describes only the reviewed removed rule
+for `7ba43a60`; unknown identities remain rejected. Strict current validation governs new spending
+and checkpoint saves. Legacy validation preserves older allocations and their exact order, including
+obsolete leveling routes, without adding/removing/reordering points during migration. Affected
+builds carry a repair marker and an immutable original allocation. FL1 includes those backups; FP1
+carries validated original strings beside its node builds. FT1/FA1 and nested FC1/FS1/FS2 accept
+this known old identity after checksum and structural validation. Current-valid allocations export
+the current tag; unrepaired originals retain the original tag. A library with an unknown identity
+remains untouched and read-only. Players can export originals from Share in either UI.
+
+The effect/timing snapshot is **1.60.1.70291**, reviewed October 9, covering the October 8 update.
+The original acquisition build/date in `meta` remain separate from `reviewedBuild` and `reviewedAt`.
+Early-rank reference descriptions use capped level-60 base values and record `textLevel`; the shared
+simulator uses exact bases, growth, per-effect caps and the displayed level. Penance damage/healing
+children retain independent caps and use three 19%-power bolts at 0/1/2 seconds. SpellPower confirms
+rank-2 cost 220 Mana despite an older rendered page showing 185. Retaliation bases and 6% caster
+scaling are reference facts; frequency and critical eligibility remain unverified, so generic
+normal-cast fallback is blocked for Thorns and Retribution Aura. Proc intervals are separate from
+ability cooldowns. No rolling-bleed, resource-flow or pet-threat combat engine is implied.
+
+Sources:
+[October 8 staff notes](https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-8/2360696/5),
+[client effect tables](https://wago.tools/db2/SpellEffect?build=1.60.1.70291) and
+[client resource costs](https://wago.tools/db2/SpellPower?build=1.60.1.70291).

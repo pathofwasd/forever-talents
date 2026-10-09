@@ -57,7 +57,7 @@ function C.Checksum(text)
 end
 
 function C.Encode(build)
-    local ok, why = FT.Model.Validate(build)
+    local ok, why = FT.Model.Preserve(build)
     if not ok then
         return nil, why
     end
@@ -72,7 +72,7 @@ function C.Encode(build)
     local name = FT.SafeText(build.name, 48)
     local body = table.concat({
         "FT1",
-        FT.Data.meta.tag,
+        build.legacyTag or FT.Data.meta.tag,
         build.classID,
         build.raceID,
         build.level,
@@ -132,7 +132,7 @@ function C.Decode(input)
     if version ~= "FT1" then
         return nil, "This build needs a newer version of Forever Talents."
     end
-    if tag ~= FT.Data.meta.tag then
+    if not FT.Model.AcceptTag(tag) then
         return nil,
             "This build uses a different talent dataset. Both players need the same Forever Talents version."
     end
@@ -167,7 +167,7 @@ function C.Decode(input)
         end
         build.order[#build.order + 1] = t.id
     end
-    local ok, why = FT.Model.Validate(build)
+    local ok, why = FT.Model.Preserve(build, tag)
     if not ok then
         return nil, why
     end
@@ -181,7 +181,8 @@ function C.EncodeTalents(build)
         return nil, why
     end
     local order = code:match("^FT1:[^:]+:%d+:%d+:%d+:([^:]*):")
-    local body = "FA1:" .. FT.Data.meta.tag .. ":" .. build.classID .. ":" .. order
+    local tag = code:match("^FT1:([^:]+):")
+    local body = "FA1:" .. tag .. ":" .. build.classID .. ":" .. order
     return body .. ":" .. C.Checksum(body)
 end
 
@@ -198,7 +199,7 @@ function C.DecodeTalents(input)
     if version ~= "FA1" then
         return nil, "These talents need a newer version of Forever Talents."
     end
-    if tag ~= FT.Data.meta.tag then
+    if not FT.Model.AcceptTag(tag) then
         return nil,
             "These talents use a different dataset. Both players need the same data version."
     end
@@ -214,7 +215,20 @@ function C.DecodeTalents(input)
     -- The existing build decoder owns ordinal lookup and legal order validation.
     local full = table.concat({ "FT1", tag, classID, class.races[1], 60, order, "" }, ":")
     local build, why = C.Decode(full .. ":" .. C.Checksum(full))
-    return build and { classID = classID, order = build.order } or nil, why
+    return build and {
+        classID = classID,
+        order = build.order,
+        legacyTag = build.legacyTag,
+        recovery = build.recovery,
+    } or nil,
+        why
+end
+
+function C.EncodeOriginal(build)
+    if not build or not build.recovery then
+        return nil, "This build has no migration backup."
+    end
+    return C.Encode(FT.Copy(build.recovery))
 end
 
 -- Shared envelope codecs use the same canonical URL-safe encoding.

@@ -1,4 +1,4 @@
-FOREVER TALENTS 1.2.15
+FOREVER TALENTS 1.2.16
 An offline talent planner for World of Warcraft Forever (Interface 16001).
 Free, unofficial community project. Not affiliated with or endorsed by
 Blizzard Entertainment. Game artwork and text belong to their rights holders.
