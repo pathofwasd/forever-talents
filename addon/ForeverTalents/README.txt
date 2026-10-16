@@ -1,4 +1,4 @@
-FOREVER TALENTS 1.2.16
+FOREVER TALENTS 1.3.0
 An offline talent planner for World of Warcraft Forever (Interface 16001).
 Free, unofficial community project. Not affiliated with or endorsed by
 Blizzard Entertainment. Game artwork and text belong to their rights holders.
@@ -61,6 +61,14 @@ your current talents). The mode is remembered per class draft and can itself
 be undone. Manual target levels still enforce their normal point budget.
 
 SKILLS AND RACIALS
+Skills are grouped by level, with one row for every player-facing rank.
+Each row shows its rank and unlock level. Future rows count down levels;
+talent skills name the talent they require. Click a row for that exact rank.
+All ranks of a selected skill share one highlight color. Search and filters
+keep the same chronological order in full, Simple and Compact views.
+Compare imported character enables per-rank Train now indicators. Re-import
+your character after a game update changes training ranks.
+
 Hover a skill to highlight its related talents. Six colors identify selections. Click for every rank,
 the first learn level and subsequent rank levels, talent unlocks and full
 descriptions. Named, school and general effects are labeled separately.
@@ -69,7 +77,7 @@ checked skills combine their related talents. Clear highlights unchecks all,
 including selections hidden by a search or filter. Selections stay when you
 inspect details, change level, or edit talents. Changing class clears them;
 changing race clears racial selections while keeping selected class skills.
-Some source ranks are alternate records; they remain visible and labeled.
+Archived alternate records stay in full details, outside the unlock timeline.
 When the snapshot has no description, the addon can display the client's
 description if available; otherwise it labels the missing source text.
 All current skills are browsable even before you unlock them. Rank details label
@@ -89,9 +97,9 @@ Each class has an independent draft that is saved between sessions. WoW
 writes SavedVariables when you log out or /reload; a crash can lose the
 current session's changes.
 
-Save build names your draft and creates a starting node. After editing, Save
-checkpoint adds a node below the selected checkpoint. Click an older node
-and edit from there to create an alternate branch. Existing nodes stay intact.
+Save build names your draft and creates a starting node. After editing, Save as new checkpoint adds a child below the selected checkpoint.
+Update checkpoint replaces the selected snapshot while retaining its branches.
+Loading another node never creates a checkpoint; Undo restores edits left behind.
 Checkpoints shows the compact tree; Expand shows a scrollable graph.
 Undo after loading a node also restores the previously selected branch.
 

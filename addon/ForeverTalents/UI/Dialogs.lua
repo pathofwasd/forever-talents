@@ -707,7 +707,7 @@ function UI.SkillLevelsDialog(skill)
     f.scroll:ScrollTo(0)
 end
 
-function UI.SkillDialog(skill)
+function UI.SkillDialog(skill, selectedRank)
     if S.SimpleView() then
         UI.SkillLevelsDialog(skill)
         return
@@ -754,7 +754,8 @@ function UI.SkillDialog(skill)
     local view, level = S.View(), S.ViewLevel()
     local points = M.Counts(view)
     local trained = FT.Skills.TrainedRank(skill, FT.Character.Get(view).trainedSkills)
-    local rank = (UI.skillFilterKey == "trained" and trained)
+    local rank = selectedRank
+        or (UI.skillFilterKey == "trained" and trained)
         or FT.Skills.CurrentRank(skill, level, points)
         or skill.ranks[1]
     f.selectedRank = rank
@@ -1177,7 +1178,37 @@ function UI.RaceDialog()
     end
 end
 
+function UI.RepairDialog()
+    local converted, message = M.Convert(S.Build())
+    if not converted then
+        UI.Status(message, true)
+        return
+    end
+    local f, first = UI.Dialog("repair", "Convert older build", 640, 300)
+    if first then
+        f.text = W.Text(f, "", 22, -64, 596, 13)
+        f.convert = W.Button(f, "Convert working talents", 22, -244, 288, nil, true, 32)
+        W.Button(f, "Cancel", 330, -244, 288, UI.CloseDialog, false, 32)
+    end
+    f.text:SetText(
+        message
+            .. "\n\nOriginal allocation is kept in Share. Undo restores it. Saved checkpoints only change when you click Update checkpoint."
+    )
+    f.convert:SetScript("OnClick", function()
+        local ok, why = S.ConvertCurrent()
+        if ok then
+            UI.CloseDialog()
+        else
+            UI.Status(why, true)
+        end
+    end)
+end
+
 function UI.HelpDialog()
+    if M.RepairStatus(S.Build()) then
+        UI.RepairDialog()
+        return
+    end
     local f, first = UI.Dialog("help", "A quick guide", 850, 616)
     if first then
         W.Text(f, "Plan the whole journey", 22, -68, 806, 16, W.colors.gold)

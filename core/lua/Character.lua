@@ -110,6 +110,16 @@ function C.Normalize(raw, strict)
         if not c.trainedSkills then
             return nil, why
         end
+        if
+            not c.trainedSkills.dataTag
+            and type(raw.capture) == "table"
+            and type(raw.capture.learnedCode) == "string"
+        then
+            local tag = raw.capture.learnedCode:match("^FT1:([^:]+):")
+            if FT.Model.AcceptTag(tag) then
+                c.trainedSkills.dataTag = tag
+            end
+        end
     end
     if
         strict
@@ -488,6 +498,13 @@ local function captured(build, sheet, inputs, withTalents)
             "Source talents were unreadable. Captured totals stay unchanged; talent stat bonuses cannot be normalized reliably. Re-capture with the game's Talents window open."
         return view
     end
+    local sourceTag = source.learnedCode and source.learnedCode:match("^FT1:([^:]+):")
+    if sourceTag and sourceTag ~= FT.Data.meta.tag then
+        warnings[#warnings + 1] =
+            "This character was captured with an older talent/racial catalog. Reported totals are preserved without recalculating changed passives. Import the character again in the updated addon."
+        view.staleCapture = true
+        return view
+    end
     if source.level ~= build.level or source.raceID ~= build.raceID then
         warnings[#warnings + 1] =
             "Live totals remain anchored to the captured race and level. Re-capture that character, or use Base + gear to preview another race or level."
@@ -584,6 +601,13 @@ local function captured(build, sheet, inputs, withTalents)
 end
 
 function C.Compute(build, sheet, withTalents)
+    if withTalents ~= false and M.RepairStatus(build) then
+        local clean = M.New(build.classID, build.raceID, build.level, build.name)
+        local view = C.Compute(clean, sheet, false)
+        view.warnings[#view.warnings + 1] =
+            "Older build needs conversion; changed talent passives are omitted until repaired. Original allocation is preserved."
+        return view
+    end
     sheet = C.Normalize(sheet or C.Get(build)) or C.New()
     local base = FT.Data.simulation.character.classes[build.classID]
     local race = FT.Data.simulation.character.races[build.raceID]
@@ -714,7 +738,6 @@ function C.Compute(build, sheet, withTalents)
     for _, trait in ipairs(FT.Data.racials[build.classID][build.raceID] or {}) do
         if trait.name == "Endurance" then
             totals.health = totals.health * 1.05
-            totals.hit = math.min(100, totals.hit + 1)
         end
         if trait.name == "Expansive Mind" and trait.text:find("Mana", 1, true) then
             totals.mana = totals.mana * 1.05
@@ -902,6 +925,7 @@ function C.ForSkill(build, skill, rank, sheet, withTalents, effectMode)
         end
         state.effectMode = parsed and parsed.effectModes and parsed.effectMode or nil
         state.form = character.sheet.form
+        state.intellect, state.mana = totals.intellect, totals.mana
         return state, character, note
     end
     local totals = character.totals
@@ -926,7 +950,9 @@ function C.ForSkill(build, skill, rank, sheet, withTalents, effectMode)
                 and parsed.kind == "damage"
                 and totals.baseMeleeCrit
             or totals.baseSpellCrit,
-        hit = math.max(0, totals.hit - (build.raceID == 6 and 1 or 0)),
+        hit = totals.hit,
+        intellect = totals.intellect,
+        mana = totals.mana,
     })
     return state, character
 end
@@ -936,6 +962,10 @@ function Sim.Run(build, skill, rank, overrides, withTalents)
         C.ForSkill(build, skill, rank, nil, withTalents, overrides and overrides.effectMode)
     for key, value in pairs(overrides or {}) do
         state[key] = value
+    end
+    if character.staleCapture then
+        return nil,
+            "Re-import this character with the updated addon before simulating changed racial and talent passives, or switch Character to overall stats. Reported totals are preserved."
     end
     local result, why = Sim.Calculate(build, skill, rank, state, withTalents)
     if result then

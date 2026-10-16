@@ -416,6 +416,7 @@ function FT.ReadPlayerSkills()
     end
     return FT.Skills.NormalizeTraining({
         schema = 1,
+        dataTag = FT.Data.meta.tag,
         classID = cid,
         raceID = rid,
         level = math.min(60, safe(UnitLevel, "player") or 0),

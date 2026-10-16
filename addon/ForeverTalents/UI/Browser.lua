@@ -88,7 +88,7 @@ function UI.AddHighlightCheckbox(row, x, y)
     return row.check
 end
 
-function UI.SkillTooltip(owner, skill)
+function UI.SkillTooltip(owner, skill, selectedRank)
     if FT.Store.SimpleView() then
         local levels, unlockLevel = FT.Skills.Levels(skill)
         local comparison =
@@ -107,7 +107,8 @@ function UI.SkillTooltip(owner, skill)
     local view, level = FT.Store.View(), FT.Store.ViewLevel()
     local points = M.Counts(view)
     local trained = FT.Skills.TrainedRank(skill, FT.Character.Get(view).trainedSkills)
-    local rank = (UI.skillFilterKey == "trained" and trained)
+    local rank = selectedRank
+        or (UI.skillFilterKey == "trained" and trained)
         or FT.Skills.CurrentRank(skill, level, points)
         or skill.ranks[1]
     if not GameTooltip then
@@ -267,7 +268,7 @@ function UI.CreateBrowser(parent)
         W.Tooltip(self, "Compare imported character", {
             "Compare the displayed level and talents with your last imported spellbook.",
             "Gold rows need a new skill or a higher rank. Needs training filters those rows.",
-            "The arrow counts levels until the next rank or first unlock. Zero means the level is reached; talent requirements still apply.",
+            "Every rank has its own row, grouped by unlock level. Future rows count levels until their unlock; talent requirements still apply.",
             "Re-import after learning skills. This is a snapshot, not a live trainer list.",
         })
     end)
@@ -279,46 +280,23 @@ function UI.CreateBrowser(parent)
     UI.trainingInfo:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     UI.skillScroll = W.Scroll(p, 8, -158, 210, 324)
     UI.skillRows = {}
-    for i = 1, 110 do
-        local row = W.Button(UI.skillScroll.content, "", 0, -(i - 1) * 77, 194, function(self)
-            UI.SkillDialog(self.skill)
-        end, false, 74)
-        row.icon = W.Icon(row, "class_druid", 7, -14, 28)
-        row.source = W.Text(row, "Trained", 5, -49, 32, 8, W.colors.teal)
-        row.source:SetJustifyH("CENTER")
-        row.title = W.Text(row, "", 42, -7, 119, 12)
+    function UI.CreateSkillRow(i)
+        local row = W.Button(UI.skillScroll.content, "", 0, 0, 194, function(self)
+            UI.SkillDialog(self.skill, self.rank)
+        end, false, 62)
+        row.icon = W.Icon(row, "class_druid", 7, -16, 28)
+        row.title = W.Text(row, "", 42, -8, 119, 12)
         row.title:SetWordWrap(false)
-        row.detail = W.Text(row, "", 42, -23, 119, 10, W.colors.muted)
-        row.detail:SetWordWrap(true)
-        row.detail:SetHeight(29)
-        row.unlock = CreateFrame("Frame", nil, row)
-        row.unlock:SetPoint("TOPLEFT", 42, -26)
-        row.unlock:SetSize(9, 11)
-        -- A small open padlock drawn with the same solid UI primitives as the frame.
-        for _, bar in ipairs({ { 0, 5, 9, 6 }, { 1, 1, 1, 5 }, { 1, 0, 6, 1 }, { 6, 1, 1, 2 } }) do
-            local texture = row.unlock:CreateTexture(nil, "ARTWORK")
-            texture:SetPoint("TOPLEFT", bar[1], -bar[2])
-            texture:SetSize(bar[3], bar[4])
-            texture:SetColorTexture(unpack(W.colors.teal))
-        end
-        row.progress = W.Text(row, "", 127, -23, 34, 10, W.colors.gold)
-        row.progress:SetJustifyH("RIGHT")
-        row.nextRank = W.Text(row, "", 42, -57, 145, 10, W.colors.muted)
-        row.nextRank:SetWordWrap(false)
-        row.nextLock = CreateFrame("Frame", nil, row)
-        row.nextLock:SetPoint("TOPLEFT", 42, -59)
-        row.nextLock:SetSize(9, 11)
-        for _, bar in ipairs({ { 0, 5, 9, 6 }, { 1, 1, 1, 5 }, { 1, 0, 6, 1 }, { 6, 1, 1, 5 } }) do
-            local texture = row.nextLock:CreateTexture(nil, "ARTWORK")
-            texture:SetPoint("TOPLEFT", bar[1], -bar[2])
-            texture:SetSize(bar[3], bar[4])
-            texture:SetColorTexture(unpack(W.colors.muted))
-        end
+        row.detail = W.Text(row, "", 42, -26, 145, 10, W.colors.teal)
+        row.detail:SetWordWrap(false)
+        row.status = W.Text(row, "", 42, -43, 145, 10, W.colors.muted)
+        row.status:SetWordWrap(false)
+        row.levelHeader = W.Text(UI.skillScroll.content, "", 2, 0, 190, 11, W.colors.gold)
         UI.AddHighlightCheckbox(row, 167, -18)
         row:SetScript("OnEnter", function(self)
             self:Paint(true)
             UI.HighlightSkill(self.skill)
-            UI.SkillTooltip(self, self.skill)
+            UI.SkillTooltip(self, self.skill, self.rank)
         end)
         row:SetScript("OnLeave", function(self)
             self:Paint(false)
@@ -326,6 +304,7 @@ function UI.CreateBrowser(parent)
             UI.HighlightSkill(nil)
         end)
         UI.skillRows[i] = row
+        return row
     end
     UI.skillEmpty = W.Text(
         UI.skillScroll.content,
@@ -369,87 +348,54 @@ function UI.RefreshBrowser()
     UI.trainingInfo:SetText(report.caption or "")
     UI.trainingInfo:SetEnabled(report.ready == true)
     UI.trainingInfo.tip = report.note
-    local list = FT.Skills.List(build, level, UI.skillQuery, filter, not simple)
-    local training = FT.Character.Get(build).trainedSkills
-    UI.skillCount:SetText(
-        #list
-            .. " skills • "
-            .. (
-                filter == "trained" and training and "captured level " .. training.level
-                or "showing level " .. level
-            )
-    )
+    local list = FT.Skills.Timeline(build, level, UI.skillQuery, filter, not simple)
+    UI.skillCount:SetText(#list .. " unlocks • level " .. level)
+    for i = #UI.skillRows + 1, #list do
+        UI.CreateSkillRow(i)
+    end
+    local y, previousLevel = 0, nil
     for i, row in ipairs(UI.skillRows) do
         local entry = list[i]
         row:SetShown(entry ~= nil)
+        row.levelHeader:Hide()
         if entry then
-            local s = entry.skill
-            row.skill = s
-            row.source:SetShown(entry.shownTrained)
-            row.comparison = entry.comparison
-            row.check:Show()
-            row.title:SetWidth(
-                (compact and 289 or 119)
-                    - (entry.comparison and entry.comparison.progress and 34 or 0)
-            )
-            local comparison = entry.comparison
-            row.detail:SetWidth(compact and 277 or 107)
-            row.detail:ClearAllPoints()
-            row.detail:SetPoint("TOPLEFT", entry.progression and 54 or 42, -23)
-            row.unlock:SetShown(entry.progression ~= nil)
-            row.progress:ClearAllPoints()
-            row.progress:SetPoint("TOPRIGHT", -34, -7)
-            row.progress:SetText(comparison and comparison.progress or "")
-            row.progress:SetShown(comparison and comparison.progress ~= nil or false)
-            local secondary = entry.progression and entry.progression.secondary
-            row.nextRank:SetText(secondary or "")
-            row.nextRank:SetShown(secondary ~= nil)
-            row.nextLock:SetShown(entry.progression and entry.progression.nextLocked or false)
-            row.nextRank:ClearAllPoints()
-            row.nextRank:SetPoint(
-                "TOPLEFT",
-                entry.progression and entry.progression.nextLocked and 54 or 42,
-                -57
-            )
-            row.nextRank:SetWidth(entry.progression and entry.progression.nextLocked and 133 or 145)
-            row.nextRank:SetTextColor(
-                unpack(comparison and comparison.needsTraining and W.colors.gold or W.colors.muted)
-            )
-            row.title:SetText(s.name)
-            row.icon:SetTexture(
-                "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. s.icon .. ".tga"
-            )
-            row.icon:SetDesaturated(not (entry.current or entry.trained))
-            local detail = s.kind == "racial" and "Racial • level 1"
-                or (
-                    s.unlock
-                        and s.unlock.treeName .. (entry.current and " • learned" or " • talent")
-                    or "Lv. "
-                        .. s.firstLevel
-                        .. " • "
-                        .. (
-                            entry.current
-                                and (entry.current.label ~= "" and entry.current.label or "available")
-                            or "not yet"
-                        )
-                )
-            row.detail:SetText(
-                entry.progression and entry.progression.summary
-                    or comparison and comparison.label
-                    or entry.trained and "Trained • " .. (entry.trained.label ~= "" and entry.trained.label or "ability")
-                    or detail
-            )
-            row.detail:SetTextColor(
+            local skill = entry.skill
+            row.skill, row.rank, row.entry = skill, entry.rank, entry
+            row.comparison = entry.needsTraining and { needsTraining = true } or nil
+            if entry.level ~= previousLevel then
+                row.levelHeader:ClearAllPoints()
+                row.levelHeader:SetPoint("TOPLEFT", 2, -y - 5)
+                row.levelHeader:SetText("LEVEL " .. entry.level)
+                row.levelHeader:Show()
+                y = y + 26
+                previousLevel = entry.level
+            end
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", 0, -y)
+            row:SetWidth(compact and 364 or 194)
+            row.check:ClearAllPoints()
+            row.check:SetPoint("TOPLEFT", compact and 337 or 167, -18)
+            row.title:SetWidth(compact and 289 or 119)
+            row.detail:SetWidth(compact and 315 or 145)
+            row.status:SetWidth(compact and 315 or 145)
+            row.title:SetText(skill.name)
+            row.detail:SetText(entry.label .. " • Lv. " .. entry.level)
+            row.status:SetText(entry.status)
+            row.status:SetTextColor(
                 unpack(
-                    entry.progression and W.colors.teal
-                        or comparison and comparison.needsTraining and W.colors.gold
-                        or (entry.current or entry.trained) and W.colors.teal
+                    entry.needsTraining and W.colors.gold
+                        or entry.trained and W.colors.teal
                         or W.colors.muted
                 )
             )
+            row.icon:SetTexture(
+                "Interface\\AddOns\\ForeverTalents\\Media\\Icons\\" .. skill.icon .. ".tga"
+            )
+            row.icon:SetDesaturated(not entry.available and not entry.trained)
+            row.check:Show()
+            y = y + 66
         else
-            row.skill = nil
-            row.comparison = nil
+            row.skill, row.rank, row.entry, row.comparison = nil, nil, nil, nil
         end
     end
     UI.skillEmpty:SetShown(#list == 0)
@@ -459,7 +405,7 @@ function UI.RefreshBrowser()
             or filter == "trained" and "No captured trained skills.\nCharacter → Import my talents & skills."
             or "No matching skills.\nTry a name, school, or effect."
     )
-    UI.skillScroll:SetContentHeight(#list * 77)
+    UI.skillScroll:SetContentHeight(y)
     UI.RefreshHighlightChecks()
 end
 

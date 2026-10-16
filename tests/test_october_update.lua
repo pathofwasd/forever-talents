@@ -251,7 +251,7 @@ source.learnedCode = retag(source.learnedCode, "7ba43a60")
 local oldCapture = Character.FromSnapshot(source)
 local preserved = Character.Compute(M.New(11, legal.raceID, 60), oldCapture)
 near(preserved.totals.healing, 125)
-check(table.concat(preserved.warnings, " "):find("reported healing total is kept", 1, true))
+check(table.concat(preserved.warnings, " "):find("Reported totals are preserved", 1, true))
 
 local healingLinks = A.Prepare(11).byName["Healing Touch"].related
 local linked = false

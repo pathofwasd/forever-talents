@@ -109,5 +109,5 @@ end
 FT.UI.Toggle()
 FT.UI.PetDialog()
 check(FT.UI.dialogs.pets.reference:GetText():find("Fox", 1, true))
-check(FT.Data.meta.tag == "759c22c2" and FT.Model.AcceptTag("7ba43a60"))
+check(FT.Model.AcceptTag("759c22c2") and FT.Model.AcceptTag("7ba43a60"))
 print("Rank audit regressions: " .. checks .. " assertions passed")

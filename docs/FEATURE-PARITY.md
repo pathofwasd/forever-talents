@@ -245,3 +245,17 @@ the same recovery steps, including compact view. Simple view remains usable for 
 Natural Instinct character contributions, early-rank growth, per-effect caps and Penance's separate
 three-bolt modes use the same engine. Base channel/cost and proc-interval labels use the same shared
 formatter. Experimental unsupported retaliation behavior is disclosed in both simulators.
+
+## Chronological unlocks and October 15 compatibility
+
+Addon full/Simple/Compact views and desktop/mobile PWA show one row per player-facing skill rank,
+grouped by level. Rows name the rank and unlock level, mark future or talent requirements, and open
+that rank in full details. Simple view opens only the shared unlock-level list. Search and filters
+preserve level order. All rank checkboxes for one ability share its selection and color; Clear
+highlights clears them all. Optional imported-character comparison marks individual untrained ranks.
+
+Both engines use the 70425 effect/timing snapshot and `d2ef5c6a` talent catalog. Known older
+allocations and graph branches are preserved. Explicit conversion previews the changed points,
+retains the original string and Undo, and never overwrites a saved checkpoint automatically. Stale
+tagged captures require re-import for changed rank comparisons and live-stat simulation. Native
+character capture remains client-only; portable sharing works on both platforms.

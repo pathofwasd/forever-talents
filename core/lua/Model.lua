@@ -18,6 +18,41 @@ function M.RaceAllowed(classID, raceID)
     return false
 end
 
+-- Historical order and rules are read only. They never replace current spending rules.
+function M.LegacyIndex(classID, tag)
+    local catalogs = FT.Data.meta.legacyCatalogs or {}
+    local source = catalogs[tag]
+    if not source then
+        return nil
+    end
+    local base = source.baseTag and catalogs[source.baseTag] or source
+    local records = base and base.classes[classID]
+    if not records then
+        return nil
+    end
+    M.legacyIndexes = M.legacyIndexes or {}
+    local key = tag .. ":" .. classID
+    if not M.legacyIndexes[key] then
+        local index, ordinal = {}, {}
+        for _, record in ipairs(records) do
+            local t = FT.Copy(record)
+            local waive = source.waive and source.waive[t.id]
+            if waive then
+                local requires = {}
+                for _, req in ipairs(t.requires) do
+                    if req.id ~= waive then
+                        requires[#requires + 1] = req
+                    end
+                end
+                t.requires = requires
+            end
+            index[t.id], ordinal[t.index] = t, t
+        end
+        M.legacyIndexes[key] = { index, ordinal }
+    end
+    return unpack(M.legacyIndexes[key])
+end
+
 function M.Index(classID)
     local c = M.Class(classID)
     if not c then
@@ -30,6 +65,17 @@ function M.Index(classID)
             for _, t in ipairs(tree.talents) do
                 t.treeID, t.treeIndex, t.treeName = tree.id, ti, tree.name
                 c.index[t.id], c.byOrdinal[t.index] = t, t
+            end
+        end
+        -- Removed talents stay addressable for old order/history displays and
+        -- explicit refunds, but cannot be allocated in the current dataset.
+        for tag in pairs(FT.Data.meta.legacyCatalogs or {}) do
+            local historical = M.LegacyIndex(classID, tag)
+            for id, talent in pairs(historical or {}) do
+                if not c.index[id] then
+                    c.index[id] = FT.Copy(talent)
+                    c.index[id].retired = true
+                end
             end
         end
     end
@@ -68,10 +114,10 @@ function M.Counts(build, count)
 end
 
 local function canAdd(build, id, points, trees, spent, legacy)
-    local index = M.Index(build.classID)
+    local index = legacy and legacy.index or M.Index(build.classID)
     local t = index and index[id]
-    if not t then
-        return false, "That talent does not belong to this class."
+    if not t or (t.retired and not legacy) then
+        return false, "That talent is no longer available in this dataset."
     end
     if spent >= M.Budget(build.level) then
         return false,
@@ -86,7 +132,7 @@ local function canAdd(build, id, points, trees, spent, legacy)
         return false, "Spend " .. t.gate .. " points in " .. t.treeName .. " to unlock this row."
     end
     for _, req in ipairs(t.requires) do
-        if not (legacy and legacy[t.id] == req.id) and (points[req.id] or 0) < req.points then
+        if (points[req.id] or 0) < req.points then
             return false,
                 "Requires " .. req.points .. " / " .. index[req.id].max .. " " .. req.name .. "."
         end
@@ -127,7 +173,7 @@ local function validate(build, legacy)
     if n ~= #build.order then
         return false, "The point order contains a gap."
     end
-    local points, trees, index = {}, {}, M.Index(build.classID)
+    local points, trees, index = {}, {}, legacy and legacy.index or M.Index(build.classID)
     for i, id in ipairs(build.order) do
         local ok, why = canAdd(build, id, points, trees, i - 1, legacy)
         if not ok then
@@ -139,20 +185,18 @@ local function validate(build, legacy)
     return true
 end
 
--- Only this reviewed prerequisite changed between these catalog identities.
--- Legacy validation preserves old records; spending points always uses current rules.
 function M.AcceptTag(tag)
-    return tag == FT.Data.meta.tag or FT.Data.meta.legacyTags[tag] ~= nil
+    return tag == FT.Data.meta.tag or (FT.Data.meta.legacyCatalogs or {})[tag] ~= nil
 end
 function M.Validate(build)
     return validate(build)
 end
 function M.ValidateLegacy(build, tag)
-    local rules = tag and FT.Data.meta.legacyTags[tag]
-    if not rules then
+    local index = type(build) == "table" and M.LegacyIndex(build.classID, tag)
+    if not index then
         return false, "Unknown legacy talent dataset."
     end
-    return validate(build, rules)
+    return validate(build, { index = index })
 end
 function M.RepairStatus(build)
     local ok, why = M.Validate(build)
@@ -188,6 +232,47 @@ function M.Preserve(build, sourceTag)
         build.recovery = FT.Copy(build)
     end
     return true
+end
+
+-- Explicit conversion is previewed by the UI. Imports themselves never discard points.
+function M.Convert(build)
+    if not M.Preserve(build) then
+        return nil, "This build cannot be recovered."
+    end
+    local result = M.New(build.classID, build.raceID, build.level, build.name)
+    local pending, dropped = FT.Copy(build.order), {}
+    while #pending > 0 do
+        local placed = false
+        for i, id in ipairs(pending) do
+            if M.CanAdd(result, id) then
+                result.order[#result.order + 1] = id
+                table.remove(pending, i)
+                placed = true
+                break
+            end
+        end
+        if not placed then
+            dropped = pending
+            break
+        end
+    end
+    result.recovery = FT.Copy(build.recovery or (build.legacyTag and build))
+    local counts, names, index = {}, {}, M.Index(build.classID)
+    for _, id in ipairs(dropped) do
+        counts[id] = (counts[id] or 0) + 1
+    end
+    for id, count in pairs(counts) do
+        names[#names + 1] = (index[id] and index[id].name or ("Talent " .. id)) .. " × " .. count
+    end
+    table.sort(names)
+    local message = #dropped == 0 and "All points retained; leveling order updated."
+        or (
+            #dropped
+            .. " unavailable or unsupported points removed: "
+            .. table.concat(names, ", ")
+            .. "."
+        )
+    return result, message, #dropped
 end
 
 function M.Add(build, id, fill)

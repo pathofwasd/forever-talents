@@ -68,6 +68,27 @@ def main():
             row['range'] = distance['DisplayName_lang']
             row['rangeMax'] = max(float(distance['RangeMax_0']), float(distance['RangeMax_1']))
         details[str(sid)] = row
+    powers = {}
+    for power in rows('SpellPower'):
+        # Conditional aura costs are not the base spell cost.
+        if int(power['RequiredAuraSpellID']) == 0:
+            powers.setdefault(int(power['SpellID']), []).append(power)
+    resource_names = {0: 'Mana', 1: 'Rage', 2: 'Focus', 3: 'Energy'}
+    for sid, detail in details.items():
+        costs = []
+        for power in powers.get(int(sid), []):
+            resource = resource_names.get(int(power['PowerType']))
+            if not resource:
+                continue
+            flat, percent = int(power['ManaCost']), float(power['PowerCostPct'])
+            if int(power['PowerType']) == 1:
+                flat /= 10  # Client rage costs are stored in tenths of one Rage.
+            if percent:
+                costs.append(f'{percent:g}% base {resource}')
+            if flat:
+                costs.append(f'{flat:g} {resource}')
+        if costs:
+            detail['cost'] = ' + '.join(costs)
     # Scripted parent channels and proc intervals are not ordinary spell cooldowns.
     power = {int(r['SpellID']): r for r in rows('SpellPower')}
     for sid in [402174, 1240720, 1240721, 1316995]:

@@ -163,6 +163,13 @@ local commands = {
     remove = function(p)
         return S.Apply(M.Remove, p.id, p.all)
     end,
+    conversionPreview = function()
+        local converted, message, removed = M.Convert(S.Build())
+        return { build = converted, message = message, removed = removed }
+    end,
+    convertBuild = function()
+        return S.ConvertCurrent()
+    end,
     reset = function(p)
         return S.Apply(M.Reset, p.treeID)
     end,
@@ -319,6 +326,9 @@ local commands = {
     end,
     skills = function(p)
         return A.List(S.View(), S.ViewLevel(), p.query, p.filter, not S.SimpleView())
+    end,
+    skillTimeline = function(p)
+        return A.Timeline(S.View(), S.ViewLevel(), p.query, p.filter, not S.SimpleView())
     end,
     skillLevels = function(p)
         local skill = A.Prepare(S.Build().classID).byName[p.name]

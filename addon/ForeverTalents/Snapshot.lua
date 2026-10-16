@@ -233,6 +233,12 @@ local extended = {
     "rage",
     "weaponType",
     "racialWeaponType",
+    "intellect",
+    "mana",
+    "arcaneBlastStacks",
+    "fireEffects",
+    "holyFireOrPain",
+    "firstFour",
     "targetType",
     "effectMode",
     "form",
@@ -245,14 +251,28 @@ function P.EncodeStats(profile)
     end
     local extra = { state = {} }
     local needed = profile.character ~= nil
+    local defaults = {
+        intellect = 0,
+        mana = 0,
+        arcaneBlastStacks = 0,
+        fireEffects = 0,
+        holyFireOrPain = false,
+        firstFour = true,
+    }
     for _, key in ipairs(extended) do
         local value = profile.state[key]
         if
             value ~= nil
-            and value ~= "none"
-            and value ~= "other"
-            and value ~= "caster"
-            and value ~= false
+            and (
+                (defaults[key] ~= nil and value ~= defaults[key])
+                or (
+                    defaults[key] == nil
+                    and value ~= "none"
+                    and value ~= "other"
+                    and value ~= "caster"
+                    and value ~= false
+                )
+            )
         then
             extra.state[key] = value
             needed = true

@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHOOLS = {
+    20: "Frostfire",
     1: "Physical",
     2: "Holy",
     4: "Fire",
@@ -60,6 +61,12 @@ def compile_spells(directory, build, catalog):
             for skill in racials:
                 roots.setdefault(skill["spellID"], (int(cid), skill["name"], skill["icon"]))
 
+    # Explicit parent/child relationships from the reviewed client descriptions.
+    # These dummy parent casts are not zero-damage utility spells.
+    nova = {408341: 408423, 408342: 408424, 408343: 408426,
+            408344: 408427, 408345: 408428}
+    consecration = {26573: 1280345, 20116: 1280346, 20922: 1280347,
+                   20923: 1280348, 20924: 1280349}
     for children in PENANCE.values():
         for child in children:
             roots.setdefault(child, (5, "Penance bolt", "spell_holy_penance"))
@@ -192,6 +199,17 @@ def compile_spells(directory, build, catalog):
                 if period:
                     for child_row in effects.get(child, []):
                         append(child_row, child, int(duration / period), period)
+        if sid in nova:
+            for child_row in effects.get(nova[sid], []):
+                append(child_row, nova[sid])
+            notes.append("One Fire Nova hit at the active Fire totem; no totem uptime or additional targets are assumed.")
+        if sid in consecration:
+            for child_row in effects.get(consecration[sid], []):
+                before = len(components)
+                append(child_row, consecration[sid], 8, 1)
+                if len(components) > before and int(child_row['EffectIndex']) == 1:
+                    components[-1]['condition'] = 'firstFour'
+            notes.append("Eight one-second ticks. Only the first four targets receive the additional base damage and 4.2% caster spell-power coefficient per tick.")
         if name == "Bloodthirst":
             flat = next((value(r, "EffectBasePointsF") for r in rows if int(r["Effect"]) == 2), 0)
             components = [
@@ -367,7 +385,7 @@ def main():
         "build": args.build,
         "checked": args.checked,
         "sources": sources,
-        "patchSource": PATCH,
+        "patchSource": catalog["meta"].get("patchSource", PATCH),
         "spells": spells,
         "statsCrit": stats_crit,
     }

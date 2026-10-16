@@ -19,6 +19,8 @@ for suite in [
     "core",
     "regressions",
     "october_update",
+    "october_fifteen",
+    "timeline",
     "removal",
     "checkpoints",
     "talent_transfer",

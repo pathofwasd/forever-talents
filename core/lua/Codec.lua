@@ -61,7 +61,11 @@ function C.Encode(build)
     if not ok then
         return nil, why
     end
-    local index, order = FT.Model.Index(build.classID), {}
+    local index, order =
+        (build.legacyTag and FT.Model.LegacyIndex(build.classID, build.legacyTag) or FT.Model.Index(
+            build.classID
+        )),
+        {}
     for _, id in ipairs(build.order) do
         local ordinal = index[id].index
         if ordinal > 64 then
@@ -158,7 +162,12 @@ function C.Decode(input)
         name = name ~= "" and name or "Untitled build",
         order = {},
     }
-    local _, byOrdinal = FT.Model.Index(class)
+    local _, byOrdinal
+    if tag ~= FT.Data.meta.tag then
+        _, byOrdinal = FT.Model.LegacyIndex(class, tag)
+    else
+        _, byOrdinal = FT.Model.Index(class)
+    end
     for i = 1, #order do
         local n = values[order:sub(i, i)]
         local t = n and byOrdinal[n + 1]

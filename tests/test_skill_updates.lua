@@ -55,14 +55,14 @@ for _, cid in ipairs(FT.classOrder) do
         end
     end
 end
-check(restored == 32)
+check(restored == 33)
 check(not A.Prepare(11).byName["Tiger's Fury"], "removed ability remains in skill browser")
 check(#A.List(M.New(11), 60, "Tiger's Fury", "all") == 0)
 local mutilate = A.Prepare(4).byName.Mutilate
 check(mutilate.ranks[1].talentGranted and mutilate.ranks[1].spellID == 1310707)
 local lava = A.Prepare(7).byName["Lava Burst"]
-check(A.CurrentRank(lava, 49, { [lava.unlock.id] = 1 }).spellID == 408490)
-check(A.CurrentRank(lava, 50, { [lava.unlock.id] = 1 }).spellID == 1238299)
+check(A.CurrentRank(lava, 39, { [lava.unlock.id] = 1 }).spellID == 408490)
+check(A.CurrentRank(lava, 40, { [lava.unlock.id] = 1 }).spellID == 1238299)
 for _, rank in ipairs(A.Levels(lava)) do
     check(not rank.toLevel or rank.toLevel >= rank.level, "archived invalid interval shown")
 end
@@ -74,14 +74,13 @@ for _, rank in ipairs(blood.ranks) do
     check(rank.text:find("45% of your Attack Power", 1, true))
 end
 near(
-    Sim.Calculate(M.New(1, nil, 40), blood, blood.ranks[1], { attackPower = 1000, crit = 0 }).expected,
+    Sim.Calculate(M.New(1, 4, 40), blood, blood.ranks[1], { attackPower = 1000, crit = 0 }).expected,
     480
 )
 local preview = Sim.Calculate(M.New(1, nil, 40), blood, blood.ranks[1], { crit = 0 })
 check(table.concat(preview.warnings, " "):find("talent is not learned", 1, true))
 local riptide = A.Prepare(7).byName.Riptide
-local healing =
-    Sim.Calculate(M.New(7, nil, 40), riptide, riptide.ranks[1], { power = 100, crit = 0 })
+local healing = Sim.Calculate(M.New(7, 8, 40), riptide, riptide.ranks[1], { power = 100, crit = 0 })
 near(healing.expected, 480 + 445 + 100 * (0.214 + 5 * 0.1))
 check(healing.parsed.descriptionSource == "client-data")
 near(Sim.Parse(lava.ranks[1], lava, 40).components[1].sp, 0.714)
@@ -155,11 +154,11 @@ check(FT.Library.Encode() == portable)
 S.SetCheckTraining(false)
 UI.skillQuery = "Arcane Shot"
 UI.RefreshBrowser()
-check(UI.skillRows[1].nextRank:GetText() == "Rank 2 Lv. 12")
-check(UI.skillRows[1].nextRank:IsShown())
-check(UI.skillRows[1].nextRank:GetStringWidth() <= UI.skillRows[1].nextRank:GetWidth())
+check(UI.skillRows[1].detail:GetText() == "Rank 1 • Lv. 6")
+check(UI.skillRows[2].detail:GetText() == "Rank 2 • Lv. 12")
+check(UI.skillRows[1].detail:GetStringWidth() <= UI.skillRows[1].detail:GetWidth())
 S.SetSimpleView(true)
-check(UI.skillRows[1].nextRank:GetText() == "Rank 2 Lv. 12")
+check(UI.skillRows[2].detail:GetText() == "Rank 2 • Lv. 12")
 S.SetSimpleView(false)
 UI.skillQuery = ""
 local archived = {

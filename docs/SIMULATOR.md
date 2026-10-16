@@ -142,3 +142,28 @@ Thorns and Retribution Aura now expose correct rank bases and 6% caster spell-po
 reference descriptions. Their trigger frequency, caster context and critical eligibility have not
 been validated. The simulator blocks generic normal-cast fallback rather than guessing those
 mechanics. Rolling Deep Wounds, Rage/Energy flow, proc uptime and threat remain outside this tool.
+
+## October 15 reviewed changes
+
+The effect snapshot is 1.60.1.70425. Arcane Wrath adds 5% of maximum Mana as effective spell power
+before its coefficient. When Arcane Blast is learned, its entered stacks add 15% of resolved
+Intellect each (0–4) before spell-power scaling. The simulator does not infer buff uptime. Fire
+Power uses the entered number of qualifying personal Fire effects (0–5), capped at 12%. Ice Lance
+uses its threefold frozen-target multiplier. Call of Flame extends Flame Shock ticks; Power in the
+Light has an explicit Holy Fire/Shadow Word: Pain condition.
+
+Fire Nova uses its linked damage spell's 14.3% coefficient. Consecration uses its linked periodic
+effect: eight one-second ticks, with extra base damage and 4.2% power per tick only for the first
+four targets. A checkbox chooses whether the single simulated target is in that group. Turning it
+off removes that component and its irrelevant power input.
+
+Human Ruthless and Orc Savage add unconditional 2% and 1% critical chance. The old Tauren hit bonus
+is removed. The new Dwarf/Tauren 2% critical-bonus-damage/healing effect is explicitly omitted: its
+precise multiplier and scope are unverified. Eureka, Lava Burst's rank-dependent Flame Shock bonus,
+Healing Stream owner-power inheritance, Seal swing-versus-Judgement scripts, pet attacks, rolling
+bleeds and proc/rotation behavior remain partial or unsupported where their full rules are
+unverified. A current tooltip is not proof of a complete numerical model.
+
+Old captured totals remain intact. Re-import changed talent/racial captures before simulating, or
+use a manual overall-stat setup. Invalid older talent allocations must be explicitly converted
+before simulation; they are never evaluated as if removed or renamed effects still applied.

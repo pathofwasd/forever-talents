@@ -403,6 +403,17 @@ function S.Apply(action, ...)
     return S.Edit(build, why or "")
 end
 
+function S.ConvertCurrent()
+    local converted, message = FT.Model.Convert(S.Build())
+    if not converted then
+        return false, message
+    end
+    return S.Edit(
+        converted,
+        message .. " Original allocation kept in Share; checkpoints stay saved."
+    )
+end
+
 function S.Undo()
     local d = S.Draft()
     if #d.undo == 0 then

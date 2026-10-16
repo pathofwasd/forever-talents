@@ -1,6 +1,18 @@
 # Changelog
 
-## 1.2.16
+## 1.3.0
+
+- Combine the October 8 and October 15 game-data updates, through client 1.60.1.70425.
+- Show every skill rank in chronological level groups in addon and desktop/mobile PWA, including
+  Simple/Compact views. Open the selected rank directly; keep shared colors and training filters.
+- Preserve original allocations and saved branches across changed talent identities, rank limits and
+  prerequisites. Review explicit conversion, undo it, or export the original build.
+- Refresh exact client effects, base cast/cooldown/resource details, and relevant simulator
+  conditions. Keep uncertain scripted behavior explicitly unmodeled.
+
+See [release notes](RELEASE-1.3.0.md) for compatibility and validation limits.
+
+## 1.2.16 (included in 1.3.0)
 
 October 8 client update (1.60.1.70291): Impale prerequisite and explicit legacy-save repair; Natural
 Instinct healing; refreshed early-rank effects and Penance; corrected proc/cast descriptions and Fox

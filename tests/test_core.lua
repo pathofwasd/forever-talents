@@ -278,7 +278,7 @@ test("all rank records, talent unlocks, racial filters and interactions", functi
             end
         end
     end
-    check(ranks == 1519)
+    check(ranks == 1530)
     local b = M.New(11, 4)
     local list = FT.Skills.List(b, 1, "Wrath", "all")
     check(#list >= 1)
