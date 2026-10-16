@@ -22,7 +22,7 @@ async function harness(saved = {}) {
 test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs, graph and numerical estimates', async () => {
   const native = execFileSync('lua5.1', ['tests/web/parity.lua'], {
     encoding: 'utf8',
-    maxBuffer: 8 * 1024 * 1024,
+    maxBuffer: 64 * 1024 * 1024,
   })
     .trim()
     .split('\n')
@@ -46,6 +46,8 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
     run('updateCheckpoint');
     run('export', { kind: 'profile' });
     run('state');
+    run('skillTimeline', { filter: 'all', includeRacials: false });
+    run('skillTimeline', { filter: 'now' });
     run('export', { kind: 'build' });
     run('export', { kind: 'link' });
     run('decode', { code: h.call('export', { kind: 'link' }), buildOnly: true });
@@ -113,6 +115,8 @@ test('Lua 5.4/WASM and actual addon Lua 5.1 produce identical operations, codecs
   run('character');
   run('checkTraining', { enabled: true });
   run('trainingReport');
+  run('skillTimeline', { filter: 'needsTraining' });
+  run('skillTimeline', { filter: 'trained' });
   run('skills', { filter: 'needsTraining' });
   run('level', { level: 29 });
   run('trainingReport');
@@ -310,7 +314,7 @@ test('talent first ranks, live progression and removed abilities reach the brows
       }
     }
   }
-  assert.equal(restored, 32);
+  assert.equal(restored, 33);
   h.call('switch', { classID: 11 });
   assert.deepEqual(list(h.call('skills', { query: "Tiger's Fury", filter: 'all' })), []);
   h.call('switch', { classID: 1 });
@@ -781,13 +785,13 @@ test('skill summary separates first unlock and displayed rank level without a du
   const entry = (name) =>
     list(h.call('skills', { query: name })).find((e) => e.skill.name === name);
   h.call('level', { level: 60 });
-  assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Max rank 5 Lv. 54');
+  assert.equal(entry('Shred').progression.summary, 'Lv. 20 · Max rank 5 Lv. 54');
   assert.equal(entry('Shred').progression.secondary, undefined);
   h.call('level', { level: 45 });
-  assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Rank 3 Lv. 38');
+  assert.equal(entry('Shred').progression.summary, 'Lv. 20 · Rank 3 Lv. 38');
   assert.equal(entry('Shred').progression.secondary, 'Rank 4 Lv. 46');
   h.call('simpleView', { enabled: true });
-  assert.equal(entry('Shred').progression.summary, 'Lv. 22 · Rank 3 Lv. 38');
+  assert.equal(entry('Shred').progression.summary, 'Lv. 20 · Rank 3 Lv. 38');
   h.close();
 });
 
@@ -981,4 +985,38 @@ test('experimental tool visibility persists locally without altering portable sa
     before
   );
   for (const testHarness of [h, restored, recipient]) testHarness.close();
+});
+
+test('October prerequisite migration preserves legacy branches and exact native/PWA sharing', async () => {
+  const native = execFileSync('lua5.1', ['tests/web/october-parity.lua'], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .trim()
+    .split('\n')
+    .map(JSON.parse);
+  const h = await harness(native[0].value);
+  assert.deepEqual(h.init, native[1]);
+  assert.match(h.init.repair, /Deep Wounds/);
+  assert.equal(list(h.call('database').profiles.p1.order).length, 3);
+  let i = 2;
+  for (const kind of ['original', 'build', 'profile', 'library', 'character', 'stats']) {
+    const result = h.raw('export', { kind });
+    assert.deepEqual(result, native[i++], kind);
+    const decoded = h.raw('decode', { code: result.value });
+    assert.equal(decoded.ok, true, decoded.error);
+  }
+  assert.deepEqual(h.raw('copyTalents'), native[i++]);
+  assert.deepEqual(h.raw('updateCheckpoint'), native[i++]);
+  const original = h.call('export', { kind: 'original' });
+  assert.equal(h.raw('decode', { code: original.slice(0, -1) }).ok, false);
+  const profile = h.call('export', { kind: 'profile' });
+  const recipient = await harness();
+  recipient.call('import', { code: profile });
+  assert.match(recipient.call('state').repair, /Deep Wounds/);
+  assert.equal(recipient.call('export', { kind: 'original' }), original);
+  const reloaded = await harness(JSON.parse(JSON.stringify(h.call('database'))));
+  assert.deepEqual(reloaded.call('state'), h.call('state'));
+  assert.equal(reloaded.call('export', { kind: 'profile' }), profile);
+  for (const target of [h, recipient, reloaded]) target.close();
 });

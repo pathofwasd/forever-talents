@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHOOLS = {
+    20: "Frostfire",
     1: "Physical",
     2: "Holy",
     4: "Fire",
@@ -22,7 +23,9 @@ SCHOOLS = {
     32: "Shadow",
     64: "Arcane",
 }
-PATCH = "https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-1/2360696"
+PATCH = "https://us.forums.blizzard.com/en/wow/t/wow-forever-beta-development-notes-%E2%80%93-updated-october-8/2360696/5"
+PENANCE = {402174: (402284, 402289), 1240720: (1240727, 1240723),
+           1240721: (1240730, 1240724), 1316995: (1316993, 1316991)}
 
 
 def compile_spells(directory, build, catalog):
@@ -57,6 +60,16 @@ def compile_spells(directory, build, catalog):
         for racials in races.values():
             for skill in racials:
                 roots.setdefault(skill["spellID"], (int(cid), skill["name"], skill["icon"]))
+
+    # Explicit parent/child relationships from the reviewed client descriptions.
+    # These dummy parent casts are not zero-damage utility spells.
+    nova = {408341: 408423, 408342: 408424, 408343: 408426,
+            408344: 408427, 408345: 408428}
+    consecration = {26573: 1280345, 20116: 1280346, 20922: 1280347,
+                   20923: 1280348, 20924: 1280349}
+    for children in PENANCE.values():
+        for child in children:
+            roots.setdefault(child, (5, "Penance bolt", "spell_holy_penance"))
 
     def value(row, key):
         return round(float(row.get(key) or 0), 6)
@@ -186,6 +199,17 @@ def compile_spells(directory, build, catalog):
                 if period:
                     for child_row in effects.get(child, []):
                         append(child_row, child, int(duration / period), period)
+        if sid in nova:
+            for child_row in effects.get(nova[sid], []):
+                append(child_row, nova[sid])
+            notes.append("One Fire Nova hit at the active Fire totem; no totem uptime or additional targets are assumed.")
+        if sid in consecration:
+            for child_row in effects.get(consecration[sid], []):
+                before = len(components)
+                append(child_row, consecration[sid], 8, 1)
+                if len(components) > before and int(child_row['EffectIndex']) == 1:
+                    components[-1]['condition'] = 'firstFour'
+            notes.append("Eight one-second ticks. Only the first four targets receive the additional base damage and 4.2% caster spell-power coefficient per tick.")
         if name == "Bloodthirst":
             flat = next((value(r, "EffectBasePointsF") for r in rows if int(r["Effect"]) == 2), 0)
             components = [
@@ -302,6 +326,20 @@ def compile_spells(directory, build, catalog):
             "components": components,
             "notes": list(dict.fromkeys(notes)),
         }
+    for parent, children in PENANCE.items():
+        bolts = [spells.get(str(child)) for child in children]
+        if not all(bolts):
+            continue
+        model = dict(bolts[0], duration=2, channel=True, maxLevel=0, cast=0)
+        model["components"] = []
+        for bolt in bolts:
+            for component in bolt["components"]:
+                component = dict(component, part="periodic", ticks=3, interval=1,
+                                 level=bolt["level"], maxLevel=bolt["maxLevel"])
+                model["components"].append(component)
+        model["notes"] = ["Three bolts at 0, 1 and 2 seconds. Select damage or healing; they are not added together.",
+                          "Each bolt uses 19% bonus power. Damage and healing retain their own client level caps."]
+        spells[str(parent)] = model
     stats_crit = {}
     for cls in catalog["classes"].values():
         for tree in cls["trees"]:
@@ -320,6 +358,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
     parser.add_argument("--build", required=True)
+    parser.add_argument("--checked", required=True, help="Date the snapshot was reviewed (YYYY-MM-DD)")
     args = parser.parse_args()
     path = ROOT / "data/catalog.json"
     catalog = json.loads(path.read_text())
@@ -344,9 +383,9 @@ def main():
     catalog["simulation"] = {
         "schema": 1,
         "build": args.build,
-        "checked": "2026-10-05",
+        "checked": args.checked,
         "sources": sources,
-        "patchSource": PATCH,
+        "patchSource": catalog["meta"].get("patchSource", PATCH),
         "spells": spells,
         "statsCrit": stats_crit,
     }

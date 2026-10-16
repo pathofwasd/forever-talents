@@ -133,7 +133,8 @@ function UI.RefreshHistory()
         p and ("Active: " .. FT.SafeText(node.title, 48)) or "No saved checkpoint"
     )
     UI.profileHint:SetText(
-        p and (dirty and "Unsaved changes • use Update" or "Saved • " .. p.name)
+        M.RepairStatus(build) and "Needs repair • see Help and Share"
+            or p and (dirty and "Unsaved changes • use Update" or "Saved • " .. p.name)
             or "Save build to start checkpoints"
     )
     UI.graphButton:SetEnabled(p ~= nil)
@@ -197,7 +198,9 @@ function UI.RefreshHistory()
                 r:SetWidth(width - indent)
                 r.title:SetWidth(width - 18 - indent)
                 r.detail:SetWidth(width - 44 - indent)
-                r.title:SetText(FT.SafeText(n.title, 48))
+                r.title:SetText(
+                    (M.RepairStatus(n.build) and "! " or "") .. FT.SafeText(n.title, 48)
+                )
                 r.detail:SetText(
                     "Lv. "
                         .. n.build.level

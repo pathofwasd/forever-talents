@@ -396,3 +396,50 @@ persisted after reload. With the preview server stopped, offline startup kept th
 and hidden tools; browser error logs were empty. Native callbacks and fitting were checked in the
 API harness; live WoW visual behavior and simulator accuracy remain unverified. No game install or
 SavedVariables were changed.
+
+## Version 1.2.16 validation
+
+Passed 20 native suites and 23 browser tests, including 112 focused October-update assertions, exact
+Lua 5.1/WASM migration and sharing parity, generated-file checks, formatting, the production build
+and addon archive validation. Regressions cover the known previous catalog, unknown catalog
+rejection, original-allocation exports, multiple checkpoint branches, legal repairs, undo/redo,
+legacy/current character and stats formats, level growth caps, all Penance ranks and separate
+damage/healing modes, proc intervals and Natural Instinct without duplicate capture bonuses.
+
+Production UI checks used synthetic libraries on isolated local origins. Desktop and 320/390 px
+phones, 1024 px tablet and 844×390 landscape had no horizontal overflow. The repair notice retained
+all three imported branches; removing Impale through the phone sheet kept the page scroll position,
+and Update checkpoint replaced only the selected snapshot. The original remained exportable.
+
+A real service-worker update from 1.2.15 to 1.2.16 offered Update now and preserved two saved
+level-60, 16-point checkpoints, their titles and selection. The new prerequisite repair notice
+appeared without reallocating any points. After stopping the server, offline reload worked and
+produced an identical full-library export. The browser console reported no errors.
+
+Native UI callbacks and loading were exercised in the Lua API harness. Live WoW loading, visual
+behavior, combat estimates and character capture still require in-game verification. Shield crit
+behavior and Fox family membership remain explicitly unverified.
+
+## Version 1.3.0 validation
+
+Passed 22 native suites and 23 browser tests, including 144 October 15 data and compatibility
+assertions and 8,531 chronological-timeline assertions across all nine classes. Exact Lua 5.1/WASM
+parity now covers the timeline in all, available-now, needs-training and trained filters. Also
+passed: generated-file checks, formatting, the production build and source package validation.
+
+Production checks in headless Chrome covered desktop 1440×900, a 390×844 phone, 844×390 landscape
+and an 820×1180 tablet, with no horizontal overflow. Rows stayed under ascending level headings.
+Search results stayed in level order. Every rank button was at least 40 px tall, and long names did
+not overflow. Checking one Healing Touch rank checked all 11 rows with a single highlight color.
+Clicking or pressing Enter on rank 2 opened details with that rank marked and scrolled into view. In
+Simple view, the phone timeline opened the shared Skill levels list. A synthetic October 8
+(`759c22c2`) Fire Power link decoded, showed Needs repair after loading, and offered a conversion
+review listing the two removed points. Loading a build of another class while a timeline row had
+focus raised an uncaught "Skill not found"; stale skill controls are now ignored.
+
+A real service-worker update from 1.2.16 to 1.3.0 offered Update now only after installation, kept a
+saved Mage build, and listed it in Builds. After switching the browser offline, reload served a
+coherent 1.3.0 with data `d2ef5c6a`. The browser console reported no errors.
+
+Native UI callbacks were exercised in the Lua API harness. Live WoW loading, visual behavior, combat
+estimates and character capture still require in-game verification.

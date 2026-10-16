@@ -18,6 +18,9 @@ run("python3", "tools/sync_core.py")
 for suite in [
     "core",
     "regressions",
+    "october_update",
+    "october_fifteen",
+    "timeline",
     "removal",
     "checkpoints",
     "talent_transfer",

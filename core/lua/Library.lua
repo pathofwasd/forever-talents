@@ -130,7 +130,7 @@ function L.Decode(code)
     if not tag then
         return nil, "Paste a complete FL1 library string."
     end
-    if tag ~= FT.Data.meta.tag then
+    if not FT.Model.AcceptTag(tag) then
         return nil, "Library uses a different talent dataset. Update both versions first."
     end
     if #checksum ~= 8 or C.Checksum(code:match("^(.*):[^:]+$")) ~= checksum then
@@ -211,8 +211,13 @@ function L.EncodeProfile(profileID)
         if not code then
             return nil, why
         end
-        wire.nodes[id] =
-            { parent = node.parent, title = node.title, created = node.created, build = code }
+        wire.nodes[id] = {
+            parent = node.parent,
+            title = node.title,
+            created = node.created,
+            build = code,
+            original = node.build.recovery and C.EncodeOriginal(node.build) or nil,
+        }
     end
     local payload = pack({ profile = wire, selected = selected })
     local body = "FP1:" .. FT.Data.meta.tag .. ":" .. C.Base64(payload)
@@ -258,7 +263,7 @@ function L.DecodeProfile(input)
     if version ~= "FP1" then
         return nil, "This profile needs a newer version of Forever Talents."
     end
-    if tag ~= FT.Data.meta.tag then
+    if not FT.Model.AcceptTag(tag) then
         return nil, "Profile uses a different talent dataset. Update both versions first."
     end
     if #checksum ~= 8 or C.Checksum(input:match("^(.*):[^:]+$")) ~= checksum then
@@ -276,6 +281,19 @@ function L.DecodeProfile(input)
         local build, why = type(node) == "table" and C.Decode(node.build)
         if not build then
             return nil, why or "Invalid checkpoint in this profile."
+        end
+        if node.original then
+            local original = C.Decode(node.original)
+            if not original then
+                return nil, "Invalid original checkpoint backup."
+            end
+            -- The original envelope must belong to a known legacy catalog.
+            local originalTag = node.original:match("^FT1:([^:]+):")
+            original.legacyTag, original.recovery = originalTag, nil
+            if not FT.Model.ValidateLegacy(original, originalTag) then
+                return nil, "Invalid original checkpoint backup."
+            end
+            build.recovery = original
         end
         profile.nodes[id] = {
             id = id,

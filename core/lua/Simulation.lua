@@ -5,6 +5,10 @@ FT.Simulation = Sim
 function Sim.Defaults()
     return {
         power = 0,
+        intellect = 0,
+        mana = 0,
+        arcaneBlastStacks = 0,
+        fireEffects = 0,
         attackPower = 0,
         weaponMin = 40,
         weaponMax = 60,
@@ -15,6 +19,7 @@ function Sim.Defaults()
         bleeding = false,
         frozen = false,
         cooldowns = false,
+        firstFour = true,
     }
 end
 
@@ -230,7 +235,9 @@ function Sim.Parse(rank, skill, level, effectMode)
     level = math.max(rank.level or model.level, level or rank.level or model.level)
     parsed.effectiveLevel = model.maxLevel > 0 and math.min(level, model.maxLevel) or level
     for _, c in ipairs(parsed.components) do
-        local growth = math.max(0, parsed.effectiveLevel - model.level) * (c.growth or 0)
+        local cap = c.maxLevel or model.maxLevel
+        local effective = cap > 0 and math.min(level, cap) or level
+        local growth = math.max(0, effective - (c.level or model.level)) * (c.growth or 0)
         c.levelBonus = growth
         c.low, c.high = math.max(0, c.low + growth), math.max(0, c.high + growth)
         local ticks = c.ticks or 1
@@ -333,7 +340,7 @@ local modifierRules = {
     ["Feral Instinct"] = { damage = true, names = { "Swipe" } },
     ["Savage Fury"] = { damage = true, names = { "Claw", "Rake", "Shred", "Maul", "Swipe" } },
     ["Sharpened Claws"] = { crit = true, attack = "melee", form = true, statsCrit = true },
-    ["Predatory Instincts"] = { critBonus = true, attack = "melee" },
+    ["Natural Instinct"] = { critBonus = true, attack = "melee" },
     ["Rend and Tear"] = { damage = true, attack = "melee", condition = "bleeding" },
     ["Gift of Nature"] = { damage = true, kind = "healing" },
     ["Improved Regrowth"] = { crit = true, kind = "healing", names = { "Regrowth" } },
@@ -376,7 +383,18 @@ local modifierRules = {
     ["Aggression"] = { damage = true, names = { "Sinister Strike", "Backstab", "Eviscerate" } },
     ["Opportunity"] = { damage = true, names = { "Backstab", "Garrote", "Ambush", "Mutilate" } },
     ["Improved Ambush"] = { crit = true, names = { "Ambush" } },
-    ["Twin Disciplines"] = { damage = true, kind = "both", instant = true },
+    ["Twin Disciplines"] = { damage = true, kind = "both", instant = true, special = "twin" },
+    ["Power in Light"] = {
+        damage = true,
+        names = { "Smite", "Penance" },
+        condition = "holyFireOrPain",
+    },
+    ["Restorative Totems"] = {
+        damage = true,
+        kind = "healing",
+        names = { "Healing Stream Totem" },
+        pattern = "Healing Stream Totem by ([%d%.]+)%%",
+    },
     ["Improved Power Word: Shield"] = {
         damage = true,
         kind = "absorption",
@@ -424,12 +442,11 @@ local modifierRules = {
     },
     ["Improved Flamestrike"] = { crit = true, names = { "Flamestrike" } },
     ["Critical Mass"] = { crit = true, schools = { Fire = true }, statsCrit = true },
-    ["Fire Power"] = { damage = true, schools = { Fire = true } },
+    ["Fire Power"] = { damage = true, schools = { Fire = true }, special = "fireEffects" },
     ["Ice Shards"] = { critBonus = true, schools = { Frost = true } },
     ["Piercing Ice"] = { damage = true, schools = { Frost = true } },
     ["Shatter"] = { crit = true, kind = "both", attack = "spell", condition = "frozen" },
     ["Improved Cone of Cold"] = { damage = true, names = { "Cone of Cold" } },
-    ["Malediction"] = { periodic = true },
     ["Improved Drains"] = { damage = true, names = { "Drain Life", "Drain Soul", "Wrack" } },
     ["Improved Bane of Agony"] = { damage = true, names = { "Bane of Agony" } },
     ["Pandemic"] = {
@@ -479,7 +496,11 @@ local function ruleApplies(rule, build, skill, parsed, state, ignoreCondition)
     if rule.attack and attack ~= rule.attack then
         return false
     end
-    if rule.schools and not rule.schools[parsed.school] then
+    if
+        rule.schools
+        and not rule.schools[parsed.school]
+        and not (parsed.school == "Frostfire" and (rule.schools.Fire or rule.schools.Frost))
+    then
         return false
     end
     if rule.names then
@@ -507,7 +528,14 @@ local function ruleApplies(rule, build, skill, parsed, state, ignoreCondition)
     if rule.destruction and not destruction[skill.name] then
         return false
     end
-    if rule.instant and (parsed.cast ~= 0 or parsed.channel) then
+    if
+        rule.instant
+        and (parsed.cast ~= 0 or parsed.channel)
+        and not (
+            rule.special == "twin"
+            and (skill.name == "Mind Flay" or skill.name == "Starshards" or skill.name == "Penance")
+        )
+    then
         return false
     end
     if rule.periodic and parsed.periodic <= 0 then
@@ -558,6 +586,10 @@ function Sim.Modifiers(build, skill, parsed, state)
         evidence = {},
     }
     state = state or Sim.Defaults()
+    if FT.Model.RepairStatus(build) then
+        out.omitted[1] = "Older talents require conversion"
+        return out
+    end
     local index = FT.Model.Index(build.classID)
     for id, rank in pairs(FT.Model.Counts(build)) do
         local talent, applied = index[id], false
@@ -576,6 +608,12 @@ function Sim.Modifiers(build, skill, parsed, state)
                 and skill.name ~= "Holy Strike"
             then
                 pct = tonumber(text:match("all other spells by ([%d%.]+)%%"))
+            end
+            if pct and rule.special == "fireEffects" then
+                pct = math.min(
+                    12,
+                    pct * math.max(0, math.min(5, math.floor(tonumber(state.fireEffects) or 0)))
+                )
             end
             if pct then
                 local evidence = { name = talent.name, rank = rank, text = text }
@@ -645,14 +683,17 @@ Sim.Bounded = bounded
 function Sim.State(raw)
     raw = type(raw) == "table" and raw or {}
     local s = Sim.Defaults()
-    for _, key in ipairs({ "power", "attackPower", "weaponMin", "weaponMax" }) do
+    for _, key in ipairs({ "power", "attackPower", "weaponMin", "weaponMax", "intellect", "mana" }) do
         s[key] = bounded(raw[key], 0, 100000, s[key])
     end
     for _, key in ipairs({ "crit", "hit", "reduction" }) do
         s[key] = bounded(raw[key], 0, 100, s[key])
     end
     s.extra = bounded(raw.extra, -99, 1000, 0)
-    for _, key in ipairs({ "bleeding", "frozen", "cooldowns", "manual" }) do
+    s.firstFour = raw.firstFour == nil or raw.firstFour == true
+    s.arcaneBlastStacks = math.floor(bounded(raw.arcaneBlastStacks, 0, 4, 0))
+    s.fireEffects = math.floor(bounded(raw.fireEffects, 0, 5, 0))
+    for _, key in ipairs({ "bleeding", "frozen", "cooldowns", "manual", "holyFireOrPain" }) do
         s[key] = raw[key] == true
     end
     for _, key in ipairs({
@@ -734,12 +775,7 @@ local function racial(build, state, parsed)
     end
     for _, trait in ipairs(FT.Data.racials[build.classID][build.raceID] or {}) do
         local text, name = trait.text:lower(), trait.name
-        local weapon = state.racialWeaponType or state.weaponType or "none"
-        local applies = (
-            name == "Sword Specialization" and (weapon == "sword" or weapon == "twoSword")
-        )
-            or (name == "Axe Specialization" and (weapon == "axe" or weapon == "twoAxe"))
-            or (name == "Mace Specialization" and (weapon == "mace" or weapon == "twoMace"))
+        local applies = name == "Ruthless" or name == "Savage"
         local pct = tonumber(text:match("by ([%d%.]+)%%") or text:match("increased by ([%d%.]+)%%"))
         if applies and pct then
             out.crit = out.crit + pct
@@ -751,8 +787,9 @@ local function racial(build, state, parsed)
             out.damage, applies = out.damage + (pct or 5), true
         elseif name == "Elemental Insight" and state.targetType == "elemental" then
             out.damage, applies = out.damage + (pct or 5), true
-        elseif name == "Endurance" and parsed.kind == "damage" then
-            out.hit, applies = out.hit + 1, true
+        elseif name == "Endurance" or name == "Earth Fury" then
+            out.warnings[#out.warnings + 1] = name
+                .. ": the 2% critical damage/healing bonus is not modeled: its exact multiplier and spell scope are unverified."
         elseif state.cooldowns and name == "Blood Fury" then
             out.power, out.ap, applies = 1.1, 1.1, true
         elseif state.cooldowns and name == "Elune's Light" then
@@ -770,6 +807,11 @@ end
 Sim.Racial = racial
 
 function Sim.Calculate(build, skill, rank, raw, withTalents)
+    if FT.Model.RepairStatus(build) then
+        return nil,
+            "Convert the older talent build before simulating its changed effects. Original points and checkpoints are preserved."
+    end
+
     if type(rank) ~= "table" then
         return nil, "Choose a valid skill rank."
     end
@@ -826,6 +868,26 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
     end
     if not parsed then
         return nil, why
+    end
+    if withTalents ~= false and skill.name == "Flame Shock" then
+        local n = FT.Model.Counts(build)[104770] or 0
+        if n > 0 then
+            parsed.duration = (parsed.duration or 0) + n * 3
+            for _, effect in ipairs(parsed.components) do
+                if effect.part == "periodic" and (effect.interval or 0) > 0 then
+                    effect.ticks = effect.ticks + math.floor(n * 3 / effect.interval)
+                end
+            end
+        end
+    end
+    if not state.firstFour then
+        local active = {}
+        for _, effect in ipairs(parsed.components) do
+            if effect.condition ~= "firstFour" then
+                active[#active + 1] = effect
+            end
+        end
+        parsed.components = active
     end
     for _, note in ipairs(parsed.notes or {}) do
         warning(warnings, note)
@@ -923,11 +985,31 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
             .. source.build
             .. " · reviewed "
             .. source.checked
-            .. " · October 1 corrections"
+            .. " · reviewed developer corrections"
     result.sources = {
         { label = "Client effects, coefficients and tick intervals", url = source.sources[1].url },
         { label = "Forever developer notes and corrections", url = source.patchSource },
     }
+    if skill.name == "Ice Lance" and state.frozen then
+        warning(warnings, "Ice Lance: frozen-target damage is multiplied by 3 (200% increased).")
+    end
+    if
+        state.arcaneBlastStacks > 0
+        and build.classID == 8
+        and (FT.Model.Counts(build)[105806] or 0) > 0
+        and withTalents ~= false
+    then
+        warning(
+            warnings,
+            "Arcane Blast state adds 15% Intellect as spell damage per entered stack; no stack generation or uptime is assumed."
+        )
+    end
+    if skill.name == "Arcane Wrath" then
+        warning(
+            warnings,
+            "Arcane Wrath adds 5% maximum Mana to effective spell power before its coefficient; this is not flat damage."
+        )
+    end
     local partial = parsed.fallback == true
     if
         state.coefficient ~= nil
@@ -1010,7 +1092,16 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
             )
             partial = true
         end
-        local power = state.power * race.power * coef
+        local extraPower = 0
+        if build.classID == 8 and c.kind == "damage" and parsed.attack == "spell" then
+            if (FT.Model.Counts(build)[105806] or 0) > 0 and withTalents ~= false then
+                extraPower = extraPower + state.intellect * 0.15 * state.arcaneBlastStacks
+            end
+            if skill.name == "Arcane Wrath" then
+                extraPower = extraPower + state.mana * 0.05
+            end
+        end
+        local power = (state.power + extraPower) * race.power * coef
         local apRatio = apOverride ~= nil
                 and apOverride / 100 / ticks / (periodic and periodicCount or directCount)
             or c.ap
@@ -1027,7 +1118,9 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
         local raceMultiplier = c.kind == "damage"
                 and (1 + race.damage / 100) * (periodic and 1 or (1 + race.direct / 100))
             or 1
-        local multiplier = c.selfDamage and 1 or talent * raceMultiplier * (1 + state.extra / 100)
+        local intrinsic = skill.name == "Ice Lance" and state.frozen and 3 or 1
+        local multiplier = c.selfDamage and 1
+            or talent * raceMultiplier * (1 + state.extra / 100) * intrinsic
         local mitigation = c.kind == "damage" and not c.selfDamage and (1 - state.reduction / 100)
             or 1
         low, high = low * multiplier * mitigation, high * multiplier * mitigation
@@ -1152,6 +1245,41 @@ function Sim.Calculate(build, skill, rank, raw, withTalents)
 end
 
 local inputDefinitions = {
+    firstFour = {
+        "Target is among the first four hit",
+        "Consecration's extra base damage and spell-power scaling apply only to its first four targets. This result always covers one target.",
+        "condition",
+    },
+    intellect = {
+        "Intellect",
+        "Resolved character Intellect. Each entered Arcane Blast stack adds 15% of this as spell damage.",
+        "character",
+    },
+    mana = {
+        "Maximum Mana",
+        "Arcane Wrath gains effective spell power equal to 5% of maximum Mana, before its coefficient.",
+        "character",
+    },
+    arcaneBlastStacks = {
+        "Arcane Blast stacks",
+        "Stacks already active before this cast, from 0 to 4. The buff expires 15 seconds after its first application; uptime is not simulated.",
+        "condition",
+        0,
+        4,
+    },
+    fireEffects = {
+        "Your Fire effects on target",
+        "Count your active Ignite, Improved Scorch, Fireball, Pyroblast and Impact effects. Frostfire Bolt benefits but does not add an effect. Fire Power is capped at 12%.",
+        "condition",
+        0,
+        5,
+    },
+    holyFireOrPain = {
+        "Your Holy Fire or Shadow Word: Pain is active",
+        "Enables Power in Light for Smite/Penance. No debuff uptime is assumed.",
+        "condition",
+    },
+
     power = {
         "Bonus power",
         "Resolved spell damage or healing from your character. Includes modeled stat passives; used only by components with a known or supplied coefficient.",
@@ -1320,50 +1448,76 @@ function Sim.Inputs(build, skill, rank, raw, parsed)
             used.effectMode = true
         end
         for _, c in ipairs(parsed.components or {}) do
-            used[c.part == "periodic" and "dotAPCoefficient" or "apCoefficient"] = true
-            local periodic = c.part == "periodic"
-            local coefficient = periodic and state.dotCoefficient
-                or (not periodic and state.coefficient or nil)
-            local effective = coefficient ~= nil and coefficient / 100 or (c.sp or 0)
-            if effective > 0 and state.scalingFactor ~= 0 then
-                used.power = true
-            end
-            local apOverride = c.part == "periodic" and state.dotAPCoefficient
-                or (c.part ~= "periodic" and state.apCoefficient or nil)
-            if
-                (apOverride ~= nil and apOverride > 0)
-                or (apOverride == nil and c.ap > 0)
-                or c.normalized
-            then
-                used.attackPower = true
-            end
-            if c.weapon > 0 then
-                used.weaponMin, used.weaponMax = true, true
-            end
-            if c.normalized then
-                used.weaponSpeed = true
-                if parsed.attack ~= "ranged" then
-                    used.weaponType = true
+            if c.condition ~= "firstFour" or state.firstFour then
+                used[c.part == "periodic" and "dotAPCoefficient" or "apCoefficient"] = true
+                local periodic = c.part == "periodic"
+                local coefficient = periodic and state.dotCoefficient
+                    or (not periodic and state.coefficient or nil)
+                local effective = coefficient ~= nil and coefficient / 100 or (c.sp or 0)
+                if effective > 0 and state.scalingFactor ~= 0 then
+                    used.power = true
                 end
-            end
-            if c.crit then
-                used.crit = true
-            end
-            if (c.combo or 0) ~= 0 then
-                used.comboPoints = true
-            end
-            if (c.rage or 0) ~= 0 then
-                used.rage = true
-            end
-            if c.kind == "damage" and not c.selfDamage then
-                used.hit, used.reduction = true, true
-            end
-            if parsed.school ~= "Physical" and not c.selfDamage then
-                used[periodic and "dotCoefficient" or "coefficient"] = true
+                local apOverride = c.part == "periodic" and state.dotAPCoefficient
+                    or (c.part ~= "periodic" and state.apCoefficient or nil)
+                if
+                    (apOverride ~= nil and apOverride > 0)
+                    or (apOverride == nil and c.ap > 0)
+                    or c.normalized
+                then
+                    used.attackPower = true
+                end
+                if c.weapon > 0 then
+                    used.weaponMin, used.weaponMax = true, true
+                end
+                if c.normalized then
+                    used.weaponSpeed = true
+                    if parsed.attack ~= "ranged" then
+                        used.weaponType = true
+                    end
+                end
+                if c.crit then
+                    used.crit = true
+                end
+                if (c.combo or 0) ~= 0 then
+                    used.comboPoints = true
+                end
+                if (c.rage or 0) ~= 0 then
+                    used.rage = true
+                end
+                if c.kind == "damage" and not c.selfDamage then
+                    used.hit, used.reduction = true, true
+                end
+                if parsed.school ~= "Physical" and not c.selfDamage then
+                    used[periodic and "dotCoefficient" or "coefficient"] = true
+                end
             end
         end
         if used.power and (rank.level or 60) < 20 and build.level > (rank.level or 60) + 10 then
             used.scalingFactor = true
+        end
+        if skill.name == "Consecration" then
+            used.firstFour = true
+        end
+        if skill.name == "Ice Lance" then
+            used.frozen = true
+        end
+        if skill.name == "Arcane Wrath" then
+            used.mana = true
+        end
+        if
+            build.classID == 8
+            and parsed.kind == "damage"
+            and parsed.attack == "spell"
+            and (FT.Model.Counts(build)[105806] or 0) > 0
+        then
+            used.intellect, used.arcaneBlastStacks = true, true
+        end
+        if
+            parsed.kind == "damage"
+            and (parsed.school == "Fire" or parsed.school == "Frostfire")
+            and (FT.Model.Counts(build)[105782] or 0) > 0
+        then
+            used.fireEffects = true
         end
         local points, index = FT.Model.Counts(build), FT.Model.Index(build.classID)
         for id in pairs(points) do
@@ -1421,6 +1575,12 @@ function Sim.Inputs(build, skill, rank, raw, parsed)
     for _, key in ipairs({
         "effectMode",
         "power",
+        "intellect",
+        "mana",
+        "arcaneBlastStacks",
+        "fireEffects",
+        "holyFireOrPain",
+        "firstFour",
         "attackPower",
         "weaponMin",
         "weaponMax",
@@ -1467,7 +1627,11 @@ function Sim.Inputs(build, skill, rank, raw, parsed)
                 min = definition[4] or 0,
                 max = definition[5]
                     or ((key == "crit" or key == "hit" or key == "reduction") and 100 or 100000),
-                type = definition[3] == "condition" and key ~= "targetType" and "boolean"
+                type = definition[3] == "condition"
+                        and key ~= "targetType"
+                        and key ~= "arcaneBlastStacks"
+                        and key ~= "fireEffects"
+                        and "boolean"
                     or (key == "targetType" or key == "weaponType" or key == "racialWeaponType" or key == "effectMode" or key == "form") and "choice"
                     or "number",
                 choices = key == "effectMode" and parsed.effectModes or nil,

@@ -85,6 +85,7 @@
     "ability_mage_incantersabsorbtion",
     "ability_mage_missilebarrage",
     "ability_mage_moltenarmor",
+    "ability_mage_netherwindpresence",
     "ability_mage_wintersgrasp",
     "ability_marksmanship",
     "ability_meleedamage",
@@ -528,6 +529,7 @@
     "spell_shadow_auraofdarkness",
     "spell_shadow_blackplague",
     "spell_shadow_burningspirit",
+    "spell_shadow_callofbone",
     "spell_shadow_charm",
     "spell_shadow_chilltouch",
     "spell_shadow_contagion",
@@ -603,6 +605,7 @@
     "spell_shaman_lavaburst",
     "spell_shaman_maelstromweapon",
     "spell_shaman_totemrecall",
+    "spell_warlock_demonsoul",
     "trade_engineering",
     "warlock_curse_shadow"
   ],

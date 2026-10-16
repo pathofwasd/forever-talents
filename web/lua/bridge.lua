@@ -56,6 +56,7 @@ local function state()
     local p, node = S.ActiveProfile()
     return {
         build = S.Build(),
+        repair = M.RepairStatus(S.Build()),
         view = S.View(),
         viewLevel = S.ViewLevel(),
         counts = M.Counts(S.View()),
@@ -162,6 +163,13 @@ local commands = {
     remove = function(p)
         return S.Apply(M.Remove, p.id, p.all)
     end,
+    conversionPreview = function()
+        local converted, message, removed = M.Convert(S.Build())
+        return { build = converted, message = message, removed = removed }
+    end,
+    convertBuild = function()
+        return S.ConvertCurrent()
+    end,
     reset = function(p)
         return S.Apply(M.Reset, p.treeID)
     end,
@@ -232,6 +240,9 @@ local commands = {
         end
         if p.kind == "library" then
             return FT.Library.Encode()
+        end
+        if p.kind == "original" then
+            return C.EncodeOriginal(S.Build())
         end
         if p.kind == "build" then
             return C.Encode(S.ExportView())
@@ -315,6 +326,9 @@ local commands = {
     end,
     skills = function(p)
         return A.List(S.View(), S.ViewLevel(), p.query, p.filter, not S.SimpleView())
+    end,
+    skillTimeline = function(p)
+        return A.Timeline(S.View(), S.ViewLevel(), p.query, p.filter, not S.SimpleView())
     end,
     skillLevels = function(p)
         local skill = A.Prepare(S.Build().classID).byName[p.name]

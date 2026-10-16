@@ -235,3 +235,27 @@ addon hover/details, compact view and PWA desktop/mobile talent details. Simulat
 from shared Lua: the Brand omission applies to Searing Pain, while Demonic Knowledge's unmodeled
 conditional spell power is disclosed for spell damage. These notes do not change estimates or
 portable build identity.
+
+Both interfaces show the Impale migration repair state and retain original-build export in Share.
+All branches remain navigable, including those requiring point-order repair. Repair state is shared
+Lua; new checkpoint saves require current rules. Original allocations also survive FL1 and FP1
+sharing. The browser uses a full-width notice and node labels; native header/history and Help expose
+the same recovery steps, including compact view. Simple view remains usable for repairing talents.
+
+Natural Instinct character contributions, early-rank growth, per-effect caps and Penance's separate
+three-bolt modes use the same engine. Base channel/cost and proc-interval labels use the same shared
+formatter. Experimental unsupported retaliation behavior is disclosed in both simulators.
+
+## Chronological unlocks and October 15 compatibility
+
+Addon full/Simple/Compact views and desktop/mobile PWA show one row per player-facing skill rank,
+grouped by level. Rows name the rank and unlock level, mark future or talent requirements, and open
+that rank in full details. Simple view opens only the shared unlock-level list. Search and filters
+preserve level order. All rank checkboxes for one ability share its selection and color; Clear
+highlights clears them all. Optional imported-character comparison marks individual untrained ranks.
+
+Both engines use the 70425 effect/timing snapshot and `d2ef5c6a` talent catalog. Known older
+allocations and graph branches are preserved. Explicit conversion previews the changed points,
+retains the original string and Undo, and never overwrites a saved checkpoint automatically. Stale
+tagged captures require re-import for changed rank comparisons and live-stat simulation. Native
+character capture remains client-only; portable sharing works on both platforms.

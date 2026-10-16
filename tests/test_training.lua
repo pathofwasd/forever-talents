@@ -131,7 +131,7 @@ UI.trainingInfo:Click()
 check(UI.skillFilterKey == "needsTraining")
 for _, row in ipairs(UI.skillRows) do
     if row:IsShown() then
-        check(row.comparison.needsTraining and row.progress:GetText() == "↑0")
+        check(row.entry.needsTraining and row.status:GetText() == "Train now")
         row:Trigger("OnEnter")
         check(GameTooltip:IsShown())
         row:Trigger("OnLeave")
@@ -142,7 +142,7 @@ UI.trainingCheck:Click()
 check(not S.CheckTraining() and UI.skillFilterKey == "all" and not UI.trainingInfo:IsShown())
 for _, row in ipairs(UI.skillRows) do
     if row:IsShown() then
-        check(not row.comparison and not row.progress:IsShown())
+        check(not row.comparison and not row.entry.needsTraining)
     end
 end
 check(FT.Library.Encode() == before, "Display preference changed a library string")

@@ -14,6 +14,14 @@ Uncheck to restore the full view with all saved data intact. The preference is l
 and survives reloads; library imports do not change it. Talent data and rules are shared with the
 full view, so future catalog updates apply to both.
 
+## Skill unlocks
+
+Skills groups every player-facing rank under its unlock level. Each row shows the rank, level and
+availability; click it to open that rank's description. Simple view keeps the same level timeline
+with a smaller unlock-level dialog. Highlighting any rank selects the whole ability, so its other
+ranks share the same color. Filters and search keep chronological order. Compare imported character
+enables per-rank training checks; re-import captures made before changed training data.
+
 ## Develop and package
 
 Follow the root [development setup](../CONTRIBUTING.md), then run:

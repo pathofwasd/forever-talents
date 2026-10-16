@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "dataTag": "7ba43a60",
+  "dataTag": "d2ef5c6a",
   "classes": 9,
   "trees": 27,
   "talents": 466,
-  "skillRanks": 1519,
-  "icons": 604,
-  "dataSha256": "a83d7e97b8855a917759106e544efff9b1cb2e9cefeadc0a12bd87e91797c2ac"
+  "skillRanks": 1530,
+  "icons": 607,
+  "dataSha256": "eea4d96cd50180e67fe5422f52df88f1a0f99b576d06ebf3b7b048fbd75f31ca"
 }

@@ -11,7 +11,9 @@ function A.AbilityDetails(rank)
         return "Base cast time and cooldown are not recorded for this spell."
     end
     if detail.passive then
-        return "Passive"
+        return detail.procCooldown
+                and ("Passive • Proc interval: " .. string.format("%g", detail.procCooldown) .. " sec")
+            or "Passive"
     end
     local function seconds(value)
         return string.format("%g", value) .. " sec"
@@ -30,6 +32,14 @@ function A.AbilityDetails(rank)
         lines[#lines + 1] = "Cooldown: " .. seconds(detail.cooldown)
     else
         lines[#lines + 1] = "No ability cooldown recorded"
+    end
+    if detail.procCooldown then
+        lines[#lines + 1] = "Proc interval: " .. seconds(detail.procCooldown)
+    end
+    if detail.cost then
+        lines[#lines + 1] = detail.cost
+    elseif detail.manaCost then
+        lines[#lines + 1] = string.format("%g", detail.manaCost) .. " Mana"
     end
     if detail.globalCooldown and detail.globalCooldown > 0 then
         lines[#lines + 1] = "Global cooldown: " .. seconds(detail.globalCooldown)
@@ -83,6 +93,9 @@ local function relation(skill, talent)
     if skill.unlock and skill.unlock.id == talent.id then
         return "Unlocked by this talent.", "unlock"
     end
+    if skill.name == "Frost Blast" and mentions(ttext, "Frostbolt") then
+        return "Frost Blast inherits talents that affect Frostbolt.", "direct"
+    end
     if mentions(ttext, skill.name) then
         return "Talent description names " .. skill.name .. ".", "direct"
     end
@@ -93,6 +106,7 @@ local function relation(skill, talent)
     -- spells. Label this contextual evidence separately from explicit links.
     local low, tlow = text:lower(), ttext:lower()
     local healing = low:find("heals", 1, true)
+        or low:find("healing to an ally", 1, true)
         or (low:find("restores", 1, true) and low:find("health", 1, true))
     local damage = low:find("damage", 1, true)
         and not low:find("absorbs", 1, true)
@@ -116,7 +130,12 @@ local function relation(skill, talent)
         return
     end
     if
-        healing and (tlow:find("healing spells", 1, true) or tlow:find("healing done by", 1, true))
+        healing
+        and (
+            tlow:find("healing spells", 1, true)
+            or tlow:find("healing done by", 1, true)
+            or tlow:find("spell healing", 1, true)
+        )
     then
         return "General healing spell modifier described by this talent.", "general"
     end
@@ -222,6 +241,7 @@ function A.Prepare(classID)
                         live = true,
                         talentGranted = true,
                         text = t.ranks[1].text,
+                        textLevel = t.ranks[1].textLevel,
                     })
                 end
             elseif t.max == 1 then
@@ -239,6 +259,7 @@ function A.Prepare(classID)
                             live = true,
                             talentGranted = true,
                             text = t.ranks[1].text,
+                            textLevel = t.ranks[1].textLevel,
                         },
                     },
                 }
@@ -345,6 +366,8 @@ function A.NormalizeTraining(raw)
         classID = raw.classID,
         raceID = raw.raceID,
         level = raw.level,
+        dataTag = type(raw.dataTag) == "string" and FT.Model.AcceptTag(raw.dataTag) and raw.dataTag
+            or nil,
         spellIDs = ids,
     }
 end
@@ -560,6 +583,12 @@ function A.TrainingReport(build, level)
             "No matching imported spellbook. Use Character → Import my talents & skills in the addon, or import its character string."
         return report
     end
+    if snapshot.dataTag and snapshot.dataTag ~= FT.Data.meta.tag then
+        report.caption = "Re-import trained skills"
+        report.note =
+            "This spellbook predates changed training ranks. Import the character again with the updated addon before comparing training."
+        return report
+    end
     report.capturedLevel = snapshot.level
     local prepared, points = A.Prepare(build.classID), FT.Model.Counts(build)
     local recognized = false
@@ -707,6 +736,86 @@ function A.List(build, level, query, filter, includeRacials)
         end
     end
     return list
+end
+
+-- One row per actual player rank, ordered by its unlock level. The catalog and
+-- the existing training rules own progression; both interfaces consume this list.
+function A.Timeline(build, level, query, filter, includeRacials)
+    local rows, points = {}, FT.Model.Counts(build)
+    local report = A.TrainingReport(build, level)
+    local snapshot = FT.Character.Get(build).trainedSkills
+    if snapshot and snapshot.classID ~= build.classID then
+        snapshot = nil
+    end
+    for _, entry in ipairs(A.List(build, level, query, "all", includeRacials)) do
+        local skill = entry.skill
+        local trained = A.TrainedRank(skill, snapshot)
+        for ri, rank in ipairs(skill.ranks) do
+            local at = unlockLevel(skill, rank)
+            if
+                rank.live
+                and not rank.aliasOf
+                and not rank.referenceOnly
+                and (not rank.toLevel or rank.toLevel >= at)
+            then
+                local requiresTalent = skill.unlock
+                    and (points[skill.unlock.id] or 0) < (rank.talentRank or 1)
+                local available = at <= level and not requiresTalent
+                local known = coversRank(trained, rank)
+                local granted = skill.kind == "racial" or grantedRank(skill, rank)
+                local needsTraining = report.ready and available and not granted and not known
+                if
+                    not filter
+                    or filter == "all"
+                    or (filter == "now" and available)
+                    or (filter == "trained" and known)
+                    or (filter == "needsTraining" and needsTraining)
+                    or (filter == "talent" and skill.unlock)
+                    or (filter == "racial" and skill.kind == "racial")
+                then
+                    local status = (report.ready or filter == "trained") and known and "Trained"
+                        or needsTraining and "Train now"
+                        or requiresTalent and ("Requires " .. skill.unlock.name)
+                        or at > level and ("In " .. (at - level) .. ((at - level) == 1 and " level" or " levels"))
+                        or granted and skill.unlock and "Talent granted"
+                        or skill.kind == "racial" and "Racial trait"
+                        or "Available"
+                    rows[#rows + 1] = {
+                        skill = skill,
+                        rank = rank,
+                        rankIndex = ri,
+                        level = at,
+                        key = skill.name .. ":" .. rank.spellID .. ":" .. ri,
+                        available = available,
+                        trained = known,
+                        needsTraining = needsTraining,
+                        requiresTalent = requiresTalent or false,
+                        label = rank.label ~= "" and rank.label or "Ability",
+                        status = status,
+                        hint = "Level "
+                            .. at
+                            .. " • "
+                            .. status
+                            .. (
+                                skill.unlock
+                                    and ". Talent requirement applies in addition to level."
+                                or ""
+                            ),
+                    }
+                end
+            end
+        end
+    end
+    table.sort(rows, function(a, b)
+        if a.level ~= b.level then
+            return a.level < b.level
+        end
+        if a.skill.name ~= b.skill.name then
+            return a.skill.name < b.skill.name
+        end
+        return a.rankIndex < b.rankIndex
+    end)
+    return rows
 end
 
 -- The compact view derives its progression from the same live rank records.

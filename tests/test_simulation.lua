@@ -16,9 +16,14 @@ local function skill(cid, name, n)
     local sk = FT.Skills.Prepare(cid).byName[name]
     return sk, sk.ranks[n or 1]
 end
+-- Keep independent effect arithmetic separate from racial critical bonuses.
+local neutralRaces =
+    { [1] = 5, [2] = 5, [3] = 8, [4] = 5, [5] = 5, [7] = 8, [8] = 5, [9] = 5, [11] = 4 }
 local function result(cid, name, state, level, n)
     local sk, rank = skill(cid, name, n)
-    return assert(Sim.Calculate(M.New(cid, nil, level or 60), sk, rank, state or { crit = 0 }))
+    return assert(
+        Sim.Calculate(M.New(cid, neutralRaces[cid], level or 60), sk, rank, state or { crit = 0 })
+    )
 end
 local function inputs(r)
     local used = {}
@@ -38,14 +43,14 @@ local function talent(cid, name)
     error("Missing talent " .. name)
 end
 local function selected(cid, name, rank)
-    local b, t = M.New(cid), talent(cid, name)
+    local b, t = M.New(cid, neutralRaces[cid]), talent(cid, name)
     for _ = 1, rank or t.max do
         b.order[#b.order + 1] = t.id
     end
     return b
 end
 local function legal(cid, name)
-    local b, t = M.New(cid), talent(cid, name)
+    local b, t = M.New(cid, neutralRaces[cid]), talent(cid, name)
     while not M.CanAdd(b, t.id) do
         local added = false
         for _, tree in ipairs(M.Class(cid).trees) do
@@ -174,7 +179,7 @@ near(
     15
 )
 local immolate, ir = skill(9, "Immolate")
-local base = Sim.Calculate(M.New(9), immolate, ir, { crit = 0 })
+local base = Sim.Calculate(M.New(9, neutralRaces[9]), immolate, ir, { crit = 0 })
 local after = Sim.Calculate(selected(9, "Aftermath"), immolate, ir, { crit = 0 })
 near(after.min, base.min * 1.5)
 near(after.periodic, base.periodic)
@@ -188,7 +193,7 @@ near(frozen.crit, 50)
 check(inputs(frozen).frozen)
 local shadow, sr = skill(9, "Shadow Bolt")
 local sacrifice = Sim.Calculate(selected(9, "Demonic Sacrifice"), shadow, sr, { crit = 0 })
-local shadowBase = Sim.Calculate(M.New(9), shadow, sr, { crit = 0 })
+local shadowBase = Sim.Calculate(M.New(9, neutralRaces[9]), shadow, sr, { crit = 0 })
 near(sacrifice.expected, shadowBase.expected)
 check(#sacrifice.modifiers.omitted > 0)
 local gnome = M.New(8, 7)
@@ -219,7 +224,7 @@ local armor = selected(2, "Toughness")
 sheet.gear.chest =
     { name = "Mail", stats = { armor = 100 }, low = 0, high = 0, speed = 0, weaponType = "none" }
 sheet.mode = "gear"
-local plain, buffed = C.Compute(M.New(2), sheet), C.Compute(armor, sheet)
+local plain, buffed = C.Compute(M.New(2, armor.raceID), sheet), C.Compute(armor, sheet)
 near(buffed.totals.stamina, plain.totals.stamina)
 near(buffed.totals.armor - plain.totals.armor, 10)
 local gear = C.New()
